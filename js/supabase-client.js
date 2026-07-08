@@ -16,8 +16,15 @@ const SUPABASE_CONFIGURED =
   Boolean(SUPABASE_URL) && Boolean(SUPABASE_ANON_KEY) && Boolean(window.supabase);
 
 const AUTH_PROVIDER_HINTS = {
-  google: false,
+  google: true,
 };
+
+function getOAuthRedirectUrl() {
+  const protocol = window.location.protocol;
+  if (protocol !== 'http:' && protocol !== 'https:') return '';
+  if (!window.location.origin || window.location.origin === 'null') return '';
+  return `${window.location.origin}${window.location.pathname}`;
+}
 
 let supabaseClient = null;
 if (SUPABASE_CONFIGURED) {
@@ -79,6 +86,9 @@ function normalizeVenta(venta) {
 }
 function normalizeDbError(error, tableName) {
   const message = error?.message || '';
+  if (/row-level security policy|violates row-level security policy/i.test(message)) {
+    return new Error('Tu sesión no tiene permisos para guardar en Supabase. Cierra sesión y vuelve a entrar (Google o correo) para refrescar la autenticación.');
+  }
   if (
     message.includes('Could not find the table') ||
     message.includes('schema cache') ||
@@ -267,21 +277,25 @@ const AUTH = {
     if (LOCAL_MODE) return this.signInWithPassword(email, password);
     const { data, error } = await supabaseClient.auth.signUp({ email, password });
     if (error) throw normalizeAuthError(error);
-    return data.user;
+    return data.session?.user || null;
   },
 
   async signInWithGoogle() {
-    if (!AUTH_PROVIDER_HINTS.google) {
-      throw new Error('Google no está configurado en esta app. Habilítalo en Supabase o usa correo y contraseña.');
-    }
     if (LOCAL_MODE) {
       const user = { id: uid(), email: 'usuario.demo@parksales.app', name: 'Usuario demo' };
       localStorage.setItem(LOCAL_KEYS.user, JSON.stringify(user));
       return user;
     }
+    if (!AUTH_PROVIDER_HINTS.google) {
+      throw new Error('Google no está configurado en esta app. Habilítalo en Supabase o usa correo y contraseña.');
+    }
+    const redirectTo = getOAuthRedirectUrl();
+    if (!redirectTo) {
+      throw new Error('Google Login requiere abrir la app con http(s). Si la abriste como archivo local (file://), usa un servidor local o GitHub Pages.');
+    }
     const { error } = await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.href },
+      options: { redirectTo },
     });
     if (error) throw normalizeAuthError(error);
   },

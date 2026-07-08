@@ -4,6 +4,14 @@
 
 let authMode = 'login'; // 'login' | 'signup'
 
+function setAuthMode(nextMode) {
+  authMode = nextMode;
+  document.getElementById('auth-title').textContent = authMode === 'login' ? 'Inicia sesión' : 'Crea tu cuenta';
+  document.getElementById('auth-submit-btn').textContent = authMode === 'login' ? 'Entrar' : 'Registrarme';
+  document.getElementById('auth-toggle-text').textContent = authMode === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?';
+  document.getElementById('auth-toggle-link').textContent = authMode === 'login' ? 'Regístrate' : 'Inicia sesión';
+}
+
 function initAuthScreen() {
   const form = document.getElementById('auth-form');
   const toggleLink = document.getElementById('auth-toggle-link');
@@ -20,11 +28,7 @@ function initAuthScreen() {
   }
 
   toggleLink.addEventListener('click', () => {
-    authMode = authMode === 'login' ? 'signup' : 'login';
-    document.getElementById('auth-title').textContent = authMode === 'login' ? 'Inicia sesión' : 'Crea tu cuenta';
-    document.getElementById('auth-submit-btn').textContent = authMode === 'login' ? 'Entrar' : 'Registrarme';
-    document.getElementById('auth-toggle-text').textContent = authMode === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?';
-    toggleLink.textContent = authMode === 'login' ? 'Regístrate' : 'Inicia sesión';
+    setAuthMode(authMode === 'login' ? 'signup' : 'login');
     errorBox.textContent = '';
   });
 
@@ -42,10 +46,16 @@ function initAuthScreen() {
       if (user) {
         await bootApp(user);
       } else {
-        errorBox.textContent = 'Revisa tu correo para confirmar la cuenta antes de entrar.';
+        errorBox.textContent = 'Revisa tu correo para confirmar la cuenta antes de entrar. Si ya tenías cuenta, inicia sesión directamente.';
       }
     } catch (err) {
-      errorBox.textContent = traducirErrorAuth(err.message);
+      if (authMode === 'signup' && /already registered|already exists/i.test(err.message || '')) {
+        setAuthMode('login');
+        document.getElementById('auth-email').value = email;
+        errorBox.textContent = 'Ese correo ya estaba registrado. Inicia sesión con esa cuenta o usa Google si la creaste así.';
+      } else {
+        errorBox.textContent = traducirErrorAuth(err.message);
+      }
     } finally {
       btn.disabled = false;
     }
@@ -71,6 +81,7 @@ function traducirErrorAuth(msg = '') {
   if (/invalid login credentials/i.test(msg)) return 'Correo o contraseña incorrectos.';
   if (/already registered/i.test(msg)) return 'Ese correo ya está registrado.';
   if (/email.*confirmed|confirmar la cuenta/i.test(msg)) return 'Revisa tu correo y confirma la cuenta antes de iniciar sesión.';
+  if (/requiere abrir la app con http/i.test(msg) || /file:\/\//i.test(msg)) return 'Para entrar con Google, abre la app en http://localhost o en tu URL pública (no desde archivo local file://).';
   if (/google no está habilitado|provider/i.test(msg)) return 'Google no está activado en Supabase. Usa correo y contraseña o habilítalo en Authentication → Providers.';
   if (/password/i.test(msg)) return 'La contraseña debe tener al menos 6 caracteres.';
   return msg || 'Ha ocurrido un error. Inténtalo de nuevo.';

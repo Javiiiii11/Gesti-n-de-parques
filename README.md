@@ -34,6 +34,10 @@ Puedes abrir `index.html` directamente (o servirlo con GitHub Pages) y pulsar
 app funcionará al 100% guardando los datos en el `localStorage` del navegador,
 para que puedas probar todo el flujo antes de conectar Supabase.
 
+> Nota: el acceso con Google requiere ejecutar la app en una URL `http/https`
+> (por ejemplo, GitHub Pages o `http://localhost`). Si abres el archivo con
+> `file://`, Google OAuth no puede completar la redirección.
+
 ## 3. Configurar Supabase (producción)
 
 ### 3.1 Crear el proyecto
