@@ -2,180 +2,631 @@
    dashboard.js — vista "Dashboard"
 ============================================================================ */
 
-let chartEvolucion = null;
-let chartParquesMes = null;
+let chartPeriodo = null;
+let chartParques = null;
+let chartObjetivo = null;
+let dashboardControlsWired = false;
 
 const MONTHLY_GOAL_KEY = 'parksales_objetivo_mensual';
-function getMonthlyGoal() { return Number(localStorage.getItem(MONTHLY_GOAL_KEY)) || 3000; }
-function setMonthlyGoal(v) { localStorage.setItem(MONTHLY_GOAL_KEY, v); }
+const WORKDAYS_KEY = 'parksales_dias_trabajo_mes';
+const DASHBOARD_FILTERS_KEY = 'parksales_dashboard_filters';
+
+const MONTH_NAMES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+function toDateInputValue(date = new Date()) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function toMonthInputValue(date = new Date()) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}`;
+}
+
+function getMonthlyGoal() {
+  return Math.max(0, Number(localStorage.getItem(MONTHLY_GOAL_KEY)) || 3000);
+}
+
+function setMonthlyGoal(value) {
+  localStorage.setItem(MONTHLY_GOAL_KEY, String(Math.max(0, Number(value) || 0)));
+}
+
+function getWorkdaysPerMonth() {
+  return Math.max(1, Number(localStorage.getItem(WORKDAYS_KEY)) || 22);
+}
+
+function setWorkdaysPerMonth(value) {
+  localStorage.setItem(WORKDAYS_KEY, String(Math.max(1, Number(value) || 1)));
+}
+
+function getDefaultDashboardFilters() {
+  const now = new Date();
+  return {
+    period: 'month',
+    value: toMonthInputValue(now),
+    year: String(now.getFullYear()),
+    parqueId: 'all',
+  };
+}
+
+function normalizeDashboardFilters(raw = {}) {
+  const defaults = getDefaultDashboardFilters();
+  const period = ['day', 'month', 'year', 'all'].includes(raw.period) ? raw.period : defaults.period;
+  let value = typeof raw.value === 'string' && raw.value ? raw.value : defaults.value;
+  const year = /^\d{4}$/.test(String(raw.year || '')) ? String(raw.year) : defaults.year;
+  const parqueId = typeof raw.parqueId === 'string' && raw.parqueId ? raw.parqueId : defaults.parqueId;
+
+  if (period === 'day' && !isValidDateValue(value)) value = toDateInputValue();
+  if (period === 'month' && !isValidMonthValue(value)) value = toMonthInputValue();
+
+  return { period, value, year, parqueId };
+}
+
+function loadDashboardFilters() {
+  try {
+    return normalizeDashboardFilters(JSON.parse(localStorage.getItem(DASHBOARD_FILTERS_KEY) || '{}'));
+  } catch (_err) {
+    return getDefaultDashboardFilters();
+  }
+}
+
+function saveDashboardFilters(filters) {
+  localStorage.setItem(DASHBOARD_FILTERS_KEY, JSON.stringify(normalizeDashboardFilters(filters)));
+}
+
+function updateDashboardFilters(patch = {}) {
+  const current = loadDashboardFilters();
+  const next = normalizeDashboardFilters({ ...current, ...patch });
+  saveDashboardFilters(next);
+  syncDashboardFilterControls(next);
+  renderDashboard();
+}
+
+function getDashboardPeriodPatch(period) {
+  const current = loadDashboardFilters();
+  const patch = { period };
+
+  if (period === 'day' && !isValidDateValue(current.value)) patch.value = toDateInputValue();
+  if (period === 'month' && !isValidMonthValue(current.value)) patch.value = toMonthInputValue();
+
+  return patch;
+}
+
+function isSameLocalDay(iso, dayValue) {
+  const date = new Date(iso);
+  const [year, month, day] = String(dayValue || '').split('-').map(Number);
+  return date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day;
+}
+
+function isSameLocalMonth(iso, monthValue) {
+  const date = new Date(iso);
+  const [year, month] = String(monthValue || '').split('-').map(Number);
+  return date.getFullYear() === year && date.getMonth() + 1 === month;
+}
+
+function isSameLocalYear(iso, yearValue) {
+  return new Date(iso).getFullYear() === Number(yearValue);
+}
+
+function startOfMonth(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(1);
+  return d;
+}
+
+function endOfMonth(date) {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + 1, 0);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function daysInMonth(year, monthIndexZeroBased) {
+  return new Date(year, monthIndexZeroBased + 1, 0).getDate();
+}
+
+function daysBetweenInclusive(from, to) {
+  const start = new Date(from);
+  const end = new Date(to);
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  const diff = Math.round((end - start) / 86400000);
+  return Math.max(1, diff + 1);
+}
+
+function getSalesByPark() {
+  const grouped = {};
+  STATE.ventas.forEach((venta) => {
+    const name = parqueNombre(venta.parque_id);
+    if (!grouped[name]) grouped[name] = { ventas: 0, total: 0 };
+    grouped[name].ventas += 1;
+    grouped[name].total += Number(venta.importe_total) || 0;
+  });
+  return grouped;
+}
+
+function getFilteredVentas(filters) {
+  return STATE.ventas.filter((venta) => {
+    if (filters.parqueId !== 'all' && venta.parque_id !== filters.parqueId) return false;
+    if (filters.period === 'day') return isSameLocalDay(venta.fecha, filters.value);
+    if (filters.period === 'month') return isSameLocalMonth(venta.fecha, filters.value);
+    if (filters.period === 'year') return isSameLocalYear(venta.fecha, filters.year);
+    return true;
+  });
+}
 
 function renderDashboard() {
-  const now = new Date();
-  const ventasHoy = STATE.ventas.filter((v) => isMismoDia(v.fecha, now));
-  const ventasSemana = STATE.ventas.filter((v) => isMismaSemana(v.fecha, now));
-  const ventasMes = STATE.ventas.filter((v) => isMismoMes(v.fecha, now));
+  if (!document.getElementById('dashboard-stats')) return;
 
-  const sum = (arr, key) => arr.reduce((acc, v) => acc + Number(v[key] || 0), 0);
+  ensureDashboardControlsWired();
+  ensureDashboardParkOptions();
+
+  const filters = normalizeDashboardFilters(loadDashboardFilters());
+  syncDashboardFilterControls(filters);
+
+  const now = new Date();
+  const hoy = STATE.ventas.filter((venta) => isMismoDia(venta.fecha, now));
+  const semana = STATE.ventas.filter((venta) => isMismaSemana(venta.fecha, now));
+  const mesActual = STATE.ventas.filter((venta) => isMismoMes(venta.fecha, now));
+  const filtradas = getFilteredVentas(filters);
+  const goal = getMonthlyGoal();
+  const workdays = getWorkdaysPerMonth();
+
+  const sum = (arr, key) => arr.reduce((acc, venta) => acc + Number(venta[key] || 0), 0);
   const totalAcumulado = sum(STATE.ventas, 'importe_total');
   const totalVentas = STATE.ventas.length;
-  const promedioVenta = totalVentas ? totalAcumulado / totalVentas : 0;
+  const firstSale = STATE.ventas.length ? STATE.ventas.reduce((min, venta) => new Date(venta.fecha) < new Date(min.fecha) ? venta : min, STATE.ventas[0]) : null;
+  const daysSinceFirstSale = firstSale ? daysBetweenInclusive(firstSale.fecha, now) : 0;
+  const dailyAverage = daysSinceFirstSale ? totalAcumulado / daysSinceFirstSale : 0;
+  const totalEntries = totalVentas;
+  const salesByPark = getSalesByPark();
+  const topParkEntry = Object.entries(salesByPark).sort((a, b) => b[1].ventas - a[1].ventas)[0];
+  const topParkName = topParkEntry ? topParkEntry[0] : '—';
+  const topParkEntries = topParkEntry ? topParkEntry[1].ventas : 0;
+  const topParkRevenue = topParkEntry ? topParkEntry[1].total : 0;
+  const filteredSummary = buildDashboardFilterSummary(filters, filtradas.length);
+  const currentMonthSales = sum(mesActual, 'importe_total');
+  const goalRemaining = Math.max(0, goal - currentMonthSales);
+  const goalProgress = goal > 0 ? Math.min(100, (currentMonthSales / goal) * 100) : 0;
+  const monthDays = daysInMonth(now.getFullYear(), now.getMonth());
+  const daysLeft = Math.max(0, monthDays - now.getDate());
+  const monthElapsed = Math.max(1, now.getDate());
+  const expectedDailyGoal = goal / workdays;
+  const currentPace = currentMonthSales / monthElapsed;
+  const missingPerWorkingDay = workdays ? goalRemaining / Math.max(1, workdays - Math.min(workdays, monthElapsed)) : goalRemaining;
 
-  const porParque = {};
-  const porCliente = {};
-  STATE.ventas.forEach((v) => {
-    porParque[v.parque_id] = porParque[v.parque_id] || [];
-    porParque[v.parque_id].push(Number(v.importe_total) || 0);
-    const cliente = v.cliente_nombre || 'Cliente';
-    porCliente[cliente] = (porCliente[cliente] || 0) + Number(v.importe_total || 0);
-  });
-  const topParqueId = Object.keys(porParque).sort((a, b) => sumBy(porParque[b]) - sumBy(porParque[a]))[0];
-  const topParqueNombre = topParqueId ? parqueNombre(topParqueId) : '—';
-  const topCliente = Object.entries(porCliente).sort((a, b) => b[1] - a[1])[0];
+  document.getElementById('dashboard-filter-summary').textContent = filteredSummary;
 
   const stats = [
-    { label: 'Ventas de hoy', value: fmtEUR(sum(ventasHoy, 'importe_total')), sub: `${fmtNum(ventasHoy.length)} ventas`, icon: 'M12 8v8M8 12h8' },
-    { label: 'Ventas de la semana', value: fmtEUR(sum(ventasSemana, 'importe_total')), sub: `${fmtNum(ventasSemana.length)} ventas`, icon: 'M3 6h18M3 12h18M3 18h18' },
-    { label: 'Ventas del mes', value: fmtEUR(sum(ventasMes, 'importe_total')), sub: `${fmtNum(ventasMes.length)} ventas`, icon: 'M3 3v18h18' },
-    { label: 'Total acumulado', value: fmtEUR(totalAcumulado), sub: `${fmtNum(totalVentas)} ventas totales`, icon: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
-    { label: 'Venta media', value: fmtEUR(promedioVenta), sub: topCliente ? `Cliente top: ${topCliente[0]}` : 'Sin datos aún', icon: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
-    { label: 'Parque más vendido', value: topParqueNombre, sub: topParqueId ? `${fmtNum(sumBy(porParque[topParqueId]))} €` : 'Sin datos aún', icon: 'M3 21l7-14 4 8 3-5 4 11H3z' },
+    { label: 'Ventas de hoy', value: fmtEUR(sum(hoy, 'importe_total')), sub: `${fmtNum(hoy.length)} entradas hoy`, icon: 'M12 8v8M8 12h8' },
+    { label: 'Ventas de la semana', value: fmtEUR(sum(semana, 'importe_total')), sub: `${fmtNum(semana.length)} entradas esta semana`, icon: 'M3 6h18M3 12h18M3 18h18' },
+    { label: 'Total desde el primer día', value: fmtEUR(totalAcumulado), sub: `${fmtNum(totalEntries)} entradas acumuladas`, icon: 'M3 3v18h18' },
+    { label: 'Venta media por día', value: fmtEUR(dailyAverage), sub: firstSale ? `Desde ${fmtDateShort(firstSale.fecha)}` : 'Sin datos aún', icon: 'M4 19h16M6 16V9M12 16V5M18 16v-4' },
+    { label: 'Parque más vendido', value: topParkName, sub: topParkEntry ? `${fmtNum(topParkEntries)} entradas · ${fmtEUR(topParkRevenue)}` : 'Sin ventas registradas', icon: 'M3 21l7-14 4 8 3-5 4 11H3z' },
+    { label: 'Días para terminar el mes', value: `${fmtNum(daysLeft)} días`, sub: `${fmtNum(monthDays)} días en total este mes`, icon: 'M8 2v3M16 2v3M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z' },
   ];
 
-  document.getElementById('dashboard-stats').innerHTML = stats.map((s) => `
-    <div class="stat-card">
-      <div class="stat-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${s.icon}"/></svg>${escapeHtml(s.label)}</div>
-      <div class="stat-value">${typeof s.value === 'string' && s.value.length > 14 ? escapeHtml(s.value) : s.value}</div>
-      <div class="stat-sub">${escapeHtml(s.sub)}</div>
-    </div>`).join('');
+  document.getElementById('dashboard-stats').innerHTML = stats.map((stat) => `
+    <div class="stat-card dashboard-stat-card">
+      <div class="stat-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${stat.icon}"/></svg>${escapeHtml(stat.label)}</div>
+      <div class="stat-value ${stat.value.length > 14 ? 'stat-value-long' : ''}">${escapeHtml(stat.value)}</div>
+      <div class="stat-sub">${escapeHtml(stat.sub)}</div>
+    </div>
+  `).join('');
 
-  renderChartEvolucion();
-  renderChartParquesMes(ventasMes);
-  renderRankingParques();
-  renderGoalWidget(totalAcumulado, promedioVenta, topParqueNombre, topCliente);
+  renderGoalChart(currentMonthSales, goal);
+  renderGoalWidget({
+    currentMonthSales,
+    goal,
+    goalRemaining,
+    goalProgress,
+    workdays,
+    daysLeft,
+    expectedDailyGoal,
+    currentPace,
+    missingPerWorkingDay,
+  });
+  renderPeriodChart(filtradas, filters);
+  renderParqueChart(filtradas);
+  renderRankingParques(filtradas);
 }
 
-function sumBy(values) {
-  return values.reduce((acc, value) => acc + Number(value || 0), 0);
+function buildDashboardFilterSummary(filters, totalFiltered) {
+  const periodLabel = filters.period === 'day' ? `Día ${filters.value}` : filters.period === 'month' ? `Mes ${filters.value}` : filters.period === 'year' ? `Año ${filters.year}` : 'Todo el histórico';
+  const parkLabel = filters.parqueId === 'all' ? 'Todos los parques' : parqueNombre(filters.parqueId);
+  return `${periodLabel} · ${parkLabel} · ${fmtNum(totalFiltered)} ventas en el filtro`;
 }
 
-function chartColors() {
+function ensureDashboardControlsWired() {
+  if (dashboardControlsWired) return;
+  dashboardControlsWired = true;
+
+  const periodSelect = document.getElementById('dashboard-period');
+  const valueInput = document.getElementById('dashboard-filter-value');
+  const yearInput = document.getElementById('dashboard-year');
+  const parqueSelect = document.getElementById('dashboard-parque');
+  const resetButton = document.getElementById('dashboard-reset-filters');
+
+  periodSelect?.addEventListener('change', (e) => updateDashboardFilters(getDashboardPeriodPatch(e.target.value)));
+  valueInput?.addEventListener('change', (e) => {
+    const period = periodSelect?.value;
+    if (period === 'year') {
+      updateDashboardFilters({ year: e.target.value });
+    } else {
+      updateDashboardFilters({ value: e.target.value });
+    }
+  });
+  yearInput?.addEventListener('change', (e) => updateDashboardFilters({ year: e.target.value }));
+  parqueSelect?.addEventListener('change', (e) => updateDashboardFilters({ parqueId: e.target.value }));
+
+  resetButton?.addEventListener('click', () => {
+    saveDashboardFilters(getDefaultDashboardFilters());
+    syncDashboardFilterControls(loadDashboardFilters());
+    renderDashboard();
+  });
+}
+
+function ensureDashboardParkOptions() {
+  const select = document.getElementById('dashboard-parque');
+  if (!select) return;
+  const current = select.value || loadDashboardFilters().parqueId || 'all';
+  const options = ['<option value="all">Todos los parques</option>']
+    .concat(STATE.parques.map((parque) => `<option value="${escapeHtml(parque.id)}">${escapeHtml(parque.nombre)}</option>`));
+  select.innerHTML = options.join('');
+  select.value = STATE.parques.some((parque) => parque.id === current) ? current : 'all';
+}
+
+function syncDashboardFilterControls(filters) {
+  const period = filters.period || 'month';
+  const periodSelect = document.getElementById('dashboard-period');
+  const yearInput = document.getElementById('dashboard-year');
+  const parqueSelect = document.getElementById('dashboard-parque');
+  const valueInput = document.getElementById('dashboard-filter-value');
+  const valueLabel = document.getElementById('dashboard-filter-value-label');
+
+  if (periodSelect) periodSelect.value = period;
+  if (yearInput) yearInput.value = filters.year;
+  if (parqueSelect && Array.from(parqueSelect.options).some((option) => option.value === filters.parqueId)) {
+    parqueSelect.value = filters.parqueId;
+  }
+
+  if (valueInput && valueLabel) {
+    if (period === 'day') {
+      valueInput.type = 'date';
+      valueInput.value = isValidDateValue(filters.value) ? filters.value : toDateInputValue();
+      valueInput.removeAttribute('min');
+      valueInput.removeAttribute('max');
+      valueInput.removeAttribute('step');
+      valueLabel.textContent = 'Día';
+    } else if (period === 'year') {
+      valueInput.type = 'number';
+      valueInput.value = filters.year;
+      valueInput.min = '2000';
+      valueInput.max = '2100';
+      valueInput.step = '1';
+      valueLabel.textContent = 'Año';
+    } else if (period === 'all') {
+      valueInput.type = 'month';
+      valueInput.value = toMonthInputValue();
+      valueInput.removeAttribute('min');
+      valueInput.removeAttribute('max');
+      valueInput.removeAttribute('step');
+      valueLabel.textContent = 'Filtro';
+    } else {
+      valueInput.type = 'month';
+      valueInput.value = isValidMonthValue(filters.value) ? filters.value : toMonthInputValue();
+      valueInput.removeAttribute('min');
+      valueInput.removeAttribute('max');
+      valueInput.removeAttribute('step');
+      valueLabel.textContent = 'Mes';
+    }
+    valueInput.disabled = period === 'all';
+    valueInput.placeholder = period === 'all' ? 'Sin filtro de periodo' : '';
+  }
+}
+
+function isValidDateValue(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function isValidMonthValue(value) {
+  return /^\d{4}-\d{2}$/.test(value);
+}
+
+function chartPalette() {
   const styles = getComputedStyle(document.body);
   return {
     accent: styles.getPropertyValue('--accent').trim() || '#F5A623',
+    accent2: styles.getPropertyValue('--info').trim() || '#60A5FA',
+    success: styles.getPropertyValue('--success').trim() || '#34D399',
+    danger: styles.getPropertyValue('--danger').trim() || '#F87171',
     text: styles.getPropertyValue('--text-secondary').trim() || '#8B95AC',
     grid: styles.getPropertyValue('--border-soft').trim() || '#1C2740',
     palette: ['#F5A623', '#60A5FA', '#34D399', '#F87171', '#A78BFA', '#F472B6', '#38BDF8', '#FBBF24'],
   };
 }
 
-function renderChartEvolucion() {
+function renderGoalChart(currentMonthSales, goal) {
   if (typeof Chart === 'undefined') return;
-  const c = chartColors();
-  const days = [];
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0, 0, 0, 0);
-    days.push(d);
-  }
-  const data = days.map((d) => STATE.ventas.filter((v) => isMismoDia(v.fecha, d)).reduce((acc, v) => acc + Number(v.importe_total), 0));
-  const labels = days.map((d) => d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }));
-
-  const ctx = document.getElementById('chart-evolucion').getContext('2d');
-  if (chartEvolucion) chartEvolucion.destroy();
-  chartEvolucion = new Chart(ctx, {
-    type: 'line',
-    data: { labels, datasets: [{
-      label: 'Ingresos (€)', data,
-      borderColor: c.accent, backgroundColor: 'rgba(245,166,35,0.12)',
-      fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 4, borderWidth: 2,
-    }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx2) => fmtEUR(ctx2.parsed.y) } } },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: c.text, maxTicksLimit: 8, font: { size: 11 } } },
-        y: { grid: { color: c.grid }, ticks: { color: c.text, font: { size: 11 }, callback: (v) => v + '€' } },
-      },
-    },
-  });
-}
-
-function renderChartParquesMes(ventasMes) {
-  if (typeof Chart === 'undefined') return;
-  const c = chartColors();
-  const porParque = {};
-  ventasMes.forEach((v) => { const n = parqueNombre(v.parque_id); porParque[n] = (porParque[n] || 0) + Number(v.importe_total); });
-  const labels = Object.keys(porParque);
-  const data = Object.values(porParque);
-
-  const ctx = document.getElementById('chart-parques-mes').getContext('2d');
-  if (chartParquesMes) chartParquesMes.destroy();
-
-  if (!labels.length) {
-    chartParquesMes = null;
-    ctx.clearRect(0, 0, 400, 400);
-    return;
-  }
-
-  chartParquesMes = new Chart(ctx, {
+  const ctx = document.getElementById('chart-objetivo').getContext('2d');
+  if (chartObjetivo) chartObjetivo.destroy();
+  const remaining = Math.max(0, goal - currentMonthSales);
+  const palette = chartPalette();
+  chartObjetivo = new Chart(ctx, {
     type: 'doughnut',
-    data: { labels, datasets: [{ data, backgroundColor: c.palette, borderWidth: 0 }] },
+    data: {
+      labels: ['Vendido', 'Pendiente'],
+      datasets: [{
+        data: [currentMonthSales, remaining],
+        backgroundColor: [palette.accent, palette.grid],
+        borderWidth: 0,
+      }],
+    },
     options: {
-      responsive: true, maintainAspectRatio: false, cutout: '68%',
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '72%',
       plugins: {
-        legend: { position: 'bottom', labels: { color: c.text, boxWidth: 10, font: { size: 11 }, padding: 12 } },
+        legend: { display: false },
         tooltip: { callbacks: { label: (ctx2) => `${ctx2.label}: ${fmtEUR(ctx2.parsed)}` } },
       },
     },
   });
 }
 
-function renderRankingParques() {
-  const porParque = {};
-  STATE.ventas.forEach((v) => {
-    const nombre = parqueNombre(v.parque_id);
-    if (!porParque[nombre]) porParque[nombre] = [];
-    porParque[nombre].push(Number(v.importe_total) || 0);
+function renderGoalWidget({
+  currentMonthSales,
+  goal,
+  goalRemaining,
+  goalProgress,
+  workdays,
+  daysLeft,
+  expectedDailyGoal,
+  currentPace,
+  missingPerWorkingDay,
+}) {
+  const percentage = goal ? Math.min(100, goalProgress) : 0;
+  document.getElementById('goal-widget').innerHTML = `
+    <div class="goal-summary">
+      <div class="goal-summary-row">
+        <span>Objetivo configurado</span>
+        <b>${fmtEUR(goal)}</b>
+      </div>
+      <div class="goal-summary-row">
+        <span>Ventas del mes</span>
+        <b>${fmtEUR(currentMonthSales)}</b>
+      </div>
+      <div class="goal-summary-row">
+        <span>Lo que falta</span>
+        <b class="goal-remaining">${fmtEUR(goalRemaining)}</b>
+      </div>
+      <div class="goal-progress-bar">
+        <div class="goal-progress-fill" style="width:${percentage}%"></div>
+      </div>
+      <div class="goal-progress-meta">${percentage.toFixed(1)}% completado</div>
+      <div class="goal-metrics-grid">
+        <div class="goal-metric"><span>Días de trabajo</span><b>${fmtNum(workdays)}</b></div>
+        <div class="goal-metric"><span>Días que faltan</span><b>${fmtNum(daysLeft)}</b></div>
+        <div class="goal-metric"><span>Meta por día</span><b>${fmtEUR(expectedDailyGoal)}</b></div>
+        <div class="goal-metric"><span>Ritmo actual</span><b>${fmtEUR(currentPace)}</b></div>
+        <div class="goal-metric full"><span>Si repartes lo que falta entre los días laborables configurados</span><b>${fmtEUR(missingPerWorkingDay)}</b></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderPeriodChart(ventas, filters) {
+  if (typeof Chart === 'undefined') return;
+  const palette = chartPalette();
+  const ctx = document.getElementById('chart-periodo').getContext('2d');
+  if (chartPeriodo) chartPeriodo.destroy();
+
+  let labels = [];
+  let data = [];
+  let tooltipLabel = 'Ingresos';
+
+  if (filters.period === 'day') {
+    const [year, month, day] = filters.value.split('-').map(Number);
+    labels = Array.from({ length: 24 }, (_, hour) => `${pad2(hour)}:00`);
+    data = labels.map((_, hour) => ventas.filter((venta) => {
+      const date = new Date(venta.fecha);
+      return date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day && date.getHours() === hour;
+    }).reduce((acc, venta) => acc + Number(venta.importe_total || 0), 0));
+    tooltipLabel = 'Ingresos hora';
+  } else if (filters.period === 'year') {
+    const year = Number(filters.year);
+    labels = MONTH_NAMES.map((name) => name.slice(0, 3));
+    data = labels.map((_, monthIndex) => ventas.filter((venta) => {
+      const date = new Date(venta.fecha);
+      return date.getFullYear() === year && date.getMonth() === monthIndex;
+    }).reduce((acc, venta) => acc + Number(venta.importe_total || 0), 0));
+    tooltipLabel = 'Ingresos mes';
+  } else if (filters.period === 'month') {
+    const [year, month] = filters.value.split('-').map(Number);
+    const days = daysInMonth(year, month - 1);
+    labels = Array.from({ length: days }, (_, dayIndex) => `${dayIndex + 1}`);
+    data = labels.map((_, dayIndex) => ventas.filter((venta) => {
+      const date = new Date(venta.fecha);
+      return date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === dayIndex + 1;
+    }).reduce((acc, venta) => acc + Number(venta.importe_total || 0), 0));
+    tooltipLabel = 'Ingresos día';
+  } else {
+    const now = new Date();
+    const months = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push(d);
+    }
+    labels = months.map((d) => `${MONTH_NAMES[d.getMonth()].slice(0, 3)} ${String(d.getFullYear()).slice(-2)}`);
+    data = months.map((d) => ventas.filter((venta) => {
+      const date = new Date(venta.fecha);
+      return date.getFullYear() === d.getFullYear() && date.getMonth() === d.getMonth();
+    }).reduce((acc, venta) => acc + Number(venta.importe_total || 0), 0));
+    tooltipLabel = 'Ingresos mes';
+  }
+
+  chartPeriodo = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: tooltipLabel,
+        data,
+        borderRadius: 10,
+        backgroundColor: palette.accent,
+        hoverBackgroundColor: palette.accent2,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx2) => fmtEUR(ctx2.parsed.y) } },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: palette.text, maxRotation: 0, autoSkip: true, maxTicksLimit: 12, font: { size: 11 } },
+        },
+        y: {
+          grid: { color: palette.grid },
+          ticks: { color: palette.text, callback: (v) => fmtEUR(v), font: { size: 11 } },
+        },
+      },
+    },
   });
-  const entries = Object.entries(porParque).map(([nombre, importes]) => {
-    const ventas = importes.length;
-    const total = sumBy(importes);
-    const media = ventas ? total / ventas : 0;
-    return { nombre, ventas, total, media };
-  }).sort((a, b) => b.total - a.total).slice(0, 6);
+}
+
+function renderParqueChart(ventas) {
+  if (typeof Chart === 'undefined') return;
+  const palette = chartPalette();
+  const ctx = document.getElementById('chart-parques').getContext('2d');
+  if (chartParques) chartParques.destroy();
+
+  const grouped = {};
+  ventas.forEach((venta) => {
+    const name = parqueNombre(venta.parque_id);
+    grouped[name] = (grouped[name] || 0) + 1;
+  });
+
+  const labels = Object.keys(grouped);
+  const values = Object.values(grouped);
+
+  if (!labels.length) {
+    chartParques = null;
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    return;
+  }
+
+  chartParques = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data: values, backgroundColor: palette.palette, borderWidth: 0 }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '68%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: palette.text, boxWidth: 10, font: { size: 11 }, padding: 12 } },
+        tooltip: { callbacks: { label: (ctx2) => `${ctx2.label}: ${fmtNum(ctx2.parsed)} entradas` } },
+      },
+    },
+  });
+}
+
+function renderRankingParques(ventas) {
+  const grouped = {};
+  ventas.forEach((venta) => {
+    const name = parqueNombre(venta.parque_id);
+    if (!grouped[name]) grouped[name] = { ventas: 0, total: 0 };
+    grouped[name].ventas += 1;
+    grouped[name].total += Number(venta.importe_total) || 0;
+  });
+
+  const rows = Object.entries(grouped)
+    .map(([nombre, values]) => ({
+      nombre,
+      ventas: values.ventas,
+      total: values.total,
+      media: values.ventas ? values.total / values.ventas : 0,
+    }))
+    .sort((a, b) => b.ventas - a.ventas)
+    .slice(0, 6);
 
   const container = document.getElementById('ranking-parques');
-  if (!entries.length) { container.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">Aún no hay ventas registradas.</p>'; return; }
+  if (!rows.length) {
+    container.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">Aún no hay ventas en este filtro.</p>';
+    return;
+  }
 
-  container.innerHTML = `
-    <div class="table-scroll">
-      <table class="data-table">
-        <thead>
-          <tr><th>Parque</th><th>Ventas</th><th>Media</th><th>Total</th></tr>
-        </thead>
-        <tbody>
-          ${entries.map((row) => `
-            <tr>
-              <td><b>${escapeHtml(row.nombre)}</b></td>
-              <td class="amount">${fmtNum(row.ventas)}</td>
-              <td class="amount">${fmtEUR(row.media)}</td>
-              <td class="amount">${fmtEUR(row.total)}</td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`;
+  const maxVentas = Math.max(...rows.map((row) => row.ventas), 1);
+  container.innerHTML = rows.map((row, index) => `
+    <div class="ranking-row dashboard-ranking-row">
+      <div class="pos">${index + 1}</div>
+      <div class="rr-name">
+        <div><b>${escapeHtml(row.nombre)}</b></div>
+        <div class="rr-bar"><div class="rr-bar-fill" style="width:${(row.ventas / maxVentas) * 100}%"></div></div>
+      </div>
+      <div class="rr-val">${fmtNum(row.ventas)} entradas</div>
+      <div class="rr-val dashboard-rr-total">${fmtEUR(row.total)}</div>
+    </div>
+  `).join('');
 }
 
-function renderGoalWidget(totalAcumulado, promedioVenta, topParqueNombre, topCliente) {
-  document.getElementById('goal-widget').innerHTML = `
-    <div class="goal-card" style="align-items:flex-start; gap:16px;">
-      <div style="flex:1;">
-        <div style="font-size:13px; color:var(--text-secondary); margin-bottom:2px;">Resumen rápido</div>
-        <div style="font-family:var(--font-display); font-weight:700; font-size:22px; margin-bottom:6px;">${fmtEUR(totalAcumulado)}</div>
-        <div style="color:var(--text-muted); font-size:12.5px; line-height:1.6;">
-          Media por venta: <b style="color:var(--text-primary);">${fmtEUR(promedioVenta)}</b><br>
-          Parque top: <b style="color:var(--text-primary);">${escapeHtml(topParqueNombre || '—')}</b><br>
-          Cliente top: <b style="color:var(--text-primary);">${escapeHtml(topCliente ? topCliente[0] : '—')}</b>
+function openProfileSettings() {
+  const goal = getMonthlyGoal();
+  const workdays = getWorkdaysPerMonth();
+  openModal({
+    title: 'Mi perfil y objetivos',
+    bodyHtml: `
+      <div class="profile-modal-grid">
+        <div class="profile-intro">
+          <div class="dashboard-eyebrow">Perfil</div>
+          <h4>Configura tu meta mensual desde aquí</h4>
+          <p>Deja el dashboard limpio y guarda tus objetivos y días de trabajo en tu perfil. Esto se conserva en este navegador.</p>
+        </div>
+        <div class="profile-settings-grid">
+          <div class="form-field full">
+            <label for="profile-goal">Meta mensual (€)</label>
+            <input type="number" id="profile-goal" min="0" step="1" value="${goal}">
+          </div>
+          <div class="form-field full">
+            <label for="profile-workdays">Días de trabajo al mes</label>
+            <input type="number" id="profile-workdays" min="1" max="31" step="1" value="${workdays}">
+          </div>
         </div>
       </div>
-    </div>`;
+    `,
+    footHtml: `
+      <button class="btn btn-ghost" id="profile-cancel-btn">Cancelar</button>
+      <button class="btn btn-primary" id="profile-save-btn">Guardar perfil</button>
+    `,
+  });
+
+  document.getElementById('profile-cancel-btn').addEventListener('click', closeModal);
+  document.getElementById('profile-save-btn').addEventListener('click', () => {
+    setMonthlyGoal(document.getElementById('profile-goal').value);
+    setWorkdaysPerMonth(document.getElementById('profile-workdays').value);
+    closeModal();
+    renderDashboard();
+    toast('Perfil actualizado. Meta y días de trabajo guardados.', 'success');
+  });
 }
+
+function wireProfilePanel() {
+  const btn = document.getElementById('profile-settings-btn');
+  if (!btn || btn.dataset.wired === '1') return;
+  btn.dataset.wired = '1';
+  btn.addEventListener('click', openProfileSettings);
+}
+
+document.addEventListener('DOMContentLoaded', wireProfilePanel);

@@ -104,6 +104,9 @@
           <div class="name" id="user-name">Cargando…</div>
           <div class="role" id="user-role">—</div>
         </div>
+        <button class="profile-btn" id="profile-settings-btn" title="Abrir perfil y objetivos">
+          Perfil
+        </button>
         <button class="logout-btn" id="logout-btn" title="Cerrar sesión">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
         </button>
@@ -135,38 +138,88 @@
 
       <!-- ============================ DASHBOARD ============================ -->
       <section class="view" id="view-dashboard">
-        <div class="view-header">
-          <div>
-            <h2>Panel general</h2>
-            <p class="desc">Ingresos, clientes y parques en tiempo real</p>
+        <div class="dashboard-toolbar card card-pad">
+          <div class="dashboard-toolbar-head">
+            <div>
+              <div class="dashboard-eyebrow">Dashboard</div>
+              <h2>Panel de ventas</h2>
+              <p class="desc">Filtra rápido y mira el parque líder, el ritmo de ventas y lo que falta por vender.</p>
+            </div>
+            <div class="dashboard-filter-summary" id="dashboard-filter-summary"></div>
+          </div>
+
+          <div class="dashboard-filters">
+            <div class="form-field dashboard-filter-field dashboard-filter-period">
+              <label for="dashboard-period">Periodo</label>
+              <select id="dashboard-period">
+                <option value="month">Mes</option>
+                <option value="year">Año</option>
+                <option value="day">Día</option>
+                <option value="all">Todo</option>
+              </select>
+            </div>
+            <div class="form-field dashboard-filter-field dashboard-filter-park">
+              <label for="dashboard-parque">Parque</label>
+              <select id="dashboard-parque"></select>
+            </div>
+            <div class="form-field dashboard-filter-field dashboard-filter-value">
+              <label id="dashboard-filter-value-label" for="dashboard-filter-value">Mes</label>
+              <input id="dashboard-filter-value" type="month">
+            </div>
+            <button type="button" class="btn btn-secondary dashboard-reset-btn" id="dashboard-reset-filters">Reset</button>
           </div>
         </div>
 
-        <div class="stats-grid" id="dashboard-stats">
+        <div class="stats-grid dashboard-stats-grid" id="dashboard-stats">
           <!-- generado por JS -->
         </div>
 
-        <div class="charts-grid">
-          <div class="card chart-card">
-            <h3>Evolución de ingresos</h3>
-            <p class="chart-sub">Importe total por día · últimos 30 días</p>
-            <div class="chart-wrap"><canvas id="chart-evolucion"></canvas></div>
+        <div class="dashboard-main-grid">
+          <div class="card dashboard-panel">
+            <div class="panel-head">
+              <div>
+                <h3>Meta mensual</h3>
+                <p class="chart-sub">Cuánto llevas, cuánto falta y ritmo diario estimado.</p>
+              </div>
+            </div>
+            <div class="goal-layout">
+              <div class="goal-chart-wrap">
+                <canvas id="chart-objetivo"></canvas>
+              </div>
+              <div id="goal-widget"></div>
+            </div>
           </div>
-          <div class="card chart-card">
-            <h3>Ingresos por parque</h3>
-            <p class="chart-sub">Distribución del mes actual</p>
-            <div class="chart-wrap small"><canvas id="chart-parques-mes"></canvas></div>
+
+          <div class="card dashboard-panel">
+            <div class="panel-head">
+              <div>
+                <h3>Ventas según el filtro</h3>
+                <p class="chart-sub">La serie cambia según mes, año o día seleccionado.</p>
+              </div>
+            </div>
+            <div class="chart-wrap dashboard-chart"><canvas id="chart-periodo"></canvas></div>
           </div>
         </div>
 
-        <div class="charts-grid" style="grid-template-columns: 1fr 1fr;">
-          <div class="card card-pad">
-            <h3 class="section-title">Resumen por parque</h3>
-            <div class="ranking-list" id="ranking-parques"></div>
+        <div class="dashboard-main-grid dashboard-main-grid-secondary">
+          <div class="card dashboard-panel">
+            <div class="panel-head">
+              <div>
+                <h3>Entradas por parque</h3>
+                <p class="chart-sub">Distribución de las ventas dentro del filtro activo.</p>
+              </div>
+            </div>
+            <div class="chart-wrap dashboard-chart small"><canvas id="chart-parques"></canvas></div>
           </div>
-          <div class="card card-pad">
-            <h3 class="section-title">Resumen rápido</h3>
-            <div id="goal-widget"></div>
+
+          <div class="card dashboard-panel">
+            <div class="panel-head">
+              <div>
+                <h3>Parques más vendidos</h3>
+                <p class="chart-sub">Ordenados por entradas vendidas.</p>
+              </div>
+            </div>
+            <div class="ranking-list" id="ranking-parques"></div>
           </div>
         </div>
       </section>
@@ -216,8 +269,8 @@
             </div>
             <div class="tp-row"><span>Ventas registradas</span><b id="tp-cantidad">0</b></div>
             <div class="tp-row"><span>Media por venta</span><b id="tp-precio">0,00 €</b></div>
-            <div class="tp-row"><span>Total del parque</span><b id="tp-comision">0,00 €</b></div>
-            <div class="tp-total"><span class="lbl">Importe actual</span><span class="val" id="tp-total">0,00 €</span></div>
+            <div class="tp-row"><span>Venta total</span><b id="tp-comision">0,00 €</b></div>
+            <div class="tp-total"><span class="lbl">Venta total:</span><span class="val" id="tp-total">0,00 €</span></div>
           </div>
         </div>
       </section>

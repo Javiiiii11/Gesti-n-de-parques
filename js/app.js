@@ -20,6 +20,7 @@ function switchView(viewId) {
   window.scrollTo({ top: 0 });
   window.location.hash = viewId;
 
+  if (viewId === 'dashboard') requestAnimationFrame(renderDashboard);
   if (viewId === 'venta-rapida') updateTicketPreview();
   if (viewId === 'estadisticas') renderEstadisticas();
 }
