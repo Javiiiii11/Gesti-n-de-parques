@@ -76,6 +76,15 @@ function setUserChip(user) {
   document.getElementById('user-avatar').textContent = name.slice(0, 1).toUpperCase();
 }
 
+// bootApp puede recibir más de una invocación durante el arranque de sesión
+// (login manual + evento onAuthStateChange de Supabase casi simultáneos).
+// APP_BOOTED evita que la fase de "cableado" de listeners (initVentaForm,
+// initHistorialView, etc.) se ejecute más de una vez, ya que cada llamada
+// añade nuevos listeners sin quitar los anteriores: si se cableaban dos
+// veces, cada clic en "Guardar venta" disparaba guardarVenta() dos veces
+// y la venta quedaba duplicada en la base de datos.
+let APP_BOOTED = false;
+
 async function bootApp(user) {
   STATE.currentUser = user;
   document.getElementById('auth-screen').style.display = 'none';
@@ -93,6 +102,19 @@ async function bootApp(user) {
   // una librería externa como Chart.js no haya cargado por falta de red)
   // no debe impedir que el resto de la aplicación quede utilizable.
   const safe = (fn, label) => { try { fn(); } catch (err) { console.error(`Error inicializando ${label}:`, err); } };
+
+  if (APP_BOOTED) {
+    // Ya se cablearon los listeners antes: solo refrescamos datos y vistas,
+    // sin volver a llamar a initVentaForm/initHistorialView/etc.
+    safe(fillParqueSelects, 'selects de parques');
+    safe(renderParquesTable, 'tabla de parques');
+    safe(renderHistorial, 'renderizado de historial');
+    safe(renderDashboard, 'renderizado de dashboard');
+    document.getElementById('app').classList.add('ready');
+    return;
+  }
+  APP_BOOTED = true;
+
   safe(fillParqueSelects, 'selects de parques');
   safe(renderParquesTable, 'tabla de parques');
   safe(initVentaForm, 'formulario de venta');
