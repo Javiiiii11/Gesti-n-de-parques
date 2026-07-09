@@ -84,9 +84,13 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
         Historial
       </div>
+      <div class="nav-item" data-view="contactos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/></svg>
+        Apuntes / Contactos
+      </div>
       <div class="nav-item" data-view="parques">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l7-14 4 8 3-5 4 11H3z"/></svg>
-        Parques
+        Parques / Bonos
       </div>
       <div class="nav-item" data-view="estadisticas">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
@@ -193,28 +197,6 @@
           <div class="card dashboard-panel">
             <div class="panel-head">
               <div>
-                <h3>Ventas según el filtro</h3>
-                <p class="chart-sub">La serie cambia según mes, año o día seleccionado.</p>
-              </div>
-            </div>
-            <div class="chart-wrap dashboard-chart"><canvas id="chart-periodo"></canvas></div>
-          </div>
-        </div>
-
-        <div class="dashboard-main-grid dashboard-main-grid-secondary">
-          <div class="card dashboard-panel">
-            <div class="panel-head">
-              <div>
-                <h3>Entradas por parque</h3>
-                <p class="chart-sub">Distribución de las ventas dentro del filtro activo.</p>
-              </div>
-            </div>
-            <div class="chart-wrap dashboard-chart small"><canvas id="chart-parques"></canvas></div>
-          </div>
-
-          <div class="card dashboard-panel">
-            <div class="panel-head">
-              <div>
                 <h3>Parques más vendidos</h3>
                 <p class="chart-sub">Ordenados por entradas vendidas.</p>
               </div>
@@ -235,10 +217,27 @@
 
         <div class="quick-sale-layout">
           <form class="card card-pad" id="venta-form">
+            <div class="form-field full" style="margin-bottom: 16px;">
+              <label>Tipo de venta</label>
+              <div style="display:flex; gap:16px;">
+                <label style="flex-direction:row; align-items:center; gap:8px;">
+                  <input type="radio" name="v-tipo" value="entrada" checked style="width:auto"> Entradas
+                </label>
+                <label style="flex-direction:row; align-items:center; gap:8px;">
+                  <input type="radio" name="v-tipo" value="bono" style="width:auto"> Bonos
+                </label>
+              </div>
+            </div>
             <div class="form-grid">
-              <div class="form-field">
+              <!-- Entrada-specific field -->
+              <div class="form-field" id="v-field-parque">
                 <label for="v-parque">Parque</label>
-                <select id="v-parque" required></select>
+                <select id="v-parque"></select>
+              </div>
+              <!-- Bono-specific field -->
+              <div class="form-field" id="v-field-bono" style="display:none;">
+                <label for="v-bono">Tipo de bono</label>
+                <select id="v-bono"></select>
               </div>
               <div class="form-field">
                 <label for="v-cliente">Nombre del cliente</label>
@@ -275,29 +274,98 @@
         </div>
       </section>
 
-      <!-- ============================= PARQUES ============================= -->
+      <!-- ============================= PARQUES / BONOS ============================= -->
       <section class="view" id="view-parques">
         <div class="view-header">
           <div>
-            <h2>Gestión de parques</h2>
-            <p class="desc">Administra los parques y consulta sus ventas totales</p>
+            <h2>Gestión de parques y bonos</h2>
+            <p class="desc">Administra los parques y los tipos de bonos disponibles</p>
           </div>
-          <button class="btn btn-primary" id="btn-nuevo-parque">
+        </div>
+
+        <div class="charts-grid" style="grid-template-columns: 1fr 1fr;">
+          <div class="card card-pad">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+              <h3 class="section-title" style="margin:0;">Parques</h3>
+              <button class="btn btn-primary btn-sm" id="btn-nuevo-parque">Nuevo parque</button>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Estado</th>
+                    <th style="text-align:right;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="parques-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card card-pad">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+              <h3 class="section-title" style="margin:0;">Tipos de Bonos</h3>
+              <button class="btn btn-primary btn-sm" id="btn-nuevo-bono">Nuevo bono</button>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Estado</th>
+                    <th style="text-align:right;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="bonos-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================ CONTACTOS / APUNTES ============================ -->
+      <section class="view" id="view-contactos">
+        <div class="view-header">
+          <div>
+            <h2>Apuntes y Contactos</h2>
+            <p class="desc">Anota información de clientes, haz seguimiento y marca si han pagado.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-nuevo-contacto">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-            Nuevo parque
+            Nuevo apunte
           </button>
         </div>
+        <div class="table-toolbar">
+          <div class="search-box" style="margin-left:0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input type="text" id="contactos-search" placeholder="Buscar por nombre, correo, teléfono...">
+          </div>
+          <select class="filter-select" id="contactos-filtro-tipo">
+            <option value="">Todos los tipos</option>
+            <option value="entrada">Entradas</option>
+            <option value="bono">Bonos</option>
+          </select>
+          <select class="filter-select" id="contactos-filtro-estado">
+            <option value="">Todos los estados</option>
+            <option value="pendiente">Pendiente de pago</option>
+            <option value="pagado">Pagado</option>
+          </select>
+        </div>
         <div class="table-scroll">
-          <table class="data-table">
+          <table class="data-table" id="contactos-table">
             <thead>
               <tr>
-                <th>Nombre</th>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Tipo</th>
+                <th>Detalles</th>
+                <th>Importe</th>
                 <th>Estado</th>
-                <th>Ventas totales</th>
                 <th style="text-align:right;">Acciones</th>
               </tr>
             </thead>
-            <tbody id="parques-tbody"></tbody>
+            <tbody id="contactos-tbody"></tbody>
           </table>
         </div>
       </section>
@@ -313,10 +381,15 @@
         <div class="table-toolbar">
           <div class="search-box" style="margin-left:0;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-            <input type="text" id="hist-search" placeholder="Buscar cliente o parque…">
+            <input type="text" id="hist-search" placeholder="Buscar cliente, parque o bono…">
           </div>
+          <select class="filter-select" id="hist-filtro-tipo-venta">
+            <option value="">Todos los tipos</option>
+            <option value="entrada">Entradas</option>
+            <option value="bono">Bonos</option>
+          </select>
           <select class="filter-select" id="hist-filtro-parque"><option value="">Todos los parques</option></select>
-          <select class="filter-select" id="hist-filtro-tipo"><option value="">Todos los clientes</option></select>
+          <select class="filter-select" id="hist-filtro-bono"><option value="">Todos los bonos</option></select>
           <input type="date" class="filter-select" id="hist-filtro-desde">
           <input type="date" class="filter-select" id="hist-filtro-hasta">
           <button class="btn btn-ghost btn-sm" id="hist-filtro-clear">Limpiar filtros</button>
@@ -326,7 +399,8 @@
             <thead>
               <tr>
                 <th data-sort="fecha">Fecha <span class="sort-arrow"></span></th>
-                <th data-sort="parque">Parque <span class="sort-arrow"></span></th>
+                <th data-sort="tipo">Tipo <span class="sort-arrow"></span></th>
+                <th data-sort="parque">Detalle <span class="sort-arrow"></span></th>
                 <th data-sort="cliente_nombre">Cliente <span class="sort-arrow"></span></th>
                 <th data-sort="importe_total">Importe (€) <span class="sort-arrow"></span></th>
                 <th style="text-align:right;">Acciones</th>
@@ -459,6 +533,7 @@
 <script src="js/parques.js"></script>
 <script src="js/ventas.js"></script>
 <script src="js/historial.js"></script>
+<script src="js/contactos.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/estadisticas.js"></script>
 <script src="js/exportar.js"></script>

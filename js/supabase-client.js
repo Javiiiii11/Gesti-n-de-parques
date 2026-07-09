@@ -46,7 +46,13 @@ if (!supabaseClient) {
   LOCAL_MODE = true;
 }
 
-const LOCAL_KEYS = { ventas: 'parksales_ventas', parques: 'parksales_parques', user: 'parksales_local_user' };
+const LOCAL_KEYS = { 
+  ventas: 'parksales_ventas', 
+  parques: 'parksales_parques', 
+  user: 'parksales_local_user',
+  tipos_bono: 'parksales_tipos_bono',
+  contactos: 'parksales_contactos'
+};
 
 function localSeedIfEmpty() {
   if (!localStorage.getItem(LOCAL_KEYS.parques)) {
@@ -57,8 +63,43 @@ function localSeedIfEmpty() {
     ];
     localStorage.setItem(LOCAL_KEYS.parques, JSON.stringify(seed));
   }
-  if (!localStorage.getItem(LOCAL_KEYS.ventas)) {
-    localStorage.setItem(LOCAL_KEYS.ventas, JSON.stringify([]));
+  
+  if (!localStorage.getItem(LOCAL_KEYS.tipos_bono)) {
+    const seed = [
+      { id: uid(), nombre: 'Bono Anual', activo: true, created_at: new Date().toISOString() },
+      { id: uid(), nombre: 'Bono Familiar', activo: true, created_at: new Date().toISOString() },
+    ];
+    localStorage.setItem(LOCAL_KEYS.tipos_bono, JSON.stringify(seed));
+  }
+  
+  if (!localStorage.getItem(LOCAL_KEYS.contactos)) {
+    localStorage.setItem(LOCAL_KEYS.contactos, JSON.stringify([]));
+  }
+  
+  const existingVentas = JSON.parse(localStorage.getItem(LOCAL_KEYS.ventas) || '[]');
+  if (existingVentas.length < 5) {
+    const parques = JSON.parse(localStorage.getItem(LOCAL_KEYS.parques));
+    const now = new Date();
+    const sampleVentas = [...existingVentas];
+    
+    // Generate sample sales for the last 6 months
+    for (let i = 0; i < 20; i++) {
+      const date = new Date(now);
+      date.setMonth(date.getMonth() - Math.floor(Math.random() * 6));
+      date.setDate(Math.floor(Math.random() * 28) + 1);
+      
+      const parque = parques[Math.floor(Math.random() * parques.length)];
+      sampleVentas.push({
+        id: uid(),
+        fecha: date.toISOString(),
+        parque_id: parque.id,
+        cliente_nombre: `Cliente ${i + 1}`,
+        importe_total: Math.floor(Math.random() * 100) + 20,
+        created_at: date.toISOString()
+      });
+    }
+    
+    localStorage.setItem(LOCAL_KEYS.ventas, JSON.stringify(sampleVentas));
   }
 }
 
@@ -78,13 +119,18 @@ function sanitizeParque(parque) {
 function normalizeVenta(venta) {
   const cliente_nombre = venta?.cliente_nombre || venta?.nombre_cliente || venta?.tipo_entrada || 'Cliente';
   const importe_total = Number(venta?.importe_total ?? (Number(venta?.cantidad || 0) * Number(venta?.precio_unitario || 0))) || 0;
+  // Only return the columns that actually exist in the ventas table!
   return {
-    ...venta,
+    fecha: venta?.fecha,
+    tipo: venta?.tipo || 'entrada',
+    parque_id: venta?.parque_id || null,
+    bono_id: venta?.bono_id || null,
     cliente_nombre,
     importe_total,
   };
 }
 function normalizeDbError(error, tableName) {
+  console.error('Original Supabase error:', error); // <-- Add this line to log the actual error!
   const message = error?.message || '';
   if (/row-level security policy|violates row-level security policy/i.test(message)) {
     return new Error('Tu sesión no tiene permisos para guardar en Supabase. Cierra sesión y vuelve a entrar (Google o correo) para refrescar la autenticación.');
@@ -166,6 +212,102 @@ const DB = {
     }
     const { error } = await supabaseClient.from('parques').delete().eq('id', id);
     if (error) throw normalizeDbError(error, 'parques');
+    return true;
+  },
+
+  // ---------------------------------------------------------------- TIPOS DE BONO
+  async getTiposBono() {
+    if (LOCAL_MODE) {
+      localSeedIfEmpty();
+      return readLocal(LOCAL_KEYS.tipos_bono).sort((a, b) => a.nombre.localeCompare(b.nombre));
+    }
+    const { data, error } = await supabaseClient.from('tipos_bono').select('*').order('nombre');
+    if (error) throw normalizeDbError(error, 'tipos_bono');
+    return data;
+  },
+
+  async addTipoBono(bono) {
+    if (LOCAL_MODE) {
+      const list = readLocal(LOCAL_KEYS.tipos_bono);
+      const nuevo = { id: uid(), created_at: new Date().toISOString(), ...sanitizeParque(bono) };
+      list.push(nuevo);
+      writeLocal(LOCAL_KEYS.tipos_bono, list);
+      return nuevo;
+    }
+    const { data, error } = await supabaseClient.from('tipos_bono').insert(sanitizeParque(bono)).select().single();
+    if (error) throw normalizeDbError(error, 'tipos_bono');
+    return data;
+  },
+
+  async updateTipoBono(id, changes) {
+    if (LOCAL_MODE) {
+      const list = readLocal(LOCAL_KEYS.tipos_bono);
+      const idx = list.findIndex(p => p.id === id);
+      if (idx > -1) list[idx] = { ...list[idx], ...sanitizeParque(changes) };
+      writeLocal(LOCAL_KEYS.tipos_bono, list);
+      return list[idx];
+    }
+    const { data, error } = await supabaseClient.from('tipos_bono').update(sanitizeParque(changes)).eq('id', id).select().single();
+    if (error) throw normalizeDbError(error, 'tipos_bono');
+    return data;
+  },
+
+  async deleteTipoBono(id) {
+    if (LOCAL_MODE) {
+      const list = readLocal(LOCAL_KEYS.tipos_bono).filter(p => p.id !== id);
+      writeLocal(LOCAL_KEYS.tipos_bono, list);
+      return true;
+    }
+    const { error } = await supabaseClient.from('tipos_bono').delete().eq('id', id);
+    if (error) throw normalizeDbError(error, 'tipos_bono');
+    return true;
+  },
+
+  // ---------------------------------------------------------------- CONTACTOS
+  async getContactos() {
+    if (LOCAL_MODE) {
+      localSeedIfEmpty();
+      return readLocal(LOCAL_KEYS.contactos).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    const { data, error } = await supabaseClient.from('contactos').select('*').order('created_at', { ascending: false });
+    if (error) throw normalizeDbError(error, 'contactos');
+    return data;
+  },
+
+  async addContacto(contacto) {
+    if (LOCAL_MODE) {
+      const list = readLocal(LOCAL_KEYS.contactos);
+      const nuevo = { id: uid(), created_at: new Date().toISOString(), ...contacto };
+      list.push(nuevo);
+      writeLocal(LOCAL_KEYS.contactos, list);
+      return nuevo;
+    }
+    const { data, error } = await supabaseClient.from('contactos').insert(contacto).select().single();
+    if (error) throw normalizeDbError(error, 'contactos');
+    return data;
+  },
+
+  async updateContacto(id, changes) {
+    if (LOCAL_MODE) {
+      const list = readLocal(LOCAL_KEYS.contactos);
+      const idx = list.findIndex(c => c.id === id);
+      if (idx > -1) list[idx] = { ...list[idx], ...changes };
+      writeLocal(LOCAL_KEYS.contactos, list);
+      return list[idx];
+    }
+    const { data, error } = await supabaseClient.from('contactos').update(changes).eq('id', id).select().single();
+    if (error) throw normalizeDbError(error, 'contactos');
+    return data;
+  },
+
+  async deleteContacto(id) {
+    if (LOCAL_MODE) {
+      const list = readLocal(LOCAL_KEYS.contactos).filter(c => c.id !== id);
+      writeLocal(LOCAL_KEYS.contactos, list);
+      return true;
+    }
+    const { error } = await supabaseClient.from('contactos').delete().eq('id', id);
+    if (error) throw normalizeDbError(error, 'contactos');
     return true;
   },
 

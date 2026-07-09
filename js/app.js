@@ -6,7 +6,8 @@ const VIEW_TITLES = {
   'dashboard': 'Dashboard',
   'venta-rapida': 'Registrar venta',
   'historial': 'Historial de ventas',
-  'parques': 'Gestión de parques',
+  'contactos': 'Apuntes / Contactos',
+  'parques': 'Parques / Bonos',
   'estadisticas': 'Estadísticas',
   'exportar': 'Exportar / Importar',
 };
@@ -23,6 +24,7 @@ function switchView(viewId) {
   if (viewId === 'dashboard') requestAnimationFrame(renderDashboard);
   if (viewId === 'venta-rapida') updateTicketPreview();
   if (viewId === 'estadisticas') renderEstadisticas();
+  if (viewId === 'contactos') renderContactos();
 }
 
 function wireSidebarNav() {
@@ -90,11 +92,18 @@ async function bootApp(user) {
   document.getElementById('auth-screen').style.display = 'none';
 
   try {
+    if (!DB || typeof DB.getTiposBono !== 'function') {
+      throw new Error('DB.getTiposBono is not a function. (DB=' + String(typeof DB) + ')');
+    }
+
     STATE.parques = await DB.getParques();
+    STATE.tipos_bono = await DB.getTiposBono();
+    STATE.contactos = await DB.getContactos();
     STATE.ventas = await DB.getVentas();
   } catch (err) {
     toast('Error al cargar datos: ' + err.message, 'error', 6000);
   }
+
 
   setUserChip(user);
 
@@ -107,22 +116,29 @@ async function bootApp(user) {
     // Ya se cablearon los listeners antes: solo refrescamos datos y vistas,
     // sin volver a llamar a initVentaForm/initHistorialView/etc.
     safe(fillParqueSelects, 'selects de parques');
+    safe(fillBonoSelects, 'selects de bonos');
     safe(renderParquesTable, 'tabla de parques');
+    safe(renderBonosTable, 'tabla de bonos');
     safe(renderHistorial, 'renderizado de historial');
     safe(renderDashboard, 'renderizado de dashboard');
+    safe(renderContactos, 'renderizado de contactos');
     document.getElementById('app').classList.add('ready');
     return;
   }
   APP_BOOTED = true;
 
   safe(fillParqueSelects, 'selects de parques');
+  safe(fillBonoSelects, 'selects de bonos');
   safe(renderParquesTable, 'tabla de parques');
+  safe(renderBonosTable, 'tabla de bonos');
   safe(initVentaForm, 'formulario de venta');
   safe(initHistorialView, 'vista de historial');
   safe(initEstadisticasView, 'vista de estadísticas');
   safe(initExportView, 'vista de exportación');
   safe(wireParquesView, 'vista de parques');
+  safe(wireContactosView, 'vista de contactos');
   safe(renderHistorial, 'renderizado de historial');
+  safe(renderContactos, 'renderizado de contactos');
   safe(renderDashboard, 'renderizado de dashboard');
 
   document.getElementById('app').classList.add('ready');

@@ -106,12 +106,19 @@ function downloadFile(filename, content, mime = 'text/plain;charset=utf-8') {
 const STATE = {
   ventas: [],
   parques: [],
+  tipos_bono: [],
+  contactos: [],
   currentUser: null,
 };
 
 function parqueNombre(parqueId) {
   const p = STATE.parques.find((x) => x.id === parqueId);
   return p ? p.nombre : '—';
+}
+
+function bonoNombre(bonoId) {
+  const b = STATE.tipos_bono.find((x) => x.id === bonoId);
+  return b ? b.nombre : '—';
 }
 
 function isMismoDia(iso, ref) {
@@ -126,4 +133,17 @@ function isMismaSemana(iso, ref) {
 function isMismoMes(iso, ref) {
   const d = new Date(iso), r = new Date(ref);
   return d.getFullYear() === r.getFullYear() && d.getMonth() === r.getMonth();
+}
+
+function chartColors() {
+  const styles = getComputedStyle(document.body);
+  return {
+    accent: styles.getPropertyValue('--accent').trim() || '#F5A623',
+    accent2: styles.getPropertyValue('--info').trim() || '#60A5FA',
+    success: styles.getPropertyValue('--success').trim() || '#34D399',
+    danger: styles.getPropertyValue('--danger').trim() || '#F87171',
+    text: styles.getPropertyValue('--text-secondary').trim() || '#8B95AC',
+    grid: styles.getPropertyValue('--border-soft').trim() || '#1C2740',
+    palette: ['#F5A623', '#60A5FA', '#34D399', '#F87171', '#A78BFA', '#F472B6', '#38BDF8', '#FBBF24'],
+  };
 }

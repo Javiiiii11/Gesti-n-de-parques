@@ -47,7 +47,7 @@ function setWorkdaysPerMonth(value) {
 function getDefaultDashboardFilters() {
   const now = new Date();
   return {
-    period: 'month',
+    period: 'all',
     value: toMonthInputValue(now),
     year: String(now.getFullYear()),
     parqueId: 'all',
@@ -68,11 +68,8 @@ function normalizeDashboardFilters(raw = {}) {
 }
 
 function loadDashboardFilters() {
-  try {
-    return normalizeDashboardFilters(JSON.parse(localStorage.getItem(DASHBOARD_FILTERS_KEY) || '{}'));
-  } catch (_err) {
-    return getDefaultDashboardFilters();
-  }
+  // Always use default filters for now to show all data
+  return getDefaultDashboardFilters();
 }
 
 function saveDashboardFilters(filters) {
@@ -171,26 +168,43 @@ function renderDashboard() {
   syncDashboardFilterControls(filters);
 
   const now = new Date();
-  const hoy = STATE.ventas.filter((venta) => isMismoDia(venta.fecha, now));
-  const semana = STATE.ventas.filter((venta) => isMismaSemana(venta.fecha, now));
-  const mesActual = STATE.ventas.filter((venta) => isMismoMes(venta.fecha, now));
   const filtradas = getFilteredVentas(filters);
   const goal = getMonthlyGoal();
   const workdays = getWorkdaysPerMonth();
 
   const sum = (arr, key) => arr.reduce((acc, venta) => acc + Number(venta[key] || 0), 0);
-  const totalAcumulado = sum(STATE.ventas, 'importe_total');
-  const totalVentas = STATE.ventas.length;
-  const firstSale = STATE.ventas.length ? STATE.ventas.reduce((min, venta) => new Date(venta.fecha) < new Date(min.fecha) ? venta : min, STATE.ventas[0]) : null;
-  const daysSinceFirstSale = firstSale ? daysBetweenInclusive(firstSale.fecha, now) : 0;
-  const dailyAverage = daysSinceFirstSale ? totalAcumulado / daysSinceFirstSale : 0;
-  const totalEntries = totalVentas;
-  const salesByPark = getSalesByPark();
-  const topParkEntry = Object.entries(salesByPark).sort((a, b) => b[1].ventas - a[1].ventas)[0];
+  
+  // Calculate stats from filtered data
+  const filteredTotal = sum(filtradas, 'importe_total');
+  const filteredCount = filtradas.length;
+  
+  // Get sales by park from filtered data
+  const filteredSalesByPark = {};
+  filtradas.forEach((venta) => {
+    const name = parqueNombre(venta.parque_id);
+    if (!filteredSalesByPark[name]) filteredSalesByPark[name] = { ventas: 0, total: 0 };
+    filteredSalesByPark[name].ventas += 1;
+    filteredSalesByPark[name].total += Number(venta.importe_total) || 0;
+  });
+  
+  const topParkEntry = Object.entries(filteredSalesByPark).sort((a, b) => b[1].ventas - a[1].ventas)[0];
   const topParkName = topParkEntry ? topParkEntry[0] : '—';
   const topParkEntries = topParkEntry ? topParkEntry[1].ventas : 0;
   const topParkRevenue = topParkEntry ? topParkEntry[1].total : 0;
+  
+  // Calculate average per sale in filtered data
+  const averagePerSale = filteredCount ? filteredTotal / filteredCount : 0;
+  
+  // Get first and last sale in filtered data
+  const firstFilteredSale = filtradas.length ? filtradas.reduce((min, venta) => new Date(venta.fecha) < new Date(min.fecha) ? venta : min, filtradas[0]) : null;
+  const lastFilteredSale = filtradas.length ? filtradas.reduce((max, venta) => new Date(venta.fecha) > new Date(max.fecha) ? venta : max, filtradas[0]) : null;
+  const daysInFilter = firstFilteredSale && lastFilteredSale ? daysBetweenInclusive(firstFilteredSale.fecha, lastFilteredSale.fecha) : 0;
+  const dailyAverageFiltered = daysInFilter ? filteredTotal / daysInFilter : 0;
+
   const filteredSummary = buildDashboardFilterSummary(filters, filtradas.length);
+  
+  // Still use current month for goal
+  const mesActual = STATE.ventas.filter((venta) => isMismoMes(venta.fecha, now));
   const currentMonthSales = sum(mesActual, 'importe_total');
   const goalRemaining = Math.max(0, goal - currentMonthSales);
   const goalProgress = goal > 0 ? Math.min(100, (currentMonthSales / goal) * 100) : 0;
@@ -204,11 +218,11 @@ function renderDashboard() {
   document.getElementById('dashboard-filter-summary').textContent = filteredSummary;
 
   const stats = [
-    { label: 'Ventas de hoy', value: fmtEUR(sum(hoy, 'importe_total')), sub: `${fmtNum(hoy.length)} entradas hoy`, icon: 'M12 8v8M8 12h8' },
-    { label: 'Ventas de la semana', value: fmtEUR(sum(semana, 'importe_total')), sub: `${fmtNum(semana.length)} entradas esta semana`, icon: 'M3 6h18M3 12h18M3 18h18' },
-    { label: 'Total desde el primer día', value: fmtEUR(totalAcumulado), sub: `${fmtNum(totalEntries)} entradas acumuladas`, icon: 'M3 3v18h18' },
-    { label: 'Venta media por día', value: fmtEUR(dailyAverage), sub: firstSale ? `Desde ${fmtDateShort(firstSale.fecha)}` : 'Sin datos aún', icon: 'M4 19h16M6 16V9M12 16V5M18 16v-4' },
-    { label: 'Parque más vendido', value: topParkName, sub: topParkEntry ? `${fmtNum(topParkEntries)} entradas · ${fmtEUR(topParkRevenue)}` : 'Sin ventas registradas', icon: 'M3 21l7-14 4 8 3-5 4 11H3z' },
+    { label: 'Total en filtro', value: fmtEUR(filteredTotal), sub: `${fmtNum(filteredCount)} entradas`, icon: 'M12 8v8M8 12h8' },
+    { label: 'Media por venta', value: fmtEUR(averagePerSale), sub: `En el filtro seleccionado`, icon: 'M3 6h18M3 12h18M3 18h18' },
+    { label: 'Parque más vendido', value: topParkName, sub: topParkEntry ? `${fmtNum(topParkEntries)} entradas · ${fmtEUR(topParkRevenue)}` : 'Sin ventas en el filtro', icon: 'M3 21l7-14 4 8 3-5 4 11H3z' },
+    { label: 'Media por día', value: fmtEUR(dailyAverageFiltered), sub: firstFilteredSale ? `Desde ${fmtDateShort(firstFilteredSale.fecha)}` : 'Sin datos aún', icon: 'M4 19h16M6 16V9M12 16V5M18 16v-4' },
+    { label: 'Primera venta en filtro', value: firstFilteredSale ? fmtDateShort(firstFilteredSale.fecha) : '—', sub: firstFilteredSale ? `${parqueNombre(firstFilteredSale.parque_id)}` : 'Sin ventas', icon: 'M3 3v18h18' },
     { label: 'Días para terminar el mes', value: `${fmtNum(daysLeft)} días`, sub: `${fmtNum(monthDays)} días en total este mes`, icon: 'M8 2v3M16 2v3M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z' },
   ];
 
@@ -232,8 +246,6 @@ function renderDashboard() {
     currentPace,
     missingPerWorkingDay,
   });
-  renderPeriodChart(filtradas, filters);
-  renderParqueChart(filtradas);
   renderRankingParques(filtradas);
 }
 
@@ -340,16 +352,7 @@ function isValidMonthValue(value) {
 }
 
 function chartPalette() {
-  const styles = getComputedStyle(document.body);
-  return {
-    accent: styles.getPropertyValue('--accent').trim() || '#F5A623',
-    accent2: styles.getPropertyValue('--info').trim() || '#60A5FA',
-    success: styles.getPropertyValue('--success').trim() || '#34D399',
-    danger: styles.getPropertyValue('--danger').trim() || '#F87171',
-    text: styles.getPropertyValue('--text-secondary').trim() || '#8B95AC',
-    grid: styles.getPropertyValue('--border-soft').trim() || '#1C2740',
-    palette: ['#F5A623', '#60A5FA', '#34D399', '#F87171', '#A78BFA', '#F472B6', '#38BDF8', '#FBBF24'],
-  };
+  return chartColors();
 }
 
 function renderGoalChart(currentMonthSales, goal) {
@@ -510,14 +513,22 @@ function renderParqueChart(ventas) {
   const ctx = document.getElementById('chart-parques').getContext('2d');
   if (chartParques) chartParques.destroy();
 
+  // Group sales by month
   const grouped = {};
   ventas.forEach((venta) => {
-    const name = parqueNombre(venta.parque_id);
-    grouped[name] = (grouped[name] || 0) + 1;
+    const date = new Date(venta.fecha);
+    const key = `${date.getFullYear()}-${pad2(date.getMonth() + 1)}`; // YYYY-MM
+    if (!grouped[key]) grouped[key] = 0;
+    grouped[key] += Number(venta.importe_total) || 0;
   });
 
-  const labels = Object.keys(grouped);
-  const values = Object.values(grouped);
+  // Sort by date
+  const sortedKeys = Object.keys(grouped).sort();
+  const labels = sortedKeys.map((key) => {
+    const [year, month] = key.split('-');
+    return `${MONTH_NAMES[Number(month) - 1].slice(0, 3)} ${year.slice(-2)}`;
+  });
+  const values = sortedKeys.map((key) => grouped[key]);
 
   if (!labels.length) {
     chartParques = null;
@@ -526,18 +537,33 @@ function renderParqueChart(ventas) {
   }
 
   chartParques = new Chart(ctx, {
-    type: 'doughnut',
+    type: 'bar',
     data: {
       labels,
-      datasets: [{ data: values, backgroundColor: palette.palette, borderWidth: 0 }],
+      datasets: [{
+        label: 'Ingresos',
+        data: values,
+        borderRadius: 10,
+        backgroundColor: palette.palette,
+        hoverBackgroundColor: palette.accent2,
+      }],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      cutout: '68%',
       plugins: {
-        legend: { position: 'bottom', labels: { color: palette.text, boxWidth: 10, font: { size: 11 }, padding: 12 } },
-        tooltip: { callbacks: { label: (ctx2) => `${ctx2.label}: ${fmtNum(ctx2.parsed)} entradas` } },
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx2) => fmtEUR(ctx2.parsed.y) } },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: palette.text, maxRotation: 0, autoSkip: true, maxTicksLimit: 12, font: { size: 11 } },
+        },
+        y: {
+          grid: { color: palette.grid },
+          ticks: { color: palette.text, callback: (v) => fmtEUR(v), font: { size: 11 } },
+        },
       },
     },
   });
