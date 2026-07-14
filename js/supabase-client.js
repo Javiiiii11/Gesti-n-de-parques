@@ -56,50 +56,16 @@ const LOCAL_KEYS = {
 
 function localSeedIfEmpty() {
   if (!localStorage.getItem(LOCAL_KEYS.parques)) {
-    const seed = [
-      { id: uid(), nombre: 'PortAventura', activo: true, created_at: new Date().toISOString() },
-      { id: uid(), nombre: 'Isla Mágica', activo: true, created_at: new Date().toISOString() },
-      { id: uid(), nombre: 'Terra Mítica', activo: true, created_at: new Date().toISOString() },
-    ];
-    localStorage.setItem(LOCAL_KEYS.parques, JSON.stringify(seed));
+    localStorage.setItem(LOCAL_KEYS.parques, JSON.stringify([]));
   }
-  
   if (!localStorage.getItem(LOCAL_KEYS.tipos_bono)) {
-    const seed = [
-      { id: uid(), nombre: 'Bono Anual', activo: true, created_at: new Date().toISOString() },
-      { id: uid(), nombre: 'Bono Familiar', activo: true, created_at: new Date().toISOString() },
-    ];
-    localStorage.setItem(LOCAL_KEYS.tipos_bono, JSON.stringify(seed));
+    localStorage.setItem(LOCAL_KEYS.tipos_bono, JSON.stringify([]));
   }
-  
   if (!localStorage.getItem(LOCAL_KEYS.contactos)) {
     localStorage.setItem(LOCAL_KEYS.contactos, JSON.stringify([]));
   }
-  
-  const existingVentas = JSON.parse(localStorage.getItem(LOCAL_KEYS.ventas) || '[]');
-  if (existingVentas.length < 5) {
-    const parques = JSON.parse(localStorage.getItem(LOCAL_KEYS.parques));
-    const now = new Date();
-    const sampleVentas = [...existingVentas];
-    
-    // Generate sample sales for the last 6 months
-    for (let i = 0; i < 20; i++) {
-      const date = new Date(now);
-      date.setMonth(date.getMonth() - Math.floor(Math.random() * 6));
-      date.setDate(Math.floor(Math.random() * 28) + 1);
-      
-      const parque = parques[Math.floor(Math.random() * parques.length)];
-      sampleVentas.push({
-        id: uid(),
-        fecha: date.toISOString(),
-        parque_id: parque.id,
-        cliente_nombre: `Cliente ${i + 1}`,
-        importe_total: Math.floor(Math.random() * 100) + 20,
-        created_at: date.toISOString()
-      });
-    }
-    
-    localStorage.setItem(LOCAL_KEYS.ventas, JSON.stringify(sampleVentas));
+  if (!localStorage.getItem(LOCAL_KEYS.ventas)) {
+    localStorage.setItem(LOCAL_KEYS.ventas, JSON.stringify([]));
   }
 }
 

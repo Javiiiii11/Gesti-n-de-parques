@@ -82,7 +82,7 @@ function fillParqueSelects() {
   const optionsHtml = activos.map((p) => `<option value="${p.id}">${escapeHtml(p.nombre)}</option>`).join('');
 
   const selVenta = document.getElementById('v-parque');
-  if (selVenta) selVenta.innerHTML = optionsHtml || '<option value="">Sin parques activos</option>';
+  if (selVenta) selVenta.innerHTML = '<option value="">Seleccionar parque...</option>' + (optionsHtml || '');
 
   const selFiltro = document.getElementById('hist-filtro-parque');
   if (selFiltro) {
@@ -99,7 +99,7 @@ function fillBonoSelects() {
   if (selContactoBono) selContactoBono.innerHTML = optionsHtml || '<option value="">Sin bonos activos</option>';
   
   const selVentaBono = document.getElementById('v-bono');
-  if (selVentaBono) selVentaBono.innerHTML = optionsHtml || '<option value="">Sin bonos activos</option>';
+  if (selVentaBono) selVentaBono.innerHTML = '<option value="">Seleccionar bono...</option>' + (optionsHtml || '');
 }
 
 function openParqueForm(id = null) {

@@ -1,5 +1,8 @@
 /* ============================================================================
    ventas.js — vista "Registrar venta" (registro rápido)
+   Una venta siempre se considera pagada. Al guardar se crea una venta en el
+   historial Y un apunte (contacto) con estado "pagado" para tener todos los
+   detalles del cliente.
 ============================================================================ */
 
 function getResumen(tipo, itemId) {
@@ -20,18 +23,52 @@ function getResumen(tipo, itemId) {
   }
 }
 
+/* Helper: safely set textContent on an element by id */
+function setPreviewText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
 function updateVentaFormVisibility() {
   const tipo = document.querySelector('input[name="v-tipo"]:checked')?.value || 'entrada';
-  document.getElementById('v-field-parque').style.display = tipo === 'entrada' ? 'block' : 'none';
-  document.getElementById('v-field-bono').style.display = tipo === 'bono' ? 'block' : 'none';
+  
+  const fieldParque = document.getElementById('v-field-parque');
+  const fieldBono = document.getElementById('v-field-bono');
+  if (fieldParque) fieldParque.style.display = tipo === 'entrada' ? 'block' : 'none';
+  if (fieldBono) fieldBono.style.display = tipo === 'bono' ? 'block' : 'none';
+  
+  // Toggle entrada/bono specific sections
+  const secEntradas = document.getElementById('v-seccion-entradas');
+  const secBonos = document.getElementById('v-seccion-bonos');
+  if (secEntradas) secEntradas.style.display = tipo === 'entrada' ? 'grid' : 'none';
+  if (secBonos) secBonos.style.display = tipo === 'bono' ? 'grid' : 'none';
+
+  // Toggle preview rows for entrada vs bono
+  const showHide = (id, show) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = show ? '' : 'none';
+  };
+  showHide('tp-row-telefono', tipo === 'entrada');
+  showHide('tp-row-extras', tipo === 'entrada');
+  showHide('tp-row-cantidad', true);
+  showHide('tp-row-num-bono', tipo === 'bono');
+  showHide('tp-row-dni', tipo === 'bono');
+  
   updateTicketPreview();
 }
 
 function initVentaForm() {
   const form = document.getElementById('venta-form');
+  if (!form) return;
   
-  // Añadir listeners para los campos
-  ['v-parque', 'v-bono', 'v-cliente', 'v-importe'].forEach((id) => {
+  // Listener para TODOS los campos para que la vista previa se actualice en vivo
+  const liveFields = [
+    'v-parque', 'v-bono', 'v-cliente', 'v-correo', 'v-importe',
+    'v-telefono', 'v-cantidad-entradas', 'v-extras',
+    'v-num-bono', 'v-dni', 'v-nacimiento', 'v-cantidad-bonos',
+    'v-anotaciones'
+  ];
+  liveFields.forEach((id) => {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener('input', updateTicketPreview);
@@ -39,7 +76,7 @@ function initVentaForm() {
     }
   });
   
-  // Añadir listeners para los radio buttons
+  // Listeners para los radio buttons de tipo
   document.querySelectorAll('input[name="v-tipo"]').forEach(el => {
     el.addEventListener('change', updateVentaFormVisibility);
   });
@@ -49,49 +86,102 @@ function initVentaForm() {
     guardarVenta({ keepOpen: false }); 
   });
   
-  document.getElementById('btn-save-and-add').addEventListener('click', () => guardarVenta({ keepOpen: true }));
-  document.getElementById('btn-clear-form').addEventListener('click', resetVentaForm);
+  const btnSaveAdd = document.getElementById('btn-save-and-add');
+  if (btnSaveAdd) btnSaveAdd.addEventListener('click', () => guardarVenta({ keepOpen: true }));
+  
+  const btnClear = document.getElementById('btn-clear-form');
+  if (btnClear) btnClear.addEventListener('click', resetVentaForm);
 
   updateVentaFormVisibility();
   updateTicketPreview();
 }
 
 function updateTicketPreview() {
-  const tipo = document.querySelector('input[name="v-tipo"]:checked')?.value || 'entrada';
-  let itemId;
+  const tipoRadio = document.querySelector('input[name="v-tipo"]:checked');
+  if (!tipoRadio) return; // form not ready yet
+  const tipo = tipoRadio.value || 'entrada';
   
+  let itemNombre;
   if (tipo === 'entrada') {
-    itemId = document.getElementById('v-parque').value;
+    const parqueEl = document.getElementById('v-parque');
+    const itemId = parqueEl ? parqueEl.value : '';
+    const parque = itemId ? STATE.parques.find(p => p.id === itemId) : null;
+    itemNombre = parque ? parque.nombre : 'Selecciona un parque';
   } else {
-    itemId = document.getElementById('v-bono').value;
+    const bonoEl = document.getElementById('v-bono');
+    const itemId = bonoEl ? bonoEl.value : '';
+    const bono = itemId ? STATE.tipos_bono.find(b => b.id === itemId) : null;
+    itemNombre = bono ? bono.nombre : 'Selecciona un bono';
   }
   
-  const resumen = itemId ? getResumen(tipo, itemId) : null;
-  const cliente = document.getElementById('v-cliente').value.trim() || 'Cliente sin nombre';
-  const importe = Number(document.getElementById('v-importe').value) || 0;
+  const clienteEl = document.getElementById('v-cliente');
+  const correoEl = document.getElementById('v-correo');
+  const importeEl = document.getElementById('v-importe');
+  
+  const cliente = clienteEl ? clienteEl.value.trim() : '';
+  const correo = correoEl ? correoEl.value.trim() : '';
+  const importe = importeEl ? (Number(importeEl.value) || 0) : 0;
 
-  document.getElementById('tp-park').textContent = resumen ? resumen.itemNombre : (tipo === 'entrada' ? 'Sin parque' : 'Sin bono');
-  document.getElementById('tp-type').textContent = `Cliente: ${cliente}`;
-  document.getElementById('tp-cantidad').textContent = resumen ? fmtNum(resumen.ventasTotales) : '0';
-  document.getElementById('tp-precio').textContent = resumen ? fmtEUR(resumen.mediaVenta) : '0,00 €';
-  document.getElementById('tp-comision').textContent = resumen ? fmtEUR(resumen.importeTotal) : '0,00 €';
-  document.getElementById('tp-total').textContent = fmtEUR(importe);
+  // Header
+  setPreviewText('tp-park', itemNombre);
+  setPreviewText('tp-type', `Cliente: ${cliente || '—'}`);
+
+  // Common fields
+  setPreviewText('tp-correo', correo || '—');
+  setPreviewText('tp-total', typeof fmtEUR === 'function' ? fmtEUR(importe) : importe.toFixed(2) + ' €');
+
+  // Entrada-specific preview
+  if (tipo === 'entrada') {
+    const telefonoEl = document.getElementById('v-telefono');
+    const cantidadEl = document.getElementById('v-cantidad-entradas');
+    const extrasEl = document.getElementById('v-extras');
+    
+    setPreviewText('tp-telefono', (telefonoEl && telefonoEl.value.trim()) || '—');
+    setPreviewText('tp-cantidad', (cantidadEl && cantidadEl.value) || '—');
+    setPreviewText('tp-extras-preview', (extrasEl && extrasEl.value.trim()) || '—');
+  } else {
+    // Bono-specific preview
+    const numBonoEl = document.getElementById('v-num-bono');
+    const dniEl = document.getElementById('v-dni');
+    const cantidadEl = document.getElementById('v-cantidad-bonos');
+    
+    setPreviewText('tp-num-bono', (numBonoEl && numBonoEl.value.trim()) || '—');
+    setPreviewText('tp-dni-preview', (dniEl && dniEl.value.trim()) || '—');
+    setPreviewText('tp-cantidad', (cantidadEl && cantidadEl.value) || '—');
+  }
+
+  // Anotaciones preview — show row only if there's text
+  const anotacionesEl = document.getElementById('v-anotaciones');
+  const notas = anotacionesEl ? anotacionesEl.value.trim() : '';
+  const rowNotas = document.getElementById('tp-row-notas');
+  if (rowNotas) {
+    if (notas) {
+      rowNotas.style.display = '';
+      setPreviewText('tp-notas', notas);
+      const notasPreviewEl = document.getElementById('tp-notas');
+      if (notasPreviewEl) notasPreviewEl.title = notas;
+    } else {
+      rowNotas.style.display = 'none';
+    }
+  }
 }
 
 async function guardarVenta({ keepOpen }) {
   const tipo = document.querySelector('input[name="v-tipo"]:checked')?.value || 'entrada';
-  const clienteNombre = document.getElementById('v-cliente').value.trim();
-  const importeTotal = Number(document.getElementById('v-importe').value);
+  const clienteNombre = document.getElementById('v-cliente')?.value.trim() || '';
+  const correo = document.getElementById('v-correo')?.value.trim() || '';
+  const importeTotal = Number(document.getElementById('v-importe')?.value);
+  const anotaciones = document.getElementById('v-anotaciones')?.value.trim() || '';
   
   let itemId;
   if (tipo === 'entrada') {
-    itemId = document.getElementById('v-parque').value;
+    itemId = document.getElementById('v-parque')?.value;
     if (!itemId) { 
       toast('Selecciona un parque', 'error'); 
       return; 
     }
   } else {
-    itemId = document.getElementById('v-bono').value;
+    itemId = document.getElementById('v-bono')?.value;
     if (!itemId) { 
       toast('Selecciona un tipo de bono', 'error'); 
       return; 
@@ -108,7 +198,34 @@ async function guardarVenta({ keepOpen }) {
     return; 
   }
 
-  const payload = {
+  // Build contacto (apunte) payload — always "pagado" since this is a sale
+  const contactoPayload = {
+    tipo,
+    nombre_apellidos: clienteNombre,
+    correo,
+    importe_total: importeTotal,
+    estado_pago: 'pagado',
+    anotaciones
+  };
+
+  if (tipo === 'entrada') {
+    contactoPayload.telefono = document.getElementById('v-telefono')?.value.trim() || '';
+    contactoPayload.parque_id = itemId;
+    const cantVal = document.getElementById('v-cantidad-entradas')?.value;
+    contactoPayload.cantidad_entradas = cantVal ? Number(cantVal) : null;
+    contactoPayload.extras = document.getElementById('v-extras')?.value.trim() || '';
+  } else {
+    contactoPayload.num_bono = document.getElementById('v-num-bono')?.value.trim() || '';
+    contactoPayload.dni = document.getElementById('v-dni')?.value.trim() || '';
+    const fechaNac = document.getElementById('v-nacimiento')?.value;
+    contactoPayload.fecha_nacimiento = fechaNac || null;
+    contactoPayload.bono_id = itemId;
+    const cantVal = document.getElementById('v-cantidad-bonos')?.value;
+    contactoPayload.cantidad_bonos = cantVal ? Number(cantVal) : null;
+  }
+
+  // Build venta payload
+  const ventaPayload = {
     fecha: new Date().toISOString(),
     tipo,
     cliente_nombre: clienteNombre,
@@ -116,38 +233,54 @@ async function guardarVenta({ keepOpen }) {
   };
   
   if (tipo === 'entrada') {
-    payload.parque_id = itemId;
-    payload.bono_id = null;
+    ventaPayload.parque_id = itemId;
+    ventaPayload.bono_id = null;
   } else {
-    payload.bono_id = itemId;
-    payload.parque_id = null;
+    ventaPayload.bono_id = itemId;
+    ventaPayload.parque_id = null;
   }
 
   const submitBtns = document.querySelectorAll('#venta-form button, #btn-save-and-add');
   submitBtns.forEach((b) => (b.disabled = true));
 
   try {
-    await DB.addVenta(payload);
+    // Create both the contacto and the venta
+    await DB.addContacto(contactoPayload);
+    await DB.addVenta(ventaPayload);
+
     STATE.ventas = await DB.getVentas();
-    toast('Venta guardada correctamente', 'success');
+    STATE.contactos = await DB.getContactos();
     refreshAllViewsAfterDataChange();
+
+    toast('Venta registrada y apunte creado', 'success');
+
     if (keepOpen) {
-      document.getElementById('v-cliente').value = '';
-      document.getElementById('v-importe').value = '';
+      // Clear client-specific fields, keep tipo and parque/bono selection
+      const fieldsToClear = [
+        'v-cliente', 'v-correo', 'v-importe', 'v-anotaciones',
+        'v-telefono', 'v-extras', 'v-num-bono', 'v-dni', 'v-nacimiento',
+        'v-cantidad-entradas', 'v-cantidad-bonos'
+      ];
+      fieldsToClear.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
       updateTicketPreview();
-      document.getElementById('v-cliente').focus();
+      const clienteField = document.getElementById('v-cliente');
+      if (clienteField) clienteField.focus();
     } else {
       resetVentaForm();
     }
   } catch (err) {
-    toast('Error al guardar la venta: ' + err.message, 'error');
+    toast('Error al guardar: ' + err.message, 'error');
   } finally {
     submitBtns.forEach((b) => (b.disabled = false));
   }
 }
 
 function resetVentaForm() {
-  document.getElementById('venta-form').reset();
+  const form = document.getElementById('venta-form');
+  if (form) form.reset();
   updateVentaFormVisibility();
   updateTicketPreview();
 }

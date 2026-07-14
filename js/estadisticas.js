@@ -18,6 +18,33 @@ function getVentasPeriodo() {
   return STATE.ventas.filter((v) => new Date(v.fecha) >= limite);
 }
 
+function toggleChartEmptyState(canvasId, isEmpty, message = 'No hay datos de ventas en este periodo') {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const wrap = canvas.parentElement;
+  if (!wrap) return;
+  
+  const existing = wrap.querySelector('.chart-empty-placeholder');
+  if (existing) existing.remove();
+  
+  if (isEmpty) {
+    canvas.style.display = 'none';
+    const placeholder = document.createElement('div');
+    placeholder.className = 'chart-empty-placeholder';
+    placeholder.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"/>
+        <line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="6" y1="20" x2="6" y2="14"/>
+      </svg>
+      <span>${escapeHtml(message)}</span>
+    `;
+    wrap.appendChild(placeholder);
+  } else {
+    canvas.style.display = '';
+  }
+}
+
 function renderEstadisticas() {
   const ventas = getVentasPeriodo();
   renderChartMensual();
@@ -30,7 +57,10 @@ function renderEstadisticas() {
 function chartColorsStats() { return chartColors(); }
 
 function renderChartMensual() {
-  if (typeof Chart === 'undefined') return;
+  if (typeof Chart === 'undefined') {
+    toggleChartEmptyState('chart-mensual', true, 'Error: No se pudo cargar Chart.js (comprueba tu conexión a Internet)');
+    return;
+  }
   const c = chartColorsStats();
   const meses = [];
   for (let i = 11; i >= 0; i--) {
@@ -39,6 +69,19 @@ function renderChartMensual() {
   }
   const ingresos = meses.map((m) => STATE.ventas.filter((v) => isMismoMes(v.fecha, m)).reduce((a, v) => a + Number(v.importe_total), 0));
   const labels = meses.map((m) => m.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' }));
+
+  const totalIngresos = ingresos.reduce((a, b) => a + b, 0);
+  const isEmpty = totalIngresos === 0;
+  
+  toggleChartEmptyState('chart-mensual', isEmpty, 'Sin ingresos registrados en los últimos 12 meses');
+  
+  if (isEmpty) {
+    if (chartMensual) {
+      chartMensual.destroy();
+      chartMensual = null;
+    }
+    return;
+  }
 
   const ctx = document.getElementById('chart-mensual').getContext('2d');
   if (chartMensual) chartMensual.destroy();
@@ -59,11 +102,25 @@ function renderChartMensual() {
 }
 
 function renderChartPorParque(ventas) {
-  if (typeof Chart === 'undefined') return;
+  if (typeof Chart === 'undefined') {
+    toggleChartEmptyState('chart-por-parque', true, 'Error: No se pudo cargar Chart.js (comprueba tu conexión a Internet)');
+    return;
+  }
   const c = chartColorsStats();
   const porParque = {};
   ventas.forEach((v) => { const n = parqueNombre(v.parque_id); porParque[n] = (porParque[n] || 0) + Number(v.importe_total); });
   const entries = Object.entries(porParque).sort((a, b) => b[1] - a[1]);
+
+  const isEmpty = entries.length === 0;
+  toggleChartEmptyState('chart-por-parque', isEmpty, 'Sin ventas por parque en este periodo');
+
+  if (isEmpty) {
+    if (chartPorParque) {
+      chartPorParque.destroy();
+      chartPorParque = null;
+    }
+    return;
+  }
 
   const ctx = document.getElementById('chart-por-parque').getContext('2d');
   if (chartPorParque) chartPorParque.destroy();
@@ -82,11 +139,26 @@ function renderChartPorParque(ventas) {
 }
 
 function renderChartDiaSemana(ventas) {
-  if (typeof Chart === 'undefined') return;
+  if (typeof Chart === 'undefined') {
+    toggleChartEmptyState('chart-dia-semana', true, 'Error: No se pudo cargar Chart.js (comprueba tu conexión a Internet)');
+    return;
+  }
   const c = chartColorsStats();
   const dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
   const totals = new Array(7).fill(0);
   ventas.forEach((v) => { const idx = (new Date(v.fecha).getDay() + 6) % 7; totals[idx] += Number(v.importe_total); });
+
+  const totalSemana = totals.reduce((a, b) => a + b, 0);
+  const isEmpty = totalSemana === 0;
+  toggleChartEmptyState('chart-dia-semana', isEmpty, 'Sin datos de actividad diaria en este periodo');
+
+  if (isEmpty) {
+    if (chartDiaSemana) {
+      chartDiaSemana.destroy();
+      chartDiaSemana = null;
+    }
+    return;
+  }
 
   const ctx = document.getElementById('chart-dia-semana').getContext('2d');
   if (chartDiaSemana) chartDiaSemana.destroy();

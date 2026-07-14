@@ -68,7 +68,12 @@ function normalizeDashboardFilters(raw = {}) {
 }
 
 function loadDashboardFilters() {
-  // Always use default filters for now to show all data
+  try {
+    const saved = localStorage.getItem(DASHBOARD_FILTERS_KEY);
+    if (saved) return normalizeDashboardFilters(JSON.parse(saved));
+  } catch (err) {
+    console.error('Error loading dashboard filters:', err);
+  }
   return getDefaultDashboardFilters();
 }
 

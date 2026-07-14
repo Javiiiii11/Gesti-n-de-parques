@@ -10,17 +10,17 @@ let CONTACTOS_STATE = {
 
 function wireContactosView() {
   document.getElementById('btn-nuevo-contacto').addEventListener('click', () => openContactoForm());
-  
+
   document.getElementById('contactos-search').addEventListener('input', debounce((e) => {
     CONTACTOS_STATE.search = e.target.value.trim().toLowerCase();
     renderContactos();
   }, 300));
-  
+
   document.getElementById('contactos-filtro-tipo').addEventListener('change', (e) => {
     CONTACTOS_STATE.tipo = e.target.value;
     renderContactos();
   });
-  
+
   document.getElementById('contactos-filtro-estado').addEventListener('change', (e) => {
     CONTACTOS_STATE.estado = e.target.value;
     renderContactos();
@@ -46,14 +46,16 @@ function renderContactos() {
   });
 
   if (!filtrados.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">No se encontraron contactos.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      No se han encontrado apuntes con estos filtros.</div></td></tr>`;
     return;
   }
 
   tbody.innerHTML = filtrados.map((c) => {
     let tipoLabel = c.tipo === 'entrada' ? 'Entradas' : 'Bonos';
     let badgeClass = c.tipo === 'entrada' ? 'bg-info' : 'bg-accent';
-    
+
     let detalles = '';
     if (c.tipo === 'entrada') {
       detalles = `${fmtNum(c.cantidad_entradas || 1)}x ${parqueNombre(c.parque_id)}<br><small style="color:var(--text-muted)">${c.extras ? 'Extras: ' + escapeHtml(c.extras) : 'Sin extras'}</small>`;
@@ -61,9 +63,14 @@ function renderContactos() {
       detalles = `${fmtNum(c.cantidad_bonos || 1)}x ${bonoNombre(c.bono_id)}<br><small style="color:var(--text-muted)">Nº: ${escapeHtml(c.num_bono)}</small>`;
     }
 
-    let estadoBadge = c.estado_pago === 'pagado' 
-      ? '<span class="badge on">Pagado</span>' 
-      : '<span class="badge off" style="color:var(--accent); border-color:var(--accent)">Pendiente</span>';
+    let estadoBadge = '';
+    if (c.estado_pago === 'pagado') {
+      estadoBadge = '<span class="badge on">Pagado</span>';
+    } else if (c.estado_pago === 'Apunte rápido') {
+      estadoBadge = '<span class="badge neutral">Apunte rápido</span>';
+    } else {
+      estadoBadge = '<span class="badge off" style="color:var(--accent); border-color:var(--accent)">Pendiente de pago</span>';
+    }
 
     return `
       <tr>
@@ -78,7 +85,7 @@ function renderContactos() {
         <td>${estadoBadge}</td>
         <td>
           <div class="row-actions" style="justify-content:flex-end;">
-            ${c.estado_pago === 'pendiente' ? `
+            ${c.estado_pago !== 'pagado' ? `
               <button class="icon-btn-sm" title="Marcar como pagado" data-pay-contacto="${c.id}" style="color:var(--success)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
               </button>
@@ -106,7 +113,7 @@ function renderContactos() {
 function openContactoForm(id = null) {
   const c = id ? STATE.contactos.find((x) => x.id === id) : null;
   const initialTipo = c ? c.tipo : 'entrada';
-  
+
   openModal({
     title: c ? 'Editar apunte' : 'Nuevo apunte',
     bodyHtml: `
@@ -141,6 +148,7 @@ function openContactoForm(id = null) {
         <div class="form-field full">
           <label for="cf-estado">Estado de pago</label>
           <select id="cf-estado">
+            <option value="Apunte rápido" ${(!c || c.estado_pago === 'Apunte rápido') ? 'selected' : ''}>Apunte rápido</option>
             <option value="pendiente" ${c?.estado_pago === 'pendiente' ? 'selected' : ''}>Pendiente de pago</option>
             <option value="pagado" ${c?.estado_pago === 'pagado' ? 'selected' : ''}>Pagado (Sumará a ventas)</option>
           </select>
@@ -256,10 +264,10 @@ function openContactoForm(id = null) {
       payload.cantidad_bonos = Number(document.getElementById('cf-cantidad-bonos').value) || 1;
     }
 
-    // Check if transitioning from pendiente to pagado
-    const wasPendiente = c && c.estado_pago === 'pendiente';
+    // Check if transitioning from unpaid to pagado
+    const wasNotPagado = c && c.estado_pago !== 'pagado';
     const isNowPagado = estado_pago === 'pagado';
-    const createVenta = (isNowPagado && (!c || wasPendiente));
+    const createVenta = (isNowPagado && (!c || wasNotPagado));
 
     try {
       if (c) {
@@ -315,7 +323,7 @@ async function payContactoFlow(id) {
 
   confirmDialog({
     title: 'Marcar como pagado',
-    message: c.tipo === 'entrada' 
+    message: c.tipo === 'entrada'
       ? 'Esto marcará el apunte como pagado y creará una nueva Venta en el historial. ¿Continuar?'
       : 'Esto marcará el bono como pagado y creará una nueva Venta en el historial. ¿Continuar?',
     confirmLabel: 'Sí, marcar pagado',
@@ -324,11 +332,11 @@ async function payContactoFlow(id) {
       try {
         // First, update the contact to paid - this is the most important part!
         await DB.updateContacto(id, { estado_pago: 'pagado' });
-        
+
         // Now update STATE.contactos immediately so UI updates right away!
         STATE.contactos = await DB.getContactos();
         refreshAllViewsAfterDataChange();
-        
+
         // Try to add the venta, but if it fails it's okay - the contact is already marked as paid!
         try {
           const ventaPayload = {
@@ -337,16 +345,16 @@ async function payContactoFlow(id) {
             cliente_nombre: c.nombre_apellidos,
             importe_total: c.importe_total
           };
-          
+
           if (c.tipo === 'entrada') {
             ventaPayload.parque_id = c.parque_id;
             ventaPayload.cantidad = c.cantidad_entradas;
           } else {
             ventaPayload.bono_id = c.bono_id;
           }
-          
+
           await DB.addVenta(ventaPayload);
-          
+
           // Refresh ventas only if we successfully added one
           STATE.ventas = await DB.getVentas();
           refreshAllViewsAfterDataChange();

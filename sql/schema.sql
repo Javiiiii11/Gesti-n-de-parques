@@ -61,7 +61,7 @@ create table if not exists public.ventas (
 create table if not exists public.contactos (
   id uuid default gen_random_uuid() primary key,
   tipo text not null check (tipo in ('entrada', 'bono')),
-  estado_pago text not null check (estado_pago in ('pendiente', 'pagado')),
+  estado_pago text not null check (estado_pago in ('pendiente', 'pagado', 'Apunte rápido')),
   nombre_apellidos text not null,
   correo text,
   importe_total numeric default 0,
@@ -257,17 +257,16 @@ create policy "contactos_delete" on public.contactos
     for delete using (auth.role() = 'authenticated');
 
 -- ----------------------------------------------------------------------------
--- Datos de ejemplo (opcional, comenta este bloque si no los quieres)
+-- Actualización del check constraint para estado_pago en contactos
 -- ----------------------------------------------------------------------------
-insert into public.parques (nombre, activo)
-values
-    ('PortAventura', true),
-    ('Isla Mágica', true),
-    ('Terra Mítica', true)
-on conflict (nombre) do nothing;
+do $$
+begin
+  -- Intentar eliminar la restricción por defecto de Supabase (suele llamarse contactos_estado_pago_check)
+  alter table public.contactos drop constraint if exists contactos_estado_pago_check;
+  
+  -- Intentar eliminar chk_contactos_estado_pago si ya se creó antes
+  alter table public.contactos drop constraint if exists chk_contactos_estado_pago;
 
-insert into public.tipos_bono (nombre, activo)
-values
-    ('Bono 10 entradas', true),
-    ('Bono Anual', true)
-on conflict (nombre) do nothing;
+  -- Crear la nueva restricción que incluye 'Apunte rápido'
+  alter table public.contactos add constraint chk_contactos_estado_pago check (estado_pago in ('pendiente', 'pagado', 'Apunte rápido'));
+end $$;
