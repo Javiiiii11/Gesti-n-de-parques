@@ -32,6 +32,10 @@ function renderContactos() {
   if (!tbody) return;
 
   let filtrados = STATE.contactos.filter((c) => {
+    // Por defecto, ocultar los apuntes ya pagados de la lista general
+    // (ya que se consideran ventas y van al Historial), a menos que se filtre por ellos.
+    if (!CONTACTOS_STATE.estado && c.estado_pago === 'pagado') return false;
+
     if (CONTACTOS_STATE.tipo && c.tipo !== CONTACTOS_STATE.tipo) return false;
     if (CONTACTOS_STATE.estado && c.estado_pago !== CONTACTOS_STATE.estado) return false;
     if (CONTACTOS_STATE.search) {

@@ -281,7 +281,7 @@ const DB = {
   async getVentas() {
     if (LOCAL_MODE) {
       localSeedIfEmpty();
-      return readLocal(LOCAL_KEYS.ventas).map(normalizeVenta).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+      return readLocal(LOCAL_KEYS.ventas).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
     }
     const { data, error } = await supabaseClient.from('ventas').select('*').order('fecha', { ascending: false });
     if (error) throw normalizeDbError(error, 'ventas');
@@ -425,7 +425,7 @@ const AUTH = {
 
   enterGuestMode() {
     LOCAL_MODE = true;
-    const user = { id: uid(), email: 'invitado@local', name: 'Invitado (local)' };
+    const user = { id: uid(), email: 'javier@parksales', name: 'Javier Rodríguez' };
     localStorage.setItem(LOCAL_KEYS.user, JSON.stringify(user));
     return user;
   },

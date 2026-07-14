@@ -29,7 +29,7 @@ function toMonthInputValue(date = new Date()) {
 }
 
 function getMonthlyGoal() {
-  return Math.max(0, Number(localStorage.getItem(MONTHLY_GOAL_KEY)) || 3000);
+  return Math.max(0, Number(localStorage.getItem(MONTHLY_GOAL_KEY)) || 0);
 }
 
 function setMonthlyGoal(value) {
@@ -400,6 +400,23 @@ function renderGoalWidget({
   missingPerWorkingDay,
 }) {
   const percentage = goal ? Math.min(100, goalProgress) : 0;
+
+  if (!goal) {
+    document.getElementById('goal-widget').innerHTML = `
+      <div class="goal-summary">
+        <div class="goal-summary-row">
+          <span>Ventas del mes</span>
+          <b>${fmtEUR(currentMonthSales)}</b>
+        </div>
+        <div style="color:var(--text-muted); font-size:12.5px; margin-top:10px; text-align:center; padding:8px 0;">
+          Sin objetivo configurado.<br>
+          <span style="color:var(--accent); cursor:pointer; font-weight:600;" onclick="openProfileSettings()">Configura tu meta mensual →</span>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
   document.getElementById('goal-widget').innerHTML = `
     <div class="goal-summary">
       <div class="goal-summary-row">
