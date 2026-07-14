@@ -57,23 +57,8 @@ function initAuthScreen() {
 }
 
 function enterApp() {
-  // Arranca la app usando el modo local (sin Supabase) o con Supabase si está configurado
-  const user = SUPABASE_CONFIGURED
-    ? null   // Si hay Supabase, dejamos que checkExistingSession maneje la sesión real
-    : AUTH.enterGuestMode();
-
-  if (user) {
-    bootApp(user);
-    return;
-  }
-
-  // Si Supabase está configurado, intentamos recuperar la sesión existente
-  // o iniciamos como invitado local
-  AUTH.getCurrentUser().then((u) => {
-    bootApp(u || AUTH.enterGuestMode());
-  }).catch(() => {
-    bootApp(AUTH.enterGuestMode());
-  });
+  const user = AUTH.enterGuestMode();
+  bootApp(user);
 }
 
 async function checkExistingSession() {

@@ -38,13 +38,10 @@ if (SUPABASE_CONFIGURED) {
   window.PARKSALES_SUPABASE_CLIENT = supabaseClient;
 }
 
-// Modo local: se activa automáticamente si Supabase no está configurado,
-// o si el usuario elige explícitamente "Entrar sin cuenta".
-let LOCAL_MODE = !SUPABASE_CONFIGURED;
-
-if (!supabaseClient) {
-  LOCAL_MODE = true;
-}
+// Modo local: Forzado a true siempre para garantizar que todos los datos
+// se guarden de forma consistente en localStorage y no se mezclen o
+// pierdan al no requerir cuenta de Supabase.
+let LOCAL_MODE = true;
 
 const LOCAL_KEYS = { 
   ventas: 'parksales_ventas', 
