@@ -6,6 +6,13 @@ async function loadParques() {
   STATE.parques = await DB.getParques();
   renderParquesTable();
   fillParqueSelects();
+  // Refresh horarios view too if it exists
+  if (typeof renderHorariosList === 'function') {
+    renderHorariosList();
+    if (selectedParkId) {
+      selectParkForSchedule(selectedParkId);
+    }
+  }
 }
 
 async function loadBonos() {
@@ -113,6 +120,14 @@ function openParqueForm(id = null) {
           <input type="text" id="pf-nombre" value="${parque ? escapeHtml(parque.nombre) : ''}" placeholder="Ej. PortAventura" required>
         </div>
         <div class="form-field full">
+          <label for="pf-horario-texto">Horarios (opcional) - escribe aquí tus horarios</label>
+          <textarea id="pf-horario-texto" rows="6" placeholder="Ej.: Lunes a Viernes: 10:00 - 20:00&#10;Sábados y Domingos: 10:00 - 22:00">${parque && parque.horario_texto ? escapeHtml(parque.horario_texto) : ''}</textarea>
+        </div>
+        <div class="form-field full">
+          <label for="pf-horario-url">URL de horarios (opcional) - enlace para confirmar</label>
+          <input type="url" id="pf-horario-url" value="${parque && parque.horario_url ? escapeHtml(parque.horario_url) : ''}" placeholder="https://ejemplo.com/horarios">
+        </div>
+        <div class="form-field full">
           <label style="flex-direction:row; justify-content:flex-start; gap:8px; align-items:center;">
             <input type="checkbox" id="pf-activo" style="width:auto;" ${!parque || parque.activo ? 'checked' : ''}>
             Parque activo
@@ -128,9 +143,13 @@ function openParqueForm(id = null) {
   document.getElementById('pf-cancel').addEventListener('click', closeModal);
   document.getElementById('pf-save').addEventListener('click', async () => {
     const nombre = document.getElementById('pf-nombre').value.trim();
+    const horarioUrl = document.getElementById('pf-horario-url').value.trim();
+    const horarioTexto = document.getElementById('pf-horario-texto').value.trim();
     if (!nombre) { toast('El nombre del parque es obligatorio', 'error'); return; }
     const payload = {
       nombre,
+      horario_url: horarioUrl || null,
+      horario_texto: horarioTexto || null,
       activo: document.getElementById('pf-activo').checked,
     };
     try {

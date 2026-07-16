@@ -115,6 +115,14 @@
           </svg>
           Notas rápidas
         </div>
+        <div class="nav-item" data-view="horarios">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          Horarios / Promos
+        </div>
         <div class="nav-item" data-view="parques">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
@@ -264,7 +272,6 @@
                 </div>
               </div>
               <div class="ranking-list" id="ranking-parques"></div>
-            </div>
           </div>
         </section>
 
@@ -291,7 +298,7 @@
                 </div>
               </div>
 
-              <!-- Campos comunes -->
+              <!-- Campos principales (siempre visibles) -->
               <div class="form-grid">
                 <!-- Entrada-specific field -->
                 <div class="form-field" id="v-field-parque">
@@ -308,56 +315,81 @@
                   <input type="text" id="v-cliente" placeholder="Ej. Marta López" required>
                 </div>
                 <div class="form-field">
-                  <label for="v-correo">Correo electrónico</label>
-                  <input type="email" id="v-correo" placeholder="cliente@ejemplo.com">
-                </div>
-                <div class="form-field">
                   <label for="v-importe">Importe total (€)</label>
                   <input type="number" id="v-importe" min="0" step="0.01" required>
                 </div>
+                <div class="form-field">
+                  <label for="v-localizador">Localizador</label>
+                  <input type="text" id="v-localizador" placeholder="Sin localizador">
+                </div>
               </div>
 
-              <!-- Campos Entradas -->
+              <!-- Campos Entradas (principales) -->
               <div id="v-seccion-entradas" class="form-grid" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
-                <div class="form-field">
-                  <label for="v-telefono">Teléfono</label>
-                  <input type="text" id="v-telefono" placeholder="Ej. 612 345 678">
-                </div>
-                <div class="form-field">
-                  <label for="v-cantidad-entradas">Cantidad de entradas</label>
-                  <input type="number" min="1" id="v-cantidad-entradas" placeholder="Opcional">
-                </div>
                 <div class="form-field full">
-                  <label for="v-extras">Extras (ej. Comida, pase rápido...)</label>
-                  <input type="text" id="v-extras" placeholder="Opcional">
+                  <label for="v-anotaciones">Anotaciones</label>
+                  <textarea id="v-anotaciones" rows="3" placeholder="Apuntes sobre el cliente..."></textarea>
                 </div>
               </div>
 
-              <!-- Campos Bonos -->
+              <!-- Campos Bonos (principales) -->
               <div id="v-seccion-bonos" class="form-grid" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border); display:none;">
                 <div class="form-field">
                   <label for="v-num-bono">Nº de bono</label>
                   <input type="text" id="v-num-bono">
                 </div>
-                <div class="form-field">
-                  <label for="v-dni">DNI</label>
-                  <input type="text" id="v-dni">
-                </div>
-                <div class="form-field">
-                  <label for="v-nacimiento">Fecha de nacimiento</label>
-                  <input type="date" id="v-nacimiento">
-                </div>
-                <div class="form-field">
-                  <label for="v-cantidad-bonos">Cantidad de bonos</label>
-                  <input type="number" min="1" id="v-cantidad-bonos" placeholder="Opcional">
+                <div class="form-field full">
+                  <label for="v-anotaciones-bono">Anotaciones</label>
+                  <textarea id="v-anotaciones-bono" rows="3" placeholder="Apuntes sobre el bono..."></textarea>
                 </div>
               </div>
 
-              <!-- Anotaciones -->
-              <div class="form-grid" style="margin-top:16px;">
-                <div class="form-field full">
-                  <label for="v-anotaciones">Anotaciones</label>
-                  <textarea id="v-anotaciones" rows="3" placeholder="Apuntes sobre el cliente, pagos pendientes..."></textarea>
+              <!-- Botón para mostrar/ocultar campos extra -->
+              <div style="margin-top:12px; text-align:center;">
+                <button type="button" class="btn btn-ghost btn-sm" id="v-toggle-extras">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"><path d="M12 5v14M5 12h14"/></svg>
+                  <span id="v-toggle-extras-text">Mostrar más campos</span>
+                </button>
+              </div>
+
+              <!-- Campos extras (ocultos por defecto) -->
+              <div id="v-section-extras" style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+                <div class="form-grid">
+                  <div class="form-field full">
+                    <label for="v-correo">Correo electrónico</label>
+                    <input type="email" id="v-correo" placeholder="cliente@ejemplo.com">
+                  </div>
+                </div>
+                <!-- Campos extra para Entradas -->
+                <div id="v-seccion-entradas-extra" class="form-grid" style="margin-top:12px;">
+                  <div class="form-field">
+                    <label for="v-telefono">Teléfono</label>
+                    <input type="text" id="v-telefono" placeholder="Ej. 612 345 678">
+                  </div>
+                  <div class="form-field">
+                    <label for="v-cantidad-entradas">Cantidad de entradas</label>
+                    <input type="number" min="1" id="v-cantidad-entradas" placeholder="Opcional" value="1">
+                  </div>
+                  <div class="form-field full">
+                    <label for="v-extras">Extras (ej. Comida, pase rápido...)</label>
+                    <input type="text" id="v-extras" placeholder="Sin extras">
+                  </div>
+                </div>
+
+                <!-- Campos extra para Bonos -->
+                <div id="v-seccion-bonos-extra" class="form-grid" style="margin-top:12px; display:none;">
+                  <div class="form-field">
+                    <label for="v-dni">DNI</label>
+                    <input type="text" id="v-dni">
+                  </div>
+                  <div class="form-field">
+                    <label for="v-nacimiento">Fecha de nacimiento</label>
+                    <input type="date" id="v-nacimiento">
+                  </div>
+                  <div class="form-field">
+                    <label for="v-cantidad-bonos">Cantidad de bonos</label>
+                    <input type="number" min="1" id="v-cantidad-bonos" placeholder="Opcional" value="1">
+                  </div>
                 </div>
               </div>
 
@@ -382,10 +414,11 @@
                 </div>
                 <div class="tp-badge">VISTA PREVIA</div>
               </div>
-              <div class="tp-row"><span>Correo</span><b id="tp-correo">—</b></div>
-              <div class="tp-row" id="tp-row-telefono"><span>Teléfono</span><b id="tp-telefono">—</b></div>
-              <div class="tp-row" id="tp-row-cantidad"><span>Cantidad</span><b id="tp-cantidad">—</b></div>
-              <div class="tp-row" id="tp-row-extras"><span>Extras</span><b id="tp-extras-preview">—</b></div>
+              <div class="tp-row" id="tp-row-correo" style="display:none"><span>Correo</span><b id="tp-correo">—</b></div>
+              <div class="tp-row"><span>Localizador</span><b id="tp-localizador">Sin localizador</b></div>
+              <div class="tp-row" id="tp-row-telefono" style="display:none"><span>Teléfono</span><b id="tp-telefono">—</b></div>
+              <div class="tp-row" id="tp-row-cantidad" style="display:none"><span>Cantidad</span><b id="tp-cantidad">—</b></div>
+              <div class="tp-row" id="tp-row-extras" style="display:none"><span>Extras</span><b id="tp-extras-preview">—</b></div>
               <div class="tp-row" id="tp-row-num-bono" style="display:none"><span>Nº Bono</span><b id="tp-num-bono">—</b></div>
               <div class="tp-row" id="tp-row-dni" style="display:none"><span>DNI</span><b id="tp-dni-preview">—</b></div>
               <div class="tp-row" id="tp-row-notas" style="display:none"><span>Notas</span><b id="tp-notas" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">—</b></div>
@@ -478,6 +511,7 @@
               <option value="pagado">Pagado</option>
               <option value="Apunte rápido">Apunte rápido</option>
             </select>
+            <button class="btn btn-ghost btn-sm" id="contactos-filtro-clear">Limpiar filtros</button>
           </div>
           <div class="table-scroll">
             <table class="data-table" id="contactos-table">
@@ -543,6 +577,41 @@
           </div>
         </section>
 
+        <!-- ============================ HORARIOS ============================ -->
+        <section class="view" id="view-horarios">
+          <div class="view-header">
+            <div>
+              <h2>Horarios y Promociones</h2>
+              <p class="desc">Consulta los horarios oficiales y las promociones activas de los parques.</p>
+            </div>
+          </div>
+
+          <!-- Sección de Promociones -->
+          <div class="card card-pad promos-card" style="margin-bottom: 24px;">
+            <div class="promos-card-header">
+              <span class="promos-icon">🎉</span>
+              <div>
+                <h3 class="section-title" style="margin:0;">Promociones y Ofertas</h3>
+                <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Consulta el Excel con todas las promociones actuales.</p>
+              </div>
+            </div>
+            <div class="promos-card-actions">
+              <a href="#" target="_blank" class="btn btn-primary" id="promos-excel-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 3v4a1 1 0 0 0 1 1h4"></path>
+                  <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path>
+                </svg>
+                Abrir Excel de Promociones
+              </a>
+            </div>
+          </div>
+
+          <!-- Sección de Parques -->
+          <div class="horarios-parks-grid" id="horarios-parks-container">
+            <!-- Tarjetas de parques generadas dinámicamente -->
+          </div>
+        </section>
+
         <!-- ============================ HISTORIAL ============================ -->
         <section class="view" id="view-historial">
           <div class="view-header">
@@ -582,6 +651,7 @@
                   <th data-sort="tipo">Tipo <span class="sort-arrow"></span></th>
                   <th data-sort="parque">Detalle <span class="sort-arrow"></span></th>
                   <th data-sort="cliente_nombre">Cliente <span class="sort-arrow"></span></th>
+                  <th data-sort="localizador">Localizador <span class="sort-arrow"></span></th>
                   <th data-sort="importe_total">Importe (€) <span class="sort-arrow"></span></th>
                   <th style="text-align:right;">Acciones</th>
                 </tr>
@@ -694,6 +764,22 @@
             </div>
           </div>
 
+          <h3 style="margin-top: 24px; margin-bottom: 16px; color: var(--text-primary);">Añadir datos predefinidos</h3>
+          <div class="export-grid">
+            <div class="card export-card">
+              <div class="ex-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l7-14 4 8 3-5 4 11H3z" /></svg></div>
+              <h4>Añadir parques predefinidos</h4>
+              <p>Añade todos los parques de la lista si no existen todavía.</p>
+              <button class="btn btn-primary" id="btn-add-all-parks">Añadir parques</button>
+            </div>
+            <div class="card export-card">
+              <div class="ex-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v8M8 12h8" /></svg></div>
+              <h4>Añadir bonos predefinidos</h4>
+              <p>Añade todos los tipos de bonos si no existen todavía.</p>
+              <button class="btn btn-primary" id="btn-add-all-bonos">Añadir bonos</button>
+            </div>
+          </div>
+
           <h3 style="margin-top: 24px; margin-bottom: 16px; color: var(--text-primary);">Copias de seguridad e Informes completos</h3>
           <div class="export-grid">
             <div class="card export-card">
@@ -765,6 +851,7 @@
   <script src="js/estadisticas.js"></script>
   <script src="js/exportar.js"></script>
   <script src="js/notas.js"></script>
+  <script src="js/horarios.js"></script>
   <script src="js/app.js"></script>
 </body>
 

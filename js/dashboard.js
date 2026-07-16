@@ -200,6 +200,12 @@ function renderDashboard() {
   // Calculate average per sale in filtered data
   const averagePerSale = filteredCount ? filteredTotal / filteredCount : 0;
   
+  // Get today's sales (always from all data, not filtered)
+  const hoy = toDateInputValue(now);
+  const ventasHoy = STATE.ventas.filter((venta) => isSameLocalDay(venta.fecha, hoy));
+  const totalHoy = sum(ventasHoy, 'importe_total');
+  const countHoy = ventasHoy.length;
+
   // Get first and last sale in filtered data
   const firstFilteredSale = filtradas.length ? filtradas.reduce((min, venta) => new Date(venta.fecha) < new Date(min.fecha) ? venta : min, filtradas[0]) : null;
   const lastFilteredSale = filtradas.length ? filtradas.reduce((max, venta) => new Date(venta.fecha) > new Date(max.fecha) ? venta : max, filtradas[0]) : null;
@@ -219,15 +225,18 @@ function renderDashboard() {
   const expectedDailyGoal = goal / workdays;
   const currentPace = currentMonthSales / monthElapsed;
   const missingPerWorkingDay = workdays ? goalRemaining / Math.max(1, workdays - Math.min(workdays, monthElapsed)) : goalRemaining;
+  const workdaysElapsed = Math.max(1, Math.round(workdays * (now.getDate() / monthDays)));
+  const workdaysRemaining = Math.max(1, workdays - workdaysElapsed);
+  const dailyGoalRemaining = goalRemaining / workdaysRemaining;
 
   document.getElementById('dashboard-filter-summary').textContent = filteredSummary;
 
   const stats = [
     { label: 'Total en filtro', value: fmtEUR(filteredTotal), sub: `${fmtNum(filteredCount)} entradas`, icon: 'M12 8v8M8 12h8' },
-    { label: 'Media por venta', value: fmtEUR(averagePerSale), sub: `En el filtro seleccionado`, icon: 'M3 6h18M3 12h18M3 18h18' },
+    { label: 'Meta restante por día', value: goal > 0 ? fmtEUR(dailyGoalRemaining) : '—', sub: goal > 0 ? `Te quedan ${fmtNum(workdaysRemaining)} días laborables de los ${fmtNum(workdays)} configurados` : 'Configura un objetivo mensual', icon: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12z M12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4z' },
     { label: 'Parque más vendido', value: topParkName, sub: topParkEntry ? `${fmtNum(topParkEntries)} entradas · ${fmtEUR(topParkRevenue)}` : 'Sin ventas en el filtro', icon: 'M3 21l7-14 4 8 3-5 4 11H3z' },
     { label: 'Media por día', value: fmtEUR(dailyAverageFiltered), sub: firstFilteredSale ? `Desde ${fmtDateShort(firstFilteredSale.fecha)}` : 'Sin datos aún', icon: 'M4 19h16M6 16V9M12 16V5M18 16v-4' },
-    { label: 'Primera venta en filtro', value: firstFilteredSale ? fmtDateShort(firstFilteredSale.fecha) : '—', sub: firstFilteredSale ? `${parqueNombre(firstFilteredSale.parque_id)}` : 'Sin ventas', icon: 'M3 3v18h18' },
+    { label: 'Ventas totales del día', value: fmtEUR(totalHoy), sub: countHoy ? `${fmtNum(countHoy)} entradas hoy` : 'Sin ventas hoy', icon: 'M3 3v18h18' },
     { label: 'Días para terminar el mes', value: `${fmtNum(daysLeft)} días`, sub: `${fmtNum(monthDays)} días en total este mes`, icon: 'M8 2v3M16 2v3M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z' },
   ];
 

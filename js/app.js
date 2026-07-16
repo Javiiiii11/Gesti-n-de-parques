@@ -8,6 +8,7 @@ const VIEW_TITLES = {
   'historial': 'Historial de ventas',
   'contactos': 'Apuntes / Contactos',
   'notas-rapidas': 'Notas rápidas',
+  'horarios': 'Horarios y Promociones',
   'parques': 'Parques / Bonos',
   'estadisticas': 'Estadísticas',
   'exportar': 'Exportar / Importar',
@@ -26,6 +27,7 @@ function switchView(viewId) {
   if (viewId === 'venta-rapida') updateTicketPreview();
   if (viewId === 'estadisticas') renderEstadisticas();
   if (viewId === 'contactos') renderContactos();
+  if (viewId === 'horarios') initHorarios();
   if (viewId === 'notas-rapidas') {
     const txt = document.getElementById('notas-rapidas-textarea');
     if (txt) txt.focus();
@@ -143,6 +145,7 @@ async function bootApp(user) {
   safe(wireParquesView, 'vista de parques');
   safe(wireContactosView, 'vista de contactos');
   safe(initNotasRapidas, 'bloc de notas rápidas');
+  safe(initHorarios, 'vista de horarios');
   safe(renderHistorial, 'renderizado de historial');
   safe(renderContactos, 'renderizado de contactos');
   safe(renderDashboard, 'renderizado de dashboard');

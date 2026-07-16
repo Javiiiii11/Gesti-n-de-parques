@@ -90,6 +90,7 @@ function normalizeVenta(venta) {
     bono_id: venta?.bono_id || null,
     cliente_nombre,
     importe_total,
+    localizador: venta?.localizador || null,
   };
 }
 function normalizeDbError(error, tableName) {
@@ -343,6 +344,18 @@ const DB = {
     }
     const { error } = await supabaseClient.from('parques').insert(parques.map(sanitizeParque));
     if (error) throw normalizeDbError(error, 'parques');
+    return true;
+  },
+
+  async bulkInsertTiposBono(tiposBono) {
+    if (LOCAL_MODE) {
+      const list = readLocal(LOCAL_KEYS.tipos_bono);
+      tiposBono.forEach(b => list.push({ id: b.id || uid(), created_at: b.created_at || new Date().toISOString(), ...sanitizeParque(b) }));
+      writeLocal(LOCAL_KEYS.tipos_bono, list);
+      return true;
+    }
+    const { error } = await supabaseClient.from('tipos_bono').insert(tiposBono.map(sanitizeParque));
+    if (error) throw normalizeDbError(error, 'tipos_bono');
     return true;
   },
 };

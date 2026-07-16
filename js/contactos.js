@@ -25,6 +25,16 @@ function wireContactosView() {
     CONTACTOS_STATE.estado = e.target.value;
     renderContactos();
   });
+
+  document.getElementById('contactos-filtro-clear').addEventListener('click', () => {
+    CONTACTOS_STATE.search = '';
+    CONTACTOS_STATE.tipo = '';
+    CONTACTOS_STATE.estado = '';
+    document.getElementById('contactos-search').value = '';
+    document.getElementById('contactos-filtro-tipo').value = '';
+    document.getElementById('contactos-filtro-estado').value = '';
+    renderContactos();
+  });
 }
 
 function renderContactos() {
@@ -44,7 +54,8 @@ function renderContactos() {
       const matchEmail = (c.correo || '').toLowerCase().includes(s);
       const matchTlf = (c.telefono || '').toLowerCase().includes(s);
       const matchDni = (c.dni || '').toLowerCase().includes(s);
-      return matchName || matchEmail || matchTlf || matchDni;
+      const matchLoc = (c.localizador || '').toLowerCase().includes(s);
+      return matchName || matchEmail || matchTlf || matchDni || matchLoc;
     }
     return true;
   });
@@ -142,12 +153,12 @@ function openContactoForm(id = null) {
           <input type="text" id="cf-nombre" value="${escapeHtml(c?.nombre_apellidos || '')}" required>
         </div>
         <div class="form-field">
-          <label for="cf-correo">Correo electrónico</label>
-          <input type="email" id="cf-correo" value="${escapeHtml(c?.correo || '')}">
-        </div>
-        <div class="form-field">
           <label for="cf-importe">Importe total (€)</label>
           <input type="number" step="0.01" min="0" id="cf-importe" value="${c?.importe_total || ''}" required>
+        </div>
+        <div class="form-field">
+          <label for="cf-localizador">Localizador</label>
+          <input type="text" id="cf-localizador" value="${escapeHtml(c?.localizador || '')}" placeholder="Sin localizador">
         </div>
         <div class="form-field full">
           <label for="cf-estado">Estado de pago</label>
@@ -159,80 +170,151 @@ function openContactoForm(id = null) {
         </div>
       </div>
 
-      <!-- Campos Entradas -->
-      <div id="cf-seccion-entradas" class="form-grid" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
-        <div class="form-field">
-          <label for="cf-telefono">Teléfono</label>
-          <input type="text" id="cf-telefono" value="${escapeHtml(c?.telefono || '')}">
-        </div>
-        <div class="form-field">
-          <label for="cf-parque">Parque</label>
-          <select id="cf-parque">
-            <option value="">Selecciona un parque...</option>
-            ${STATE.parques.filter(p => p.activo !== false).map(p => `<option value="${p.id}" ${c?.parque_id === p.id ? 'selected' : ''}>${escapeHtml(p.nombre)}</option>`).join('')}
-          </select>
-        </div>
-        <div class="form-field">
-          <label for="cf-cantidad-entradas">Cantidad de entradas</label>
-          <input type="number" min="1" id="cf-cantidad-entradas" value="${c?.cantidad_entradas || 1}">
-        </div>
-        <div class="form-field full">
-          <label for="cf-extras">Extras (ej. Comida, pase rápido...)</label>
-          <input type="text" id="cf-extras" value="${escapeHtml(c?.extras || '')}" placeholder="Opcional">
-        </div>
+      <!-- Entrada-specific field -->
+      <div class="form-field" id="cf-field-parque">
+        <label for="cf-parque">Parque</label>
+        <select id="cf-parque">
+          <option value="">Selecciona un parque...</option>
+          ${STATE.parques.filter(p => p.activo !== false).map(p => `<option value="${p.id}" ${c?.parque_id === p.id ? 'selected' : ''}>${escapeHtml(p.nombre)}</option>`).join('')}
+        </select>
+      </div>
+      <!-- Bono-specific field -->
+      <div class="form-field" id="cf-field-bono" style="display:none;">
+        <label for="cf-bono">Tipo de bono</label>
+        <select id="cf-bono">
+          <option value="">Selecciona un bono...</option>
+          ${STATE.tipos_bono.filter(b => b.activo !== false).map(b => `<option value="${b.id}" ${c?.bono_id === b.id ? 'selected' : ''}>${escapeHtml(b.nombre)}</option>`).join('')}
+        </select>
       </div>
 
-      <!-- Campos Bonos -->
-      <div id="cf-seccion-bonos" class="form-grid" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border); display:none;">
-        <div class="form-field">
-          <label for="cf-num-bono">Nº de bono</label>
-          <input type="text" id="cf-num-bono" value="${escapeHtml(c?.num_bono || '')}">
-        </div>
-        <div class="form-field">
-          <label for="cf-dni">DNI</label>
-          <input type="text" id="cf-dni" value="${escapeHtml(c?.dni || '')}">
-        </div>
-        <div class="form-field">
-          <label for="cf-nacimiento">Fecha de nacimiento</label>
-          <input type="date" id="cf-nacimiento" value="${c?.fecha_nacimiento || ''}">
-        </div>
-        <div class="form-field">
-          <label for="cf-bono">Tipo de bono</label>
-          <select id="cf-bono">
-            <option value="">Selecciona un bono...</option>
-            ${STATE.tipos_bono.filter(b => b.activo !== false).map(b => `<option value="${b.id}" ${c?.bono_id === b.id ? 'selected' : ''}>${escapeHtml(b.nombre)}</option>`).join('')}
-          </select>
-        </div>
-        <div class="form-field">
-          <label for="cf-cantidad-bonos">Cantidad de bonos</label>
-          <input type="number" min="1" id="cf-cantidad-bonos" value="${c?.cantidad_bonos || 1}">
-        </div>
-      </div>
-
-      <!-- Anotaciones Comunes -->
-      <div class="form-grid" style="margin-top:16px;">
+      <!-- Campos Anotaciones -->
+      <div class="form-grid" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
         <div class="form-field full">
           <label for="cf-anotaciones">Anotaciones</label>
-          <textarea id="cf-anotaciones" rows="3" placeholder="Apuntes sobre el cliente, pagos pendientes...">${escapeHtml(c?.anotaciones || '')}</textarea>
+          <textarea id="cf-anotaciones" rows="3" placeholder="Apuntes sobre el cliente...">${escapeHtml(c?.anotaciones || '')}</textarea>
+        </div>
+      </div>
+
+      <!-- Botón para mostrar/ocultar campos extra -->
+      <div style="margin-top:12px; text-align:center;">
+        <button type="button" class="btn btn-ghost btn-sm" id="cf-toggle-extras">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"><path d="M12 5v14M5 12h14"/></svg>
+          <span id="cf-toggle-extras-text">Mostrar más campos</span>
+        </button>
+      </div>
+
+      <!-- Campos extras (ocultos por defecto) -->
+      <div id="cf-section-extras" style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+        <div class="form-grid">
+          <div class="form-field full">
+            <label for="cf-correo">Correo electrónico</label>
+            <input type="email" id="cf-correo" value="${escapeHtml(c?.correo || '')}">
+          </div>
+        </div>
+        <!-- Campos extra para Entradas -->
+        <div id="cf-seccion-entradas-extra" class="form-grid" style="margin-top:12px;">
+          <div class="form-field">
+            <label for="cf-telefono">Teléfono</label>
+            <input type="text" id="cf-telefono" value="${escapeHtml(c?.telefono || '')}">
+          </div>
+          <div class="form-field">
+            <label for="cf-cantidad-entradas">Cantidad de entradas</label>
+            <input type="number" min="1" id="cf-cantidad-entradas" value="${c?.cantidad_entradas || 1}">
+          </div>
+          <div class="form-field full">
+            <label for="cf-extras">Extras (ej. Comida, pase rápido...)</label>
+            <input type="text" id="cf-extras" value="${escapeHtml(c?.extras || '')}" placeholder="Sin extras">
+          </div>
+        </div>
+
+        <!-- Campos extra para Bonos -->
+        <div id="cf-seccion-bonos-extra" class="form-grid" style="margin-top:12px; display:none;">
+          <div class="form-field">
+            <label for="cf-dni">DNI</label>
+            <input type="text" id="cf-dni" value="${escapeHtml(c?.dni || '')}">
+          </div>
+          <div class="form-field">
+            <label for="cf-nacimiento">Fecha de nacimiento</label>
+            <input type="date" id="cf-nacimiento" value="${c?.fecha_nacimiento || ''}">
+          </div>
+          <div class="form-field">
+            <label for="cf-cantidad-bonos">Cantidad de bonos</label>
+            <input type="number" min="1" id="cf-cantidad-bonos" value="${c?.cantidad_bonos || 1}">
+          </div>
+          <div class="form-field">
+            <label for="cf-num-bono">Nº de bono</label>
+            <input type="text" id="cf-num-bono" value="${escapeHtml(c?.num_bono || '')}">
+          </div>
         </div>
       </div>
     `,
     footHtml: `
       <button class="btn btn-ghost" id="cf-cancel">Cancelar</button>
+      <button class="btn btn-secondary" id="cf-clear">Limpiar</button>
       <button class="btn btn-primary" id="cf-save">${c ? 'Guardar cambios' : 'Crear apunte'}</button>
     `
   });
 
   const updateFormVisibility = () => {
     const tipo = document.querySelector('input[name="cf-tipo"]:checked').value;
-    document.getElementById('cf-seccion-entradas').style.display = tipo === 'entrada' ? 'grid' : 'none';
-    document.getElementById('cf-seccion-bonos').style.display = tipo === 'bono' ? 'grid' : 'none';
+    document.getElementById('cf-field-parque').style.display = tipo === 'entrada' ? 'block' : 'none';
+    document.getElementById('cf-field-bono').style.display = tipo === 'bono' ? 'block' : 'none';
+    
+    // Toggle extra sections if extras container is visible
+    const extrasContainer = document.getElementById('cf-section-extras');
+    if (extrasContainer && extrasContainer.style.display !== 'none') {
+      const secEntradasExtra = document.getElementById('cf-seccion-entradas-extra');
+      const secBonosExtra = document.getElementById('cf-seccion-bonos-extra');
+      if (secEntradasExtra) secEntradasExtra.style.display = tipo === 'entrada' ? 'grid' : 'none';
+      if (secBonosExtra) secBonosExtra.style.display = tipo === 'bono' ? 'grid' : 'none';
+    }
   };
 
   document.querySelectorAll('input[name="cf-tipo"]').forEach(el => el.addEventListener('change', updateFormVisibility));
   updateFormVisibility();
 
+  // Toggle extra fields
+  const toggleBtn = document.getElementById('cf-toggle-extras');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const extras = document.getElementById('cf-section-extras');
+      const text = document.getElementById('cf-toggle-extras-text');
+      if (extras) {
+        const isHidden = extras.style.display === 'none';
+        extras.style.display = isHidden ? 'block' : 'none';
+        if (text) text.textContent = isHidden ? 'Ocultar campos extra' : 'Mostrar más campos';
+        // Update visibility of tipo-specific extra sections
+        if (!isHidden) updateFormVisibility();
+      }
+    });
+  }
+
   document.getElementById('cf-cancel').addEventListener('click', closeModal);
+  document.getElementById('cf-clear').addEventListener('click', () => {
+    // Reset common fields
+    document.getElementById('cf-nombre').value = '';
+    document.getElementById('cf-importe').value = '';
+    document.getElementById('cf-localizador').value = '';
+    document.getElementById('cf-estado').value = 'Apunte rápido';
+    document.getElementById('cf-anotaciones').value = '';
+    // Reset extra fields
+    document.getElementById('cf-correo').value = '';
+    if (document.getElementById('cf-field-parque').style.display !== 'none') {
+      // Entrada fields
+      document.getElementById('cf-telefono').value = '';
+      document.getElementById('cf-cantidad-entradas').value = '1';
+      document.getElementById('cf-extras').value = '';
+      document.getElementById('cf-parque').value = '';
+    }
+    if (document.getElementById('cf-field-bono').style.display !== 'none') {
+      // Bono fields
+      document.getElementById('cf-dni').value = '';
+      document.getElementById('cf-nacimiento').value = '';
+      document.getElementById('cf-cantidad-bonos').value = '1';
+      document.getElementById('cf-num-bono').value = '';
+      document.getElementById('cf-bono').value = '';
+    }
+  });
   document.getElementById('cf-save').addEventListener('click', async () => {
     const tipo = document.querySelector('input[name="cf-tipo"]:checked').value;
     const nombre_apellidos = document.getElementById('cf-nombre').value.trim();
@@ -241,13 +323,15 @@ function openContactoForm(id = null) {
 
     if (!nombre_apellidos) { toast('El nombre es obligatorio', 'error'); return; }
 
+    const localizadorVal = document.getElementById('cf-localizador')?.value.trim() || '';
     let payload = {
       tipo,
       nombre_apellidos,
       correo: document.getElementById('cf-correo').value.trim(),
       importe_total,
       estado_pago,
-      anotaciones: document.getElementById('cf-anotaciones').value.trim()
+      anotaciones: document.getElementById('cf-anotaciones').value.trim(),
+      localizador: localizadorVal || null
     };
 
     if (tipo === 'entrada') {

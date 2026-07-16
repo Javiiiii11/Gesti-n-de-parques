@@ -11,6 +11,9 @@ function initExportView() {
   document.getElementById('btn-export-xlsx').addEventListener('click', exportXLSX);
   document.getElementById('btn-export-json').addEventListener('click', exportBackupJSON);
 
+  document.getElementById('btn-add-all-parks').addEventListener('click', addAllPredefinedParks);
+  document.getElementById('btn-add-all-bonos').addEventListener('click', addAllPredefinedBonos);
+
   const drop = document.getElementById('import-drop');
   const fileInput = document.getElementById('import-file');
   drop.addEventListener('click', () => fileInput.click());
@@ -21,6 +24,79 @@ function initExportView() {
     if (e.dataTransfer.files.length) handleImportFile(e.dataTransfer.files[0]);
   });
   fileInput.addEventListener('change', (e) => { if (e.target.files.length) handleImportFile(e.target.files[0]); });
+}
+
+// Datos predefinidos
+const PREDEFINED_PARKS = [
+  'Atlantis',
+  'Aquopolis CAR',
+  'Aquopolis CDA',
+  'Aquopolis CULL',
+  'Aquopolis TOR',
+  'Aquopolis VILL',
+  'Faunia',
+  'PAM',
+  'Selwo Aventura',
+  'Selwo Marina',
+  'Teleférico Benalmádena',
+  'Warner',
+  'Warner Beach',
+  'ZOO'
+];
+
+const PREDEFINED_BONOS = [
+  { nombre: 'Bono Oro', activo: true },
+  { nombre: 'Bono Oro + Parking', activo: true },
+  { nombre: 'Bono Plata', activo: true },
+  { nombre: 'Bono Platino', activo: true },
+  { nombre: 'Bono Verano Estándar', activo: true },
+  { nombre: 'Bono Verano Plus', activo: true },
+  { nombre: 'Bono Verano Plus + Warner Beach', activo: true },
+  { nombre: 'Bono Verano Ultra (Inactivo)', activo: false },
+  { nombre: 'Bono Zoollover', activo: true }
+];
+
+async function addAllPredefinedParks() {
+  try {
+    const currentParks = await DB.getParques();
+    const existingNames = new Set(currentParks.map(p => p.nombre));
+    const parksToAdd = PREDEFINED_PARKS.filter(nombre => !existingNames.has(nombre))
+      .map(nombre => ({ nombre, activo: true }));
+
+    if (parksToAdd.length === 0) {
+      toast('Todos los parques ya están añadidos', 'info');
+      return;
+    }
+
+    await DB.bulkInsertParques(parksToAdd);
+    STATE.parques = await DB.getParques();
+    fillParqueSelects();
+    refreshAllViewsAfterDataChange();
+    toast(`${parksToAdd.length} parque(s) añadido(s) correctamente`, 'success');
+  } catch (err) {
+    toast('Error al añadir los parques: ' + err.message, 'error');
+  }
+}
+
+async function addAllPredefinedBonos() {
+  try {
+    const currentBonos = await DB.getTiposBono();
+    const existingNames = new Set(currentBonos.map(b => b.nombre));
+    const bonosToAdd = PREDEFINED_BONOS.filter(b => !existingNames.has(b.nombre));
+
+    if (bonosToAdd.length === 0) {
+      toast('Todos los bonos ya están añadidos', 'info');
+      return;
+    }
+
+    await DB.bulkInsertTiposBono(bonosToAdd);
+    STATE.tipos_bono = await DB.getTiposBono();
+    fillBonoSelects();
+    refreshAllViewsAfterDataChange();
+    toast(`${bonosToAdd.length} tipo(s) de bono añadido(s) correctamente`, 'success');
+  } catch (err) {
+    toast('Error al añadir los bonos: ' + err.message, 'error');
+  }
 }
 
 /* --- HEADERS PARA EXPORTACIONES --- */

@@ -16,10 +16,17 @@ create extension if not exists "pgcrypto";
 create table if not exists public.parques (
     id                  uuid primary key default gen_random_uuid(),
     nombre              text not null unique,
+    horario_url         text,
+    horario_texto       text,
     activo              boolean not null default true,
     created_at          timestamptz not null default now(),
     updated_at          timestamptz not null default now()
 );
+
+-- Add horario_url column if it doesn't exist yet
+alter table public.parques add column if not exists horario_url text;
+-- Add horario_texto column if it doesn't exist yet
+alter table public.parques add column if not exists horario_texto text;
 
 comment on table public.parques is 'Parques de ocio sobre los que se venden entradas';
 
@@ -47,6 +54,7 @@ create table if not exists public.ventas (
   bono_id         uuid references public.tipos_bono(id) on delete restrict,
   cliente_nombre  text not null,
   importe_total   numeric(10,2) not null check (importe_total >= 0),
+  localizador     text,
   created_at      timestamptz not null default now(),
   -- At least one of parque_id or bono_id must be set
   constraint chk_parque_or_bono check (
@@ -72,6 +80,7 @@ create table if not exists public.contactos (
   parque_id uuid references public.parques(id),
   cantidad_entradas integer,
   extras text,
+  localizador text,
   
   -- Campos para bonos
   num_bono text,
@@ -79,6 +88,7 @@ create table if not exists public.contactos (
   fecha_nacimiento date,
   bono_id uuid references public.tipos_bono(id),
   cantidad_bonos integer,
+  localizador_bono text,
   
   created_at timestamptz not null default now()
 );

@@ -43,6 +43,15 @@ function updateVentaFormVisibility() {
   if (secEntradas) secEntradas.style.display = tipo === 'entrada' ? 'grid' : 'none';
   if (secBonos) secBonos.style.display = tipo === 'bono' ? 'grid' : 'none';
 
+  // Toggle entrada/bono extra sections (only if extras container is visible)
+  const extrasContainer = document.getElementById('v-section-extras');
+  if (extrasContainer && extrasContainer.style.display !== 'none') {
+    const secEntradasExtra = document.getElementById('v-seccion-entradas-extra');
+    const secBonosExtra = document.getElementById('v-seccion-bonos-extra');
+    if (secEntradasExtra) secEntradasExtra.style.display = tipo === 'entrada' ? 'grid' : 'none';
+    if (secBonosExtra) secBonosExtra.style.display = tipo === 'bono' ? 'grid' : 'none';
+  }
+
   // Toggle preview rows for entrada vs bono
   const showHide = (id, show) => {
     const el = document.getElementById(id);
@@ -66,7 +75,7 @@ function initVentaForm() {
     'v-parque', 'v-bono', 'v-cliente', 'v-correo', 'v-importe',
     'v-telefono', 'v-cantidad-entradas', 'v-extras',
     'v-num-bono', 'v-dni', 'v-nacimiento', 'v-cantidad-bonos',
-    'v-anotaciones'
+    'v-anotaciones', 'v-anotaciones-bono', 'v-localizador'
   ];
   liveFields.forEach((id) => {
     const el = document.getElementById(id);
@@ -91,6 +100,20 @@ function initVentaForm() {
   
   const btnClear = document.getElementById('btn-clear-form');
   if (btnClear) btnClear.addEventListener('click', resetVentaForm);
+
+  // Toggle extra fields
+  const toggleBtn = document.getElementById('v-toggle-extras');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const extras = document.getElementById('v-section-extras');
+      const text = document.getElementById('v-toggle-extras-text');
+      if (extras) {
+        const isHidden = extras.style.display === 'none';
+        extras.style.display = isHidden ? 'block' : 'none';
+        if (text) text.textContent = isHidden ? 'Ocultar campos extra' : 'Mostrar más campos';
+      }
+    });
+  }
 
   updateVentaFormVisibility();
   updateTicketPreview();
@@ -127,7 +150,18 @@ function updateTicketPreview() {
   setPreviewText('tp-type', `Cliente: ${cliente || '—'}`);
 
   // Common fields
-  setPreviewText('tp-correo', correo || '—');
+  const rowCorreo = document.getElementById('tp-row-correo');
+  if (rowCorreo) {
+    if (correo) {
+      rowCorreo.style.display = '';
+      setPreviewText('tp-correo', correo);
+    } else {
+      rowCorreo.style.display = 'none';
+    }
+  }
+  const localizadorEl = document.getElementById('v-localizador');
+  const locValue = localizadorEl ? localizadorEl.value.trim() : '';
+  setPreviewText('tp-localizador', locValue || 'Sin localizador');
   setPreviewText('tp-total', typeof fmtEUR === 'function' ? fmtEUR(importe) : importe.toFixed(2) + ' €');
 
   // Entrada-specific preview
@@ -171,7 +205,10 @@ async function guardarVenta({ keepOpen }) {
   const clienteNombre = document.getElementById('v-cliente')?.value.trim() || '';
   const correo = document.getElementById('v-correo')?.value.trim() || '';
   const importeTotal = Number(document.getElementById('v-importe')?.value);
-  const anotaciones = document.getElementById('v-anotaciones')?.value.trim() || '';
+  const anotaciones = tipo === 'entrada'
+    ? (document.getElementById('v-anotaciones')?.value.trim() || '')
+    : (document.getElementById('v-anotaciones-bono')?.value.trim() || '');
+  const localizador = document.getElementById('v-localizador')?.value.trim() || '';
   
   let itemId;
   if (tipo === 'entrada') {
@@ -205,7 +242,8 @@ async function guardarVenta({ keepOpen }) {
     correo,
     importe_total: importeTotal,
     estado_pago: 'pagado',
-    anotaciones
+    anotaciones,
+    localizador: localizador || null
   };
 
   if (tipo === 'entrada') {
@@ -230,6 +268,7 @@ async function guardarVenta({ keepOpen }) {
     tipo,
     cliente_nombre: clienteNombre,
     importe_total: importeTotal,
+    localizador: localizador || null,
   };
   
   if (tipo === 'entrada') {
@@ -257,7 +296,7 @@ async function guardarVenta({ keepOpen }) {
     if (keepOpen) {
       // Clear client-specific fields, keep tipo and parque/bono selection
       const fieldsToClear = [
-        'v-cliente', 'v-correo', 'v-importe', 'v-anotaciones',
+        'v-cliente', 'v-correo', 'v-importe', 'v-anotaciones', 'v-localizador',
         'v-telefono', 'v-extras', 'v-num-bono', 'v-dni', 'v-nacimiento',
         'v-cantidad-entradas', 'v-cantidad-bonos'
       ];

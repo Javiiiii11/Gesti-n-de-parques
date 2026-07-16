@@ -110,7 +110,8 @@ function getFilteredSortedVentas() {
     rows = rows.filter((v) =>
       v.parqueNombreCache.toLowerCase().includes(q) ||
       v.bonoNombreCache.toLowerCase().includes(q) ||
-      (v.cliente_nombre || '').toLowerCase().includes(q));
+      (v.cliente_nombre || '').toLowerCase().includes(q) ||
+      (v.localizador || '').toLowerCase().includes(q));
   }
   if (HIST_STATE.tipoVenta) rows = rows.filter((v) => v.tipo === HIST_STATE.tipoVenta);
   if (HIST_STATE.parqueId) rows = rows.filter((v) => v.parque_id === HIST_STATE.parqueId);
@@ -163,19 +164,21 @@ function renderHistorial() {
 
   const tbody = document.getElementById('historial-tbody');
   if (!pageRows.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       No se han encontrado ventas con estos filtros.</div></td></tr>`;
   } else {
     tbody.innerHTML = pageRows.map((v) => {
       const tipo = v.tipo || 'entrada';
       const detalle = tipo === 'entrada' ? v.parqueNombreCache : v.bonoNombreCache;
+      const loc = v.localizador || '—';
       return `
         <tr>
           <td>${fmtDateTime(v.fecha)}</td>
           <td><span class="badge ${tipo === 'entrada' ? 'badge-primary' : 'badge-success'}">${tipo === 'entrada' ? 'Entrada' : 'Bono'}</span></td>
           <td>${escapeHtml(detalle)}</td>
           <td>${escapeHtml(v.cliente_nombre || '—')}</td>
+          <td>${escapeHtml(loc)}</td>
           <td class="amount">${fmtEUR(v.importe_total)}</td>
           <td>
             <div class="row-actions" style="justify-content:flex-end;">
@@ -243,6 +246,10 @@ function openEditVenta(id) {
           <label for="ev-importe">Importe (€)</label>
           <input type="number" id="ev-importe" min="0" step="0.01" value="${v.importe_total}">
         </div>
+        <div class="form-field full">
+          <label for="ev-localizador">Localizador</label>
+          <input type="text" id="ev-localizador" value="${escapeHtml(v.localizador || '')}" placeholder="Sin localizador">
+        </div>
       </div>`,
     footHtml: `
       <button class="btn btn-ghost" id="ev-cancel">Cancelar</button>
@@ -271,6 +278,7 @@ function openEditVenta(id) {
       tipo,
       cliente_nombre: document.getElementById('ev-cliente').value.trim(),
       importe_total: Number(document.getElementById('ev-importe').value) || 0,
+      localizador: document.getElementById('ev-localizador')?.value.trim() || null,
     };
     
     if (tipo === 'entrada') {
