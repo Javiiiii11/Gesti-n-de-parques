@@ -124,9 +124,40 @@ a { color: inherit; }
   font-size: 12.5px; color: var(--text-secondary); cursor: pointer;
   user-select: none;
 }
-.remember-label input[type="checkbox"] {
-  width: 15px; height: 15px; accent-color: var(--accent);
-  cursor: pointer; flex-shrink: 0;
+.remember-label input[type="checkbox"],
+input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+input[type="radio"] {
+  border-radius: 50%;
+}
+input[type="radio"]:checked {
+  background-color: var(--accent);
+}
+label:has(input[type="radio"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-s);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  transition: all var(--transition);
+}
+label:has(input[type="radio"]):hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+label:has(input[type="radio"]:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 .auth-error { color: var(--danger); font-size: 12.5px; min-height: 16px; }
 

@@ -121,7 +121,7 @@
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg>
-          Horarios / Promos
+          Horarios, Webs y Promos
         </div>
         <div class="nav-item" data-view="parques">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -581,7 +581,7 @@
         <section class="view" id="view-horarios">
           <div class="view-header">
             <div>
-              <h2>Horarios y Promociones</h2>
+              <h2>Horarios, Webs y Promociones</h2>
               <p class="desc">Consulta los horarios oficiales y las promociones activas de los parques.</p>
             </div>
           </div>
@@ -592,10 +592,10 @@
               <span class="promos-icon">🎉</span>
               <div>
                 <h3 class="section-title" style="margin:0;">Promociones y Ofertas</h3>
-                <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Consulta el Excel con todas las promociones actuales.</p>
+                <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Consulta el Excel con todas las promociones, de todos los parques actuales.</p>
               </div>
             </div>
-            <div class="promos-card-actions">
+            <div class="promos-card-actions"> // Abrir Excel de Promociones
               <a href="#" target="_blank" class="btn btn-primary" id="promos-excel-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 3v4a1 1 0 0 0 1 1h4"></path>
@@ -603,6 +603,36 @@
                 </svg>
                 Abrir Excel de Promociones
               </a>
+            </div>
+          </div>
+
+          <!-- Sección de Bonos -->
+          <div style="margin-bottom: 32px;">
+            <div class="card card-pad promos-card">
+              <div class="promos-card-header">
+                <span class="promos-icon">🎟️</span>
+                <div>
+                  <h3 class="section-title" style="margin:0;">Bono Parques</h3>
+                  <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Consulta la información y el área privada de todos los bonos.</p>
+                </div>
+              </div>
+              <div class="promos-card-actions">
+                <a href="https://www.bonoparques.es/bonos/elige-tu-bono" target="_blank" class="btn btn-secondary" id="bonos-home-btn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                  </svg>
+                  Página Principal
+                </a>
+                <a href="https://www.bonoparques.es/area/login" target="_blank" class="btn btn-primary" id="bonos-private-btn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  Área Privada
+                </a>
+              </div>
             </div>
           </div>
 
