@@ -248,6 +248,16 @@ label:has(input[type="radio"]:checked) {
 }
 .icon-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
 .icon-btn svg { width: 17px; height: 17px; }
+#music-toggle.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: rgba(245, 166, 35, 0.3);
+  animation: musicPulse 3s infinite ease-in-out;
+}
+@keyframes musicPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
 .btn-fab-quick {
   display: flex; align-items: center; gap: 8px;
   background: var(--accent); color: #1A1200; font-weight: 700; font-size: 13px;
