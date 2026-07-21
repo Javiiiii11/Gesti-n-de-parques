@@ -50,6 +50,7 @@ create table if not exists public.ventas (
   id              uuid primary key default gen_random_uuid(),
   fecha           timestamptz not null default now(),
   tipo            text not null check (tipo in ('entrada', 'bono')) default 'entrada',
+  via             text not null check (via in ('llamada', 'correo', 'chat')) default 'llamada',
   parque_id       uuid references public.parques(id) on delete restrict,
   bono_id         uuid references public.tipos_bono(id) on delete restrict,
   cliente_nombre  text not null,
@@ -98,6 +99,7 @@ comment on table public.ventas is 'Registro individual de ventas de entradas y b
 -- Add missing columns to existing ventas table and make parque_id nullable
 alter table public.ventas add column if not exists tipo text check (tipo in ('entrada', 'bono')) default 'entrada';
 alter table public.ventas add column if not exists bono_id uuid references public.tipos_bono(id) on delete restrict;
+alter table public.ventas add column if not exists via text check (via in ('llamada', 'correo', 'chat')) default 'llamada';
 
 -- Make parque_id nullable (if it's not already)
 do $$

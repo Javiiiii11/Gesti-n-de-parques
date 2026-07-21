@@ -9,6 +9,7 @@ const HIST_STATE = {
   sortDir: 'desc',
   search: '',
   tipoVenta: '',
+  via: '',
   parqueId: '',
   bonoId: '',
   desde: '',
@@ -29,6 +30,11 @@ function initHistorialView() {
 
   document.getElementById('hist-filtro-tipo-venta').addEventListener('change', (e) => {
     HIST_STATE.tipoVenta = e.target.value;
+    HIST_STATE.page = 1;
+    renderHistorial();
+  });
+  document.getElementById('hist-filtro-via').addEventListener('change', (e) => {
+    HIST_STATE.via = e.target.value;
     HIST_STATE.page = 1;
     renderHistorial();
   });
@@ -55,6 +61,7 @@ function initHistorialView() {
   document.getElementById('hist-filtro-clear').addEventListener('click', () => {
     HIST_STATE.search = '';
     HIST_STATE.tipoVenta = '';
+    HIST_STATE.via = '';
     HIST_STATE.parqueId = '';
     HIST_STATE.bonoId = '';
     HIST_STATE.desde = '';
@@ -62,6 +69,7 @@ function initHistorialView() {
     HIST_STATE.page = 1;
     document.getElementById('hist-search').value = '';
     document.getElementById('hist-filtro-tipo-venta').value = '';
+    document.getElementById('hist-filtro-via').value = '';
     document.getElementById('hist-filtro-parque').value = '';
     document.getElementById('hist-filtro-bono').value = '';
     document.getElementById('hist-filtro-desde').value = '';
@@ -114,6 +122,7 @@ function getFilteredSortedVentas() {
       (v.localizador || '').toLowerCase().includes(q));
   }
   if (HIST_STATE.tipoVenta) rows = rows.filter((v) => v.tipo === HIST_STATE.tipoVenta);
+  if (HIST_STATE.via) rows = rows.filter((v) => (v.via || 'llamada') === HIST_STATE.via);
   if (HIST_STATE.parqueId) rows = rows.filter((v) => v.parque_id === HIST_STATE.parqueId);
   if (HIST_STATE.bonoId) rows = rows.filter((v) => v.bono_id === HIST_STATE.bonoId);
   if (HIST_STATE.desde) rows = rows.filter((v) => new Date(v.fecha) >= new Date(HIST_STATE.desde));
@@ -129,6 +138,9 @@ function getFilteredSortedVentas() {
     } else if (key === 'tipo') {
       va = a.tipo || 'entrada';
       vb = b.tipo || 'entrada';
+    } else if (key === 'via') {
+      va = a.via || 'llamada';
+      vb = b.via || 'llamada';
     } else if (key === 'fecha') {
       va = new Date(a[key]).getTime();
       vb = new Date(b[key]).getTime();
@@ -164,18 +176,23 @@ function renderHistorial() {
 
   const tbody = document.getElementById('historial-tbody');
   if (!pageRows.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       No se han encontrado ventas con estos filtros.</div></td></tr>`;
   } else {
+    const viaLabels = { llamada: '📞 Llamada', correo: '✉️ Correo', chat: '💬 Chat' };
+    const viaClasses = { llamada: 'badge-via-llamada', correo: 'badge-via-correo', chat: 'badge-via-chat' };
+
     tbody.innerHTML = pageRows.map((v) => {
       const tipo = v.tipo || 'entrada';
+      const via = v.via || 'llamada';
       const detalle = tipo === 'entrada' ? v.parqueNombreCache : v.bonoNombreCache;
       const loc = v.localizador || '—';
       return `
         <tr>
           <td>${fmtDateTime(v.fecha)}</td>
           <td><span class="badge ${tipo === 'entrada' ? 'badge-primary' : 'badge-success'}">${tipo === 'entrada' ? 'Entrada' : 'Bono'}</span></td>
+          <td><span class="badge ${viaClasses[via] || 'badge-via-llamada'}">${viaLabels[via] || '📞 Llamada'}</span></td>
           <td>${escapeHtml(detalle)}</td>
           <td>${escapeHtml(v.cliente_nombre || '—')}</td>
           <td>${escapeHtml(loc)}</td>
@@ -246,6 +263,14 @@ function openEditVenta(id) {
           <label for="ev-importe">Importe (€)</label>
           <input type="number" id="ev-importe" min="0" step="0.01" value="${v.importe_total}">
         </div>
+        <div class="form-field">
+          <label for="ev-via">Vía de venta</label>
+          <select id="ev-via">
+            <option value="llamada" ${(v.via || 'llamada') === 'llamada' ? 'selected' : ''}>📞 Llamada</option>
+            <option value="correo" ${v.via === 'correo' ? 'selected' : ''}>✉️ Correo</option>
+            <option value="chat" ${v.via === 'chat' ? 'selected' : ''}>💬 Chat</option>
+          </select>
+        </div>
         <div class="form-field full">
           <label for="ev-localizador">Localizador</label>
           <input type="text" id="ev-localizador" value="${escapeHtml(v.localizador || '')}" placeholder="Sin localizador">
@@ -273,9 +298,11 @@ function openEditVenta(id) {
   document.getElementById('ev-cancel').addEventListener('click', closeModal);
   document.getElementById('ev-save').addEventListener('click', async () => {
     const tipo = document.querySelector('input[name="ev-tipo"]:checked').value;
+    const via = document.getElementById('ev-via').value;
     const changes = {
       fecha: new Date(document.getElementById('ev-fecha').value).toISOString(),
       tipo,
+      via,
       cliente_nombre: document.getElementById('ev-cliente').value.trim(),
       importe_total: Number(document.getElementById('ev-importe').value) || 0,
       localizador: document.getElementById('ev-localizador')?.value.trim() || null,

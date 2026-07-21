@@ -125,12 +125,62 @@ function renderContactos() {
     btn.addEventListener('click', () => payContactoFlow(btn.dataset.payContacto)));
 }
 
+let NUEVO_APUNTE_DRAFT = null;
+
+function saveNuevoApunteDraft() {
+  const modal = document.getElementById('modal-body');
+  if (!modal) return;
+  const tipo = document.querySelector('input[name="cf-tipo"]:checked')?.value || 'entrada';
+  NUEVO_APUNTE_DRAFT = {
+    tipo,
+    nombre_apellidos: document.getElementById('cf-nombre')?.value || '',
+    importe_total: document.getElementById('cf-importe')?.value || '',
+    localizador: document.getElementById('cf-localizador')?.value || '',
+    via: document.getElementById('cf-via')?.value || 'llamada',
+    estado_pago: document.getElementById('cf-estado')?.value || 'Apunte rápido',
+    anotaciones: document.getElementById('cf-anotaciones')?.value || '',
+    parque_id: document.getElementById('cf-parque')?.value || '',
+    bono_id: document.getElementById('cf-bono')?.value || '',
+    correo: document.getElementById('cf-correo')?.value || '',
+    telefono: document.getElementById('cf-telefono')?.value || '',
+    cantidad_entradas: document.getElementById('cf-cantidad-entradas')?.value || '1',
+    extras: document.getElementById('cf-extras')?.value || '',
+    dni: document.getElementById('cf-dni')?.value || '',
+    nacimiento: document.getElementById('cf-nacimiento')?.value || '',
+    cantidad_bonos: document.getElementById('cf-cantidad-bonos')?.value || '1',
+    num_bono: document.getElementById('cf-num-bono')?.value || '',
+    showExtras: document.getElementById('cf-section-extras')?.style.display !== 'none'
+  };
+}
+
 function openContactoForm(id = null) {
-  const c = id ? STATE.contactos.find((x) => x.id === id) : null;
+  const isEdit = Boolean(id);
+  const c = isEdit
+    ? STATE.contactos.find((x) => x.id === id)
+    : (NUEVO_APUNTE_DRAFT ? {
+        tipo: NUEVO_APUNTE_DRAFT.tipo,
+        nombre_apellidos: NUEVO_APUNTE_DRAFT.nombre_apellidos,
+        importe_total: NUEVO_APUNTE_DRAFT.importe_total,
+        localizador: NUEVO_APUNTE_DRAFT.localizador,
+        via: NUEVO_APUNTE_DRAFT.via,
+        estado_pago: NUEVO_APUNTE_DRAFT.estado_pago,
+        anotaciones: NUEVO_APUNTE_DRAFT.anotaciones,
+        parque_id: NUEVO_APUNTE_DRAFT.parque_id,
+        bono_id: NUEVO_APUNTE_DRAFT.bono_id,
+        correo: NUEVO_APUNTE_DRAFT.correo,
+        telefono: NUEVO_APUNTE_DRAFT.telefono,
+        cantidad_entradas: NUEVO_APUNTE_DRAFT.cantidad_entradas,
+        extras: NUEVO_APUNTE_DRAFT.extras,
+        dni: NUEVO_APUNTE_DRAFT.dni,
+        fecha_nacimiento: NUEVO_APUNTE_DRAFT.nacimiento,
+        cantidad_bonos: NUEVO_APUNTE_DRAFT.cantidad_bonos,
+        num_bono: NUEVO_APUNTE_DRAFT.num_bono
+      } : null);
+
   const initialTipo = c ? c.tipo : 'entrada';
 
   openModal({
-    title: c ? 'Editar apunte' : 'Nuevo apunte',
+    title: isEdit ? 'Editar apunte' : 'Nuevo apunte',
     bodyHtml: `
       <div class="form-grid" style="margin-bottom:16px;">
         <div class="form-field full">
@@ -159,6 +209,14 @@ function openContactoForm(id = null) {
         <div class="form-field">
           <label for="cf-localizador">Localizador</label>
           <input type="text" id="cf-localizador" value="${escapeHtml(c?.localizador || '')}" placeholder="Sin localizador">
+        </div>
+        <div class="form-field">
+          <label for="cf-via">Vía de venta</label>
+          <select id="cf-via">
+            <option value="llamada" ${(!c || c.via === 'llamada') ? 'selected' : ''}>📞 Llamada</option>
+            <option value="correo" ${c?.via === 'correo' ? 'selected' : ''}>✉️ Correo</option>
+            <option value="chat" ${c?.via === 'chat' ? 'selected' : ''}>💬 Chat</option>
+          </select>
         </div>
         <div class="form-field full">
           <label for="cf-estado">Estado de pago</label>
@@ -251,16 +309,23 @@ function openContactoForm(id = null) {
     footHtml: `
       <button class="btn btn-ghost" id="cf-cancel">Cancelar</button>
       <button class="btn btn-secondary" id="cf-clear">Limpiar</button>
-      <button class="btn btn-primary" id="cf-save">${c ? 'Guardar cambios' : 'Crear apunte'}</button>
+      <button class="btn btn-primary" id="cf-save">${isEdit ? 'Guardar cambios' : 'Crear apunte'}</button>
     `
   });
+
+  if (!isEdit) {
+    const modalBody = document.getElementById('modal-body');
+    if (modalBody) {
+      modalBody.addEventListener('input', saveNuevoApunteDraft);
+      modalBody.addEventListener('change', saveNuevoApunteDraft);
+    }
+  }
 
   const updateFormVisibility = () => {
     const tipo = document.querySelector('input[name="cf-tipo"]:checked').value;
     document.getElementById('cf-field-parque').style.display = tipo === 'entrada' ? 'block' : 'none';
     document.getElementById('cf-field-bono').style.display = tipo === 'bono' ? 'block' : 'none';
     
-    // Toggle extra sections if extras container is visible
     const extrasContainer = document.getElementById('cf-section-extras');
     if (extrasContainer && extrasContainer.style.display !== 'none') {
       const secEntradasExtra = document.getElementById('cf-seccion-entradas-extra');
@@ -272,6 +337,16 @@ function openContactoForm(id = null) {
 
   document.querySelectorAll('input[name="cf-tipo"]').forEach(el => el.addEventListener('change', updateFormVisibility));
   updateFormVisibility();
+
+  // Auto expand extras if draft/contact has extra values or was expanded
+  const hasExtras = c && (c.correo || c.telefono || c.extras || c.dni || c.fecha_nacimiento || c.num_bono);
+  if (hasExtras || (!isEdit && NUEVO_APUNTE_DRAFT && NUEVO_APUNTE_DRAFT.showExtras)) {
+    const extras = document.getElementById('cf-section-extras');
+    const text = document.getElementById('cf-toggle-extras-text');
+    if (extras) extras.style.display = 'block';
+    if (text) text.textContent = 'Ocultar campos extra';
+    updateFormVisibility();
+  }
 
   // Toggle extra fields
   const toggleBtn = document.getElementById('cf-toggle-extras');
@@ -291,6 +366,7 @@ function openContactoForm(id = null) {
 
   document.getElementById('cf-cancel').addEventListener('click', closeModal);
   document.getElementById('cf-clear').addEventListener('click', () => {
+    if (!isEdit) NUEVO_APUNTE_DRAFT = null;
     // Reset common fields
     document.getElementById('cf-nombre').value = '';
     document.getElementById('cf-importe').value = '';
@@ -324,8 +400,10 @@ function openContactoForm(id = null) {
     if (!nombre_apellidos) { toast('El nombre es obligatorio', 'error'); return; }
 
     const localizadorVal = document.getElementById('cf-localizador')?.value.trim() || '';
+    const viaVal = document.getElementById('cf-via')?.value || 'llamada';
     let payload = {
       tipo,
+      via: viaVal,
       nombre_apellidos,
       correo: document.getElementById('cf-correo').value.trim(),
       importe_total,
@@ -353,28 +431,36 @@ function openContactoForm(id = null) {
     }
 
     // Check if transitioning from unpaid to pagado
-    const wasNotPagado = c && c.estado_pago !== 'pagado';
+    const wasNotPagado = isEdit && c && c.estado_pago !== 'pagado';
     const isNowPagado = estado_pago === 'pagado';
-    const createVenta = (isNowPagado && (!c || wasNotPagado));
+    const createVenta = (isNowPagado && (!isEdit || wasNotPagado));
 
     try {
-      if (c) {
+      if (isEdit) {
         await DB.updateContacto(c.id, payload);
         toast('Apunte actualizado', 'success');
       } else {
         await DB.addContacto(payload);
+        NUEVO_APUNTE_DRAFT = null;
         toast('Apunte creado', 'success');
       }
 
-      if (createVenta && tipo === 'entrada') {
+      if (createVenta) {
         // Automatically create a venta
-        await DB.addVenta({
+        const ventaPayload = {
           fecha: new Date().toISOString(),
-          parque_id: payload.parque_id,
+          tipo: payload.tipo,
+          via: payload.via || 'llamada',
           cliente_nombre: payload.nombre_apellidos,
           importe_total: payload.importe_total,
-          cantidad: payload.cantidad_entradas
-        });
+          localizador: payload.localizador || null
+        };
+        if (payload.tipo === 'entrada') {
+          ventaPayload.parque_id = payload.parque_id;
+        } else {
+          ventaPayload.bono_id = payload.bono_id;
+        }
+        await DB.addVenta(ventaPayload);
         toast('Venta generada automáticamente a partir del apunte pagado', 'success');
       }
 
@@ -427,16 +513,18 @@ async function payContactoFlow(id) {
 
         // Try to add the venta, but if it fails it's okay - the contact is already marked as paid!
         try {
+          const loc = c.localizador || c.localizador_bono || null;
           const ventaPayload = {
             fecha: new Date().toISOString(),
             tipo: c.tipo,
+            via: c.via || 'llamada',
             cliente_nombre: c.nombre_apellidos,
-            importe_total: c.importe_total
+            importe_total: c.importe_total,
+            localizador: loc
           };
 
           if (c.tipo === 'entrada') {
             ventaPayload.parque_id = c.parque_id;
-            ventaPayload.cantidad = c.cantidad_entradas;
           } else {
             ventaPayload.bono_id = c.bono_id;
           }

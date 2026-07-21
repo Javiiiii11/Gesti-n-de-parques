@@ -262,10 +262,13 @@ async function guardarVenta({ keepOpen }) {
     contactoPayload.cantidad_bonos = cantVal ? Number(cantVal) : null;
   }
 
+  const via = document.getElementById('v-via')?.value || 'llamada';
+
   // Build venta payload
   const ventaPayload = {
     fecha: new Date().toISOString(),
     tipo,
+    via,
     cliente_nombre: clienteNombre,
     importe_total: importeTotal,
     localizador: localizador || null,

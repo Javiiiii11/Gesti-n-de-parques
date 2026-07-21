@@ -381,6 +381,14 @@
                   <label for="v-localizador">Localizador</label>
                   <input type="text" id="v-localizador" placeholder="Sin localizador">
                 </div>
+                <div class="form-field">
+                  <label for="v-via">Vía de venta</label>
+                  <select id="v-via">
+                    <option value="llamada">📞 Llamada</option>
+                    <option value="correo">✉️ Correo</option>
+                    <option value="chat">💬 Chat</option>
+                  </select>
+                </div>
               </div>
 
               <!-- Campos Entradas (principales) -->
@@ -722,6 +730,12 @@
               <option value="entrada">Entradas</option>
               <option value="bono">Bonos</option>
             </select>
+            <select class="filter-select" id="hist-filtro-via">
+              <option value="">Todas las vías</option>
+              <option value="llamada">📞 Llamada</option>
+              <option value="correo">✉️ Correo</option>
+              <option value="chat">💬 Chat</option>
+            </select>
             <select class="filter-select" id="hist-filtro-parque">
               <option value="">Todos los parques</option>
             </select>
@@ -738,6 +752,7 @@
                 <tr>
                   <th data-sort="fecha">Fecha <span class="sort-arrow"></span></th>
                   <th data-sort="tipo">Tipo <span class="sort-arrow"></span></th>
+                  <th data-sort="via">Vía <span class="sort-arrow"></span></th>
                   <th data-sort="parque">Detalle <span class="sort-arrow"></span></th>
                   <th data-sort="cliente_nombre">Cliente <span class="sort-arrow"></span></th>
                   <th data-sort="localizador">Localizador <span class="sort-arrow"></span></th>

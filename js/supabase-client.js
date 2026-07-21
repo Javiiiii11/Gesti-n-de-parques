@@ -86,6 +86,7 @@ function normalizeVenta(venta) {
   return {
     fecha: venta?.fecha,
     tipo: venta?.tipo || 'entrada',
+    via: venta?.via || 'llamada',
     parque_id: venta?.parque_id || null,
     bono_id: venta?.bono_id || null,
     cliente_nombre,
