@@ -146,6 +146,7 @@ async function bootApp(user) {
   safe(wireContactosView, 'vista de contactos');
   safe(initNotasRapidas, 'bloc de notas rápidas');
   safe(initHorarios, 'vista de horarios');
+  safe(initPomodoro, 'temporizador y pendientes');
   safe(renderHistorial, 'renderizado de historial');
   safe(renderContactos, 'renderizado de contactos');
   safe(renderDashboard, 'renderizado de dashboard');
