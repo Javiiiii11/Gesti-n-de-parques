@@ -247,5 +247,14 @@ function wireMusicToggle() {
   const btn = document.getElementById('music-toggle');
   if (!btn) return;
 
+  // Asegurar que la música siempre arranque apagada
+  musicPlaying = false;
+  if (musicTimer) {
+    clearInterval(musicTimer);
+    musicTimer = null;
+  }
+  localStorage.setItem('parksales_music', 'off');
+  updateMusicUI(false);
+
   btn.addEventListener('click', toggleMusic);
 }

@@ -5,6 +5,7 @@
 let CONTACTOS_STATE = {
   search: '',
   tipo: '',
+  via: '',
   estado: ''
 };
 
@@ -21,6 +22,11 @@ function wireContactosView() {
     renderContactos();
   });
 
+  document.getElementById('contactos-filtro-via').addEventListener('change', (e) => {
+    CONTACTOS_STATE.via = e.target.value;
+    renderContactos();
+  });
+
   document.getElementById('contactos-filtro-estado').addEventListener('change', (e) => {
     CONTACTOS_STATE.estado = e.target.value;
     renderContactos();
@@ -29,9 +35,11 @@ function wireContactosView() {
   document.getElementById('contactos-filtro-clear').addEventListener('click', () => {
     CONTACTOS_STATE.search = '';
     CONTACTOS_STATE.tipo = '';
+    CONTACTOS_STATE.via = '';
     CONTACTOS_STATE.estado = '';
     document.getElementById('contactos-search').value = '';
     document.getElementById('contactos-filtro-tipo').value = '';
+    document.getElementById('contactos-filtro-via').value = '';
     document.getElementById('contactos-filtro-estado').value = '';
     renderContactos();
   });
@@ -47,6 +55,7 @@ function renderContactos() {
     if (!CONTACTOS_STATE.estado && c.estado_pago === 'pagado') return false;
 
     if (CONTACTOS_STATE.tipo && c.tipo !== CONTACTOS_STATE.tipo) return false;
+    if (CONTACTOS_STATE.via && (c.via || 'llamada') !== CONTACTOS_STATE.via) return false;
     if (CONTACTOS_STATE.estado && c.estado_pago !== CONTACTOS_STATE.estado) return false;
     if (CONTACTOS_STATE.search) {
       const s = CONTACTOS_STATE.search;
@@ -61,15 +70,19 @@ function renderContactos() {
   });
 
   if (!filtrados.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       No se han encontrado apuntes con estos filtros.</div></td></tr>`;
     return;
   }
 
+  const viaLabels = { llamada: '📞 Llamada', correo: '✉️ Correo', chat: '💬 Chat' };
+  const viaClasses = { llamada: 'badge-via-llamada', correo: 'badge-via-correo', chat: 'badge-via-chat' };
+
   tbody.innerHTML = filtrados.map((c) => {
     let tipoLabel = c.tipo === 'entrada' ? 'Entradas' : 'Bonos';
     let badgeClass = c.tipo === 'entrada' ? 'bg-info' : 'bg-accent';
+    const via = c.via || 'llamada';
 
     let detalles = '';
     if (c.tipo === 'entrada') {
@@ -95,7 +108,9 @@ function renderContactos() {
           <small style="color:var(--text-muted)">${escapeHtml(c.correo || '')} ${c.telefono ? '· ' + escapeHtml(c.telefono) : ''}</small>
         </td>
         <td><span class="badge" style="background:var(--bg-hover)">${tipoLabel}</span></td>
+        <td><span class="badge ${viaClasses[via] || 'badge-via-llamada'}">${viaLabels[via] || '📞 Llamada'}</span></td>
         <td>${detalles}</td>
+        <td style="color:var(--text-secondary); font-size:13px;">${escapeHtml(c.localizador || '—')}</td>
         <td class="amount"><b>${fmtEUR(c.importe_total)}</b></td>
         <td>${estadoBadge}</td>
         <td>

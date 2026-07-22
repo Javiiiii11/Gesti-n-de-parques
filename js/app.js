@@ -165,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
   wireMobileSidebar();
   wireThemeToggle();
   if (typeof wireMusicToggle === 'function') wireMusicToggle();
+  if (typeof initCalculator === 'function') initCalculator();
   wireGlobalSearch();
 
   const savedTheme = localStorage.getItem('parksales_theme');
