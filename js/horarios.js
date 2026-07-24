@@ -7,6 +7,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     name: 'Atlantis',
     icon: '🌊',
     color: '#0077BE',
+    banner: 'img/parks/atlantis.jpg',
     homeUrl: 'https://www.atlantisaquarium-madrid.es',
     scheduleUrl: 'https://www.atlantisaquarium-madrid.es/precios-y-horarios/horarios-de-apertura'
   },
@@ -14,6 +15,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     name: 'Aquopolis CAR',
     icon: '🏊',
     color: '#00BFFF',
+    banner: 'img/parks/aquopolis-car.jpg',
     homeUrl: 'https://cartaya.aquopolis.es',
     scheduleUrl: 'https://cartaya.aquopolis.es/horarios-y-precios/horarios'
   },
@@ -21,6 +23,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     name: 'Aquopolis CDA',
     icon: '🏊',
     color: '#00BFFF',
+    banner: 'img/parks/aquopolis-cda.jpg',
     homeUrl: 'https://costa-dorada.aquopolis.es',
     scheduleUrl: 'https://costa-dorada.aquopolis.es/precios-y-horarios/horarios-de-apertura'
   },
@@ -28,6 +31,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     name: 'Aquopolis CULL',
     icon: '🏊',
     color: '#00BFFF',
+    banner: 'img/parks/aquopolis-cull.jpg',
     homeUrl: 'https://cullera.aquopolis.es',
     scheduleUrl: 'https://cullera.aquopolis.es/horarios-y-precios/horarios'
   },
@@ -35,6 +39,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     name: 'Aquopolis TOR',
     icon: '🏊',
     color: '#00BFFF',
+    banner: 'img/parks/aquopolis-tor.jpg',
     homeUrl: 'https://torrevieja.aquopolis.es',
     scheduleUrl: 'https://torrevieja.aquopolis.es/horarios-y-precios/horarios'
   },
@@ -42,6 +47,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     name: 'Aquopolis VILL',
     icon: '🏊',
     color: '#00BFFF',
+    banner: 'img/parks/aquopolis-vill.jpg',
     homeUrl: 'https://villanueva.aquopolis.es',
     scheduleUrl: 'https://villanueva.aquopolis.es/horarios-y-precios/horarios'
   },
@@ -49,6 +55,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     name: 'Faunia',
     icon: '🦜',
     color: '#4CAF50',
+    banner: 'img/parks/faunia.jpg',
     homeUrl: 'https://www.faunia.es',
     scheduleUrl: 'https://www.faunia.es/horarios-y-precios/horarios'
   },
@@ -56,6 +63,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     name: 'PAM',
     icon: '🎪',
     color: '#FF5722',
+    banner: 'img/parks/pam.jpg',
     homeUrl: 'https://www.parquedeatracciones.es',
     scheduleUrl: 'https://www.parquedeatracciones.es/horarios-y-precios/horarios'
   },
@@ -63,6 +71,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     name: 'Selwo Aventura',
     icon: '🦁',
     color: '#795548',
+    banner: 'img/parks/selwo-aventura.jpg',
     homeUrl: 'https://www.selwo.es',
     scheduleUrl: 'https://www.selwo.es/horarios-y-precios/horarios'
   },
@@ -70,6 +79,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     name: 'Selwo Marina',
     icon: '🐬',
     color: '#2196F3',
+    banner: 'img/parks/selwo-marina.jpg',
     homeUrl: 'https://www.selwomarina.es',
     scheduleUrl: 'https://www.selwomarina.es/horarios-y-precios/horarios'
   },
@@ -77,6 +87,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     name: 'Teleférico Benalmádena',
     icon: '🚠',
     color: '#9C27B0',
+    banner: 'img/parks/teleferico-benalmadena.jpg',
     homeUrl: 'https://www.telefericobenalmadena.com',
     scheduleUrl: 'https://www.telefericobenalmadena.com/horarios-y-precios/horarios'
   },
@@ -84,6 +95,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     name: 'Warner',
     icon: '🎬',
     color: '#004F9F',
+    banner: 'img/parks/warner.jpg',
     homeUrl: 'https://www.parquewarner.com',
     scheduleUrl: 'https://www.parquewarner.com/horarios-y-precios/horarios'
   },
@@ -91,6 +103,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     name: 'Warner Beach',
     icon: '🏖️',
     color: '#FF9800',
+    banner: 'img/parks/warner-beach.jpg',
     homeUrl: 'https://parquewarnerbeach.parquewarner.com',
     scheduleUrl: 'https://parquewarnerbeach.parquewarner.com/horarios-y-precios/horarios'
   },
@@ -98,6 +111,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     name: 'ZOO',
     icon: '🐘',
     color: '#3E2723',
+    banner: 'img/parks/zoo.jpg',
     homeUrl: 'https://www.zoomadrid.com',
     scheduleUrl: 'https://www.zoomadrid.com/horarios-y-precios/horarios'
   }
@@ -115,12 +129,29 @@ function renderParksCards() {
   const container = document.getElementById('horarios-parks-container');
   if (!container) return;
 
-  container.innerHTML = PREDEFINED_PARKS_HORARIOS.map(park => {
+  // Get active parks from STATE (parques that exist and are active)
+  const activeParkNames = (STATE.parques || [])
+    .filter(p => p.activo !== false)
+    .map(p => p.nombre.toLowerCase().trim());
+
+  const visibleParks = PREDEFINED_PARKS_HORARIOS.filter(park =>
+    activeParkNames.includes(park.name.toLowerCase().trim())
+  );
+
+  if (!visibleParks.length) {
+    container.innerHTML = `<div class="empty-state">No hay parques activos. Crea y activa parques en la sección "Parques / Bonos" para ver sus horarios.</div>`;
+    return;
+  }
+
+  container.innerHTML = visibleParks.map(park => {
+    const hasBanner = !!park.banner;
     return `
       <div class="park-card">
-        <div class="park-card-header" style="background: linear-gradient(135deg, ${park.color}, ${adjustColor(park.color, -30)});">
+        <div class="park-card-header${hasBanner ? ' has-banner' : ''}" style="background: linear-gradient(135deg, ${park.color}, ${adjustColor(park.color, -30)});">
+          ${hasBanner ? `<img class="park-card-banner-img" src="${escapeHtml(park.banner)}" alt="${escapeHtml(park.name)}" loading="lazy" onerror="this.remove(); this.closest('.park-card-header').classList.remove('has-banner');">` : ''}
           <span class="park-card-icon">${park.icon}</span>
           <h3 class="park-card-name">${escapeHtml(park.name)}</h3>
+          ${hasBanner ? `<div class="park-card-overlay-name">${escapeHtml(park.name)}</div>` : ''}
         </div>
         <div class="park-card-actions">
           <a href="${escapeHtml(park.homeUrl)}" target="_blank" class="park-action-btn">

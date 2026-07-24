@@ -52,7 +52,7 @@ const PREDEFINED_BONOS = [
   { nombre: 'Bono Verano Estándar', activo: true },
   { nombre: 'Bono Verano Plus', activo: true },
   { nombre: 'Bono Verano Plus + Warner Beach', activo: true },
-  { nombre: 'Bono Verano Ultra (Inactivo)', activo: false },
+  { nombre: 'Bono Verano Ultra', activo: false },
   { nombre: 'Bono Zoollover', activo: true }
 ];
 
@@ -106,7 +106,9 @@ function getVentasHeaders() {
     { label: 'Fecha', value: (v) => fmtDateTime(v.fecha) },
     { label: 'Tipo', value: (v) => v.tipo === 'entrada' ? 'Entradas' : 'Bonos' },
     { label: 'Detalle', value: (v) => v.tipo === 'entrada' ? parqueNombre(v.parque_id) : bonoNombre(v.bono_id) },
+    { label: 'Vía', value: (v) => { const viaLabels = { llamada: '📞 Llamada', correo: '✉️ Correo', chat: '💬 Chat' }; return viaLabels[v.via] || v.via || '📞 Llamada'; } },
     { label: 'Cliente', value: (v) => v.cliente_nombre || '—' },
+    { label: 'Localizador', value: (v) => v.localizador || '—' },
     { label: 'Importe total', value: (v) => v.importe_total },
   ];
 }
@@ -185,11 +187,14 @@ function exportXLSX() {
   const wb = XLSX.utils.book_new();
 
   // 1. Hoja de Ventas
+  const viaLabels = { llamada: '📞 Llamada', correo: '✉️ Correo', chat: '💬 Chat' };
   const ventasRows = STATE.ventas.map((v) => ({
     Fecha: fmtDateTime(v.fecha),
     Tipo: v.tipo === 'entrada' ? 'Entrada' : 'Bono',
     Detalle: v.tipo === 'entrada' ? parqueNombre(v.parque_id) : bonoNombre(v.bono_id),
+    'Vía': viaLabels[v.via] || v.via || '📞 Llamada',
     Cliente: v.cliente_nombre || '—',
+    Localizador: v.localizador || '—',
     'Importe total': v.importe_total,
   }));
   const wsVentas = XLSX.utils.json_to_sheet(ventasRows);
@@ -310,10 +315,12 @@ function handleImportFile(file) {
               return {
                 fecha: rest.fecha || new Date().toISOString(),
                 tipo: rest.tipo || 'entrada',
+                via: rest.via || 'llamada',
                 parque_id: parque_id ? getNewParqueId(parque_id) : null,
                 bono_id: bono_id ? getNewBonoId(bono_id) : null,
                 cliente_nombre,
-                importe_total
+                importe_total,
+                localizador: rest.localizador || null,
               };
             }).filter(v => (v.tipo === 'entrada' && v.parque_id) || (v.tipo === 'bono' && v.bono_id));
 

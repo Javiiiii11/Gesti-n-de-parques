@@ -60,8 +60,10 @@ function updateVentaFormVisibility() {
   showHide('tp-row-telefono', tipo === 'entrada');
   showHide('tp-row-extras', tipo === 'entrada');
   showHide('tp-row-cantidad', true);
-  showHide('tp-row-num-bono', tipo === 'bono');
   showHide('tp-row-dni', tipo === 'bono');
+  // Nº de bono solo se muestra cuando los extras están visibles y es tipo bono
+  const extrasVisible = extrasContainer && extrasContainer.style.display !== 'none';
+  showHide('tp-row-num-bono', tipo === 'bono' && extrasVisible);
   
   updateTicketPreview();
 }
