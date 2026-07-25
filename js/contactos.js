@@ -214,15 +214,15 @@ function openContactoForm(id = null) {
       <!-- Campos Comunes -->
       <div class="form-grid">
         <div class="form-field full">
-          <label for="cf-nombre">Nombre y apellidos</label>
-          <input type="text" id="cf-nombre" value="${escapeHtml(c?.nombre_apellidos || '')}" required>
+          <label for="cf-nombre">👤 Nombre y apellidos</label>
+          <input type="text" id="cf-nombre" placeholder="Nombre completo del cliente..." value="${escapeHtml(c?.nombre_apellidos || '')}" required>
         </div>
         <div class="form-field">
-          <label for="cf-importe">Importe total (€)</label>
-          <input type="number" step="0.01" min="0" id="cf-importe" value="${c?.importe_total || ''}" required>
+          <label for="cf-importe">💵 Importe total (€)</label>
+          <input type="number" placeholder="0.0€" step="0.01" min="0" id="cf-importe" value="${c?.importe_total || ''}" required>
         </div>
         <div class="form-field">
-          <label for="cf-localizador">Localizador</label>
+          <label for="cf-localizador">🚩 Localizador</label>
           <input type="text" id="cf-localizador" value="${escapeHtml(c?.localizador || '')}" placeholder="Sin localizador">
         </div>
         <div class="form-field">
@@ -234,7 +234,7 @@ function openContactoForm(id = null) {
           </select>
         </div>
         <div class="form-field full">
-          <label for="cf-estado">Estado de pago</label>
+          <label for="cf-estado">💳 Estado de pago</label>
           <select id="cf-estado">
             <option value="Apunte rápido" ${(!c || c.estado_pago === 'Apunte rápido') ? 'selected' : ''}>Apunte rápido</option>
             <option value="pendiente" ${c?.estado_pago === 'pendiente' ? 'selected' : ''}>Pendiente de pago</option>
@@ -245,7 +245,8 @@ function openContactoForm(id = null) {
 
       <!-- Entrada-specific field -->
       <div class="form-field" id="cf-field-parque">
-        <label for="cf-parque">Parque</label>
+        </br>
+        <label for="cf-parque">🎢 Parque</label>
         <select id="cf-parque">
           <option value="">Selecciona un parque...</option>
           ${STATE.parques.filter(p => p.activo !== false).map(p => `<option value="${p.id}" ${c?.parque_id === p.id ? 'selected' : ''}>${escapeHtml(p.nombre)}</option>`).join('')}
@@ -253,7 +254,8 @@ function openContactoForm(id = null) {
       </div>
       <!-- Bono-specific field -->
       <div class="form-field" id="cf-field-bono" style="display:none;">
-        <label for="cf-bono">Tipo de bono</label>
+        </br>
+        <label for="cf-bono">🪪 Tipo de bono</label>
         <select id="cf-bono">
           <option value="">Selecciona un bono...</option>
           ${STATE.tipos_bono.filter(b => b.activo !== false).map(b => `<option value="${b.id}" ${c?.bono_id === b.id ? 'selected' : ''}>${escapeHtml(b.nombre)}</option>`).join('')}
@@ -263,7 +265,7 @@ function openContactoForm(id = null) {
       <!-- Campos Anotaciones -->
       <div class="form-grid" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
         <div class="form-field full">
-          <label for="cf-anotaciones">Anotaciones</label>
+          <label for="cf-anotaciones">📝 Anotaciones</label>
           <textarea id="cf-anotaciones" rows="3" placeholder="Apuntes sobre el cliente...">${escapeHtml(c?.anotaciones || '')}</textarea>
         </div>
       </div>

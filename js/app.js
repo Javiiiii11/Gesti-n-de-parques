@@ -8,10 +8,12 @@ const VIEW_TITLES = {
   'historial': 'Historial de ventas',
   'contactos': 'Apuntes / Contactos',
   'notas-rapidas': 'Notas rápidas',
+  'llamadas': 'Llamadas',
   'horarios': 'Horarios y Promociones',
   'parques': 'Parques / Bonos',
   'estadisticas': 'Estadísticas',
   'exportar': 'Exportar / Importar',
+  'chat-ia': 'Chat IA',
 };
 
 function switchView(viewId) {
@@ -27,6 +29,7 @@ function switchView(viewId) {
   if (viewId === 'venta-rapida') updateTicketPreview();
   if (viewId === 'estadisticas') renderEstadisticas();
   if (viewId === 'contactos') renderContactos();
+  if (viewId === 'llamadas') initLlamadasView();
   if (viewId === 'horarios') initHorarios();
   if (viewId === 'notas-rapidas') {
     const txt = document.getElementById('notas-rapidas-textarea');
@@ -145,8 +148,10 @@ async function bootApp(user) {
   safe(wireParquesView, 'vista de parques');
   safe(wireContactosView, 'vista de contactos');
   safe(initNotasRapidas, 'bloc de notas rápidas');
+  safe(initLlamadasView, 'vista de llamadas');
   safe(initHorarios, 'vista de horarios');
   safe(initPomodoro, 'temporizador y pendientes');
+  safe(initChatIA, 'Chat IA');
   safe(renderHistorial, 'renderizado de historial');
   safe(renderContactos, 'renderizado de contactos');
   safe(renderDashboard, 'renderizado de dashboard');
@@ -168,8 +173,38 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof initCalculator === 'function') initCalculator();
   wireGlobalSearch();
 
+  initTopbarPomo();
+
   const savedTheme = localStorage.getItem('parksales_theme');
   if (savedTheme === 'light') document.body.classList.add('light-mode');
 
   checkExistingSession();
 });
+
+function initTopbarPomo() {
+  const wrap = document.getElementById('topbar-pomo');
+  if (!wrap || wrap.dataset.wired === '1') return;
+  wrap.dataset.wired = '1';
+
+  const expandBtn = document.getElementById('tp-expand');
+
+  function togglePomoMenu(force) {
+    const next = typeof force === 'boolean' ? force : !wrap.classList.contains('open');
+    wrap.classList.toggle('open', next);
+  }
+
+  if (expandBtn) {
+    expandBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePomoMenu();
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) togglePomoMenu(false);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') togglePomoMenu(false);
+  });
+}

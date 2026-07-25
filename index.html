@@ -22,6 +22,15 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <!-- Supabase JS client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <!-- pdf.js para leer archivos .pdf en el Chat IA (todo se procesa en local) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+  <!-- mammoth.js para leer archivos .docx en el Chat IA -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth.js/1.6.0/mammoth.browser.min.js"></script>
 </head>
 
 <body class="dark-mode">
@@ -84,6 +93,9 @@
           </svg>
           Dashboard
         </div>
+
+        <div class="nav-separator"><span>TRABAJO</span></div>
+
         <div class="nav-item" data-view="venta-rapida">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
@@ -115,6 +127,13 @@
           </svg>
           Notas rápidas
         </div>
+        <div class="nav-item" data-view="llamadas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+          Llamadas
+        </div>
         <div class="nav-item" data-view="horarios">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
@@ -123,6 +142,19 @@
           </svg>
           Horarios, Webs y Promos
         </div>
+
+        <div class="nav-separator"><span>ASISTENTE</span></div>
+
+        <div class="nav-item" data-view="chat-ia">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          Chat IA
+        </div>
+
+        <div class="nav-separator"><span>GESTIÓN</span></div>
+
         <div class="nav-item" data-view="parques">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
@@ -147,79 +179,6 @@
           Exportar / Importar
         </div>
       </nav>
-
-      <!-- ==================== TEMPORIZADOR COMPACTO EN SIDEBAR ==================== -->
-      <div class="sidebar-pomo" id="sidebar-pomo">
-        <div class="sp-header">
-          <div class="sp-title-group">
-            <span class="sp-icon">⏱</span>
-            <span class="sp-title">Temporizador</span>
-            <span class="sp-badge" id="sidebar-pomo-badge" style="display:none;">00:00</span>
-          </div>
-          <span class="sp-state" id="pomo-state">⏳ Listo</span>
-        </div>
-        <div class="sp-body">
-          <div class="sp-main-row">
-            <div class="sp-display-container">
-              <input type="text" id="pomo-display" class="sp-display" value="05:00" inputmode="numeric" autocomplete="off" title="Clic para cambiar minutos (ej: 25 o 10:30)">
-            </div>
-            <div class="sp-actions">
-              <button class="sp-action-btn btn-start" id="pomo-start" title="Iniciar">
-                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-              </button>
-              <button class="sp-action-btn btn-pause" id="pomo-pause" style="display:none;" title="Pausar">
-                <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-              </button>
-              <button class="sp-action-btn btn-reset" id="pomo-reset" style="display:none;" title="Reiniciar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-              </button>
-            </div>
-          </div>
-          
-          <div class="sp-desc-row">
-            <input type="text" id="pomo-desc" placeholder="Teléfono o nota..." maxlength="60" class="sp-desc-input" autocomplete="off" spellcheck="false">
-            <span id="pomo-progress-text" class="sp-pct-text" style="display: none;">0%</span>
-          </div>
-
-          <div class="sp-presets-row" id="pomo-presets-row">
-            <button class="sp-preset-pill" data-minutes="5">5m</button>
-            <button class="sp-preset-pill" data-minutes="15">15m</button>
-            <button class="sp-preset-pill" data-minutes="25">25m</button>
-          </div>
-          
-          <div class="sp-progress-track">
-            <div class="sp-progress-fill" id="pomo-progress"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="sidebar-foot">
-        <div class="user-chip-container">
-          <div class="user-chip-main">
-            <div class="user-avatar" id="user-avatar">?</div>
-            <div class="user-meta">
-              <div class="name" id="user-name">Cargando…</div>
-              <div class="role" id="user-role">—</div>
-            </div>
-          </div>
-          <div class="user-chip-actions">
-            <button class="profile-btn" id="profile-settings-btn" title="Abrir perfil y objetivos">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-              </svg>
-              Ajustes Perfil
-            </button>
-            <button class="logout-btn" id="logout-btn" title="Cerrar sesión">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <path d="M16 17l5-5-5-5" />
-                <path d="M21 12H9" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
     </aside>
 
     <div class="main-col">
@@ -239,6 +198,45 @@
           <input type="text" id="global-search" placeholder="Buscar parque, entrada, nota…">
         </div>
         <div class="topbar-spacer"></div>
+
+        <div class="topbar-pomo" id="topbar-pomo">
+          <div class="tp-chip">
+            <span class="tp-icon">⏱</span>
+            <input type="text" id="pomo-display" class="tp-display" value="05:00" inputmode="numeric" autocomplete="off" title="Clic para cambiar minutos (ej: 25 o 10:30)">
+            <button class="tp-action tp-btn-start" id="pomo-start" title="Iniciar">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <button class="tp-action tp-btn-pause" id="pomo-pause" style="display:none;" title="Pausar">
+              <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </button>
+            <button class="tp-action tp-btn-reset" id="pomo-reset" style="display:none;" title="Reiniciar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            </button>
+            <button class="tp-expand" id="tp-expand" title="Opciones del temporizador">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <span class="tp-badge" id="sidebar-pomo-badge" style="display:none;">00:00</span>
+            <div class="tp-progress-track">
+              <div class="tp-progress-fill" id="pomo-progress"></div>
+            </div>
+          </div>
+          <div class="tp-popover">
+            <div class="tp-pop-row tp-pop-first">
+              <span class="tp-label">⏳ Estado</span>
+              <span class="tp-state" id="pomo-state">Listo</span>
+            </div>
+            <div class="tp-pop-row">
+              <input type="text" id="pomo-desc" class="tp-desc" placeholder="Teléfono o nota..." maxlength="60" autocomplete="off" spellcheck="false">
+              <span id="pomo-progress-text" class="tp-pct" style="display: none;">0%</span>
+            </div>
+            <div class="tp-presets-row" id="pomo-presets-row">
+              <button class="tp-preset-pill sp-preset-pill" data-minutes="5">5m</button>
+              <button class="tp-preset-pill sp-preset-pill" data-minutes="15">15m</button>
+              <button class="tp-preset-pill sp-preset-pill" data-minutes="25">25m</button>
+            </div>
+          </div>
+        </div>
+
         <button class="icon-btn" id="music-toggle" title="Música de fondo: Desactivada (Clic para activar)">
           <svg id="music-icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 18V5l12-2v13" />
@@ -266,12 +264,43 @@
             <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
           </svg>
         </button>
+
         <button class="btn-fab-quick" id="quick-add-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
             <path d="M12 5v14M5 12h14" />
           </svg>
           <span>Nueva venta</span>
         </button>
+
+        <div class="topbar-user">
+          <button class="topbar-user-btn" id="profile-settings-btn" title="Perfil y ajustes">
+            <div class="user-avatar" id="user-avatar">?</div>
+            <div class="user-meta">
+              <div class="name" id="user-name">Cargando…</div>
+              <div class="role" id="user-role">—</div>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chev">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <div class="topbar-user-menu">
+            <button class="tbm-item profile-menu-btn" data-open-profile="1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+              Ajustes perfil
+            </button>
+            <button class="tbm-item danger" id="logout-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <path d="M16 17l5-5-5-5" />
+                <path d="M21 12H9" />
+              </svg>
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
       </header>
 
       <div class="view-container">
@@ -512,7 +541,7 @@
             </div>
           </div>
 
-          <div class="charts-grid" style="grid-template-columns: 1fr 1fr;">
+          <div class="parques-grid">
             <div class="card card-pad">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
                 <h3 class="section-title" style="margin:0;">Parques</h3>
@@ -654,6 +683,103 @@
                     </svg>
                     Limpiar
                   </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================ LLAMADAS ============================ -->
+        <section class="view" id="view-llamadas">
+          <div class="view-header">
+            <div>
+              <h2>📞 Gestión de llamadas</h2>
+              <p class="desc">Programa llamadas con alarma 10 min antes y en la hora exacta</p>
+            </div>
+          </div>
+
+          <div class="ll-layout">
+            <div class="ll-form-col">
+              <form class="card card-pad" id="llamada-form">
+                <div class="form-field full" style="margin-bottom: 12px;">
+                  <div style="display:flex; gap:16px;">
+                    <label style="flex-direction:row; align-items:center; gap:8px; padding:6px 12px; border-radius:var(--radius-s); background:var(--bg-elevated); border:1px solid var(--border); cursor:pointer;">
+                      <input type="radio" name="ll-tipo" value="entrada" checked style="width:auto"> 🎢 Entradas
+                    </label>
+                    <label style="flex-direction:row; align-items:center; gap:8px; padding:6px 12px; border-radius:var(--radius-s); background:var(--bg-elevated); border:1px solid var(--border); cursor:pointer;">
+                      <input type="radio" name="ll-tipo" value="bono" style="width:auto"> 🎟️ Bonos
+                    </label>
+                  </div>
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-field" id="ll-field-parque">
+                    <label for="ll-parque">Parque</label>
+                    <select id="ll-parque"></select>
+                  </div>
+                  <div class="form-field" id="ll-field-bono" style="display:none;">
+                    <label for="ll-bono">Tipo de bono</label>
+                    <select id="ll-bono"></select>
+                  </div>
+                  <div class="form-field">
+                    <label for="ll-fecha">📅 Fecha</label>
+                    <input type="date" id="ll-fecha" required>
+                  </div>
+                  <div class="form-field">
+                    <label for="ll-hora">⏰ Hora</label>
+                    <input type="time" id="ll-hora" required>
+                  </div>
+                  <div class="form-field">
+                    <label for="ll-telefono">📞 Teléfono</label>
+                    <input type="tel" id="ll-telefono" placeholder="Ej. 612 345 678" required>
+                  </div>
+                  <div class="form-field">
+                    <label for="ll-cliente">👤 Cliente</label>
+                    <input type="text" id="ll-cliente" placeholder="Nombre del cliente" required>
+                  </div>
+                  <div class="form-field full">
+                    <label for="ll-notas">📝 Notas</label>
+                    <textarea id="ll-notas" rows="2" placeholder="Apuntes para la llamada..."></textarea>
+                  </div>
+                </div>
+
+                <!-- Toggle extras -->
+                <div style="margin-top:10px; text-align:center;">
+                  <button type="button" class="btn btn-ghost btn-sm" id="ll-toggle-extras">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"><path d="M12 5v14M5 12h14"/></svg>
+                    <span id="ll-toggle-extras-text">Más opciones</span>
+                  </button>
+                </div>
+
+                <div id="ll-section-extras" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+                  <div class="form-grid">
+                    <div class="form-field">
+                      <label for="ll-correo">✉️ Correo</label>
+                      <input type="email" id="ll-correo" placeholder="cliente@ejemplo.com">
+                    </div>
+                    <div class="form-field">
+                      <label for="ll-localizador">🔖 Localizador</label>
+                      <input type="text" id="ll-localizador" placeholder="Opcional">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="btn-row" style="margin-top:16px;">
+                  <button type="submit" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    Programar llamada
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div class="ll-list-col">
+              <div id="llamadas-list">
+                <div class="empty-state">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                  <span>Carga las llamadas desde el formulario</span>
                 </div>
               </div>
             </div>
@@ -938,6 +1064,96 @@
           </div>
         </section>
 
+        <!-- ============================ CHAT IA ============================ -->
+        <section class="view" id="view-chat-ia">
+          <div class="view-header">
+            <div>
+              <h2>Chat IA</h2>
+              <p class="desc">Busca dentro de tus propios archivos y webs guardadas. No usa internet ni ninguna IA externa: todo se queda en tu navegador.</p>
+            </div>
+          </div>
+
+          <div class="chat-ia-tabs">
+            <button class="chat-ia-tab active" data-tab="preguntar">💬 Preguntar</button>
+            <button class="chat-ia-tab" data-tab="fuentes">📚 Fuentes</button>
+            <button class="chat-ia-tab" data-tab="frases">✉️ Frases para email</button>
+          </div>
+
+          <!-- ---- PANEL: PREGUNTAR ---- -->
+          <div class="chat-ia-panel active" id="chat-ia-panel-preguntar">
+            <div class="card chat-ia-card">
+              <div class="chat-ia-mensajes" id="chat-ia-mensajes">
+                <div class="empty-state">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  <span>Pregúntame algo sobre tus archivos o webs guardadas.</span>
+                </div>
+              </div>
+              <form id="chat-ia-form" class="chat-ia-form">
+                <input type="text" id="chat-ia-input" placeholder="Ej: ¿Cuál es el horario del parque X los sábados?" autocomplete="off">
+                <button type="submit" class="btn btn-primary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  Preguntar
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- ---- PANEL: FUENTES ---- -->
+          <div class="chat-ia-panel" id="chat-ia-panel-fuentes">
+            <div class="card card-pad" style="margin-bottom:18px;">
+              <h3 class="section-title" style="margin-top:0;">Añadir archivo</h3>
+              <p style="font-size:13px; color:var(--text-muted); margin:4px 0 14px;">Admite .txt, .md, .csv, .json, .pdf y .docx (máx. 8 MB por archivo).</p>
+              <div class="chat-ia-dropzone" id="chat-ia-dropzone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+                <span>Arrastra archivos aquí o</span>
+                <button type="button" class="btn btn-secondary btn-sm" id="chat-ia-file-btn">Elegir archivos</button>
+                <input type="file" id="chat-ia-file-input" multiple accept=".txt,.md,.csv,.json,.log,.pdf,.docx" style="display:none;">
+              </div>
+            </div>
+
+            <div class="card card-pad" style="margin-bottom:18px;">
+              <h3 class="section-title" style="margin-top:0;">Añadir web</h3>
+              <p style="font-size:13px; color:var(--text-muted); margin:4px 0 14px;">
+                Muchas webs bloquean la descarga automática desde el navegador. Prueba "Intentar descargar" y, si falla, pega tú el texto.
+              </p>
+              <form id="chat-ia-web-form" class="chat-ia-web-form">
+                <div class="form-field">
+                  <label for="chat-ia-web-url">URL de la web (opcional, solo como referencia)</label>
+                  <input type="url" id="chat-ia-web-url" placeholder="https://...">
+                </div>
+                <div class="form-field">
+                  <label for="chat-ia-web-nombre">Nombre para identificarla</label>
+                  <input type="text" id="chat-ia-web-nombre" placeholder="Ej: Horarios oficiales Parque X">
+                </div>
+                <div class="form-field">
+                  <label for="chat-ia-web-texto">Contenido de la web</label>
+                  <textarea id="chat-ia-web-texto" class="notes-textarea" style="min-height:140px;" placeholder="Pega aquí el texto de la web, o pulsa 'Intentar descargar' arriba"></textarea>
+                </div>
+                <div class="chat-ia-web-actions">
+                  <button type="button" class="btn btn-secondary" id="chat-ia-web-autofetch-btn">Intentar descargar</button>
+                  <button type="submit" class="btn btn-primary">Guardar web</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="card card-pad">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+                <h3 class="section-title" style="margin:0;">Fuentes guardadas</h3>
+                <span id="chat-ia-fuentes-resumen" style="font-size:12.5px; color:var(--text-muted);"></span>
+              </div>
+              <div id="chat-ia-fuentes-list"></div>
+            </div>
+          </div>
+
+          <!-- ---- PANEL: FRASES PARA EMAIL ---- -->
+          <div class="chat-ia-panel" id="chat-ia-panel-frases">
+            <div class="card card-pad">
+              <input type="text" id="chat-ia-frases-buscador" placeholder="Buscar frase o categoría (ej: disculpa, cierre, recordatorio...)" style="margin-bottom:16px;">
+              <div id="chat-ia-frases-list"></div>
+            </div>
+          </div>
+        </section>
+
       </div>
     </div>
   </div>
@@ -971,10 +1187,12 @@
   <script src="js/estadisticas.js"></script>
   <script src="js/exportar.js"></script>
   <script src="js/notas.js"></script>
+  <script src="js/llamadas.js"></script>
   <script src="js/horarios.js"></script>
   <script src="js/pomodoro.js"></script>
   <script src="js/music.js"></script>
   <script src="js/calculator.js"></script>
+  <script src="js/chat-ia.js"></script>
   <script src="js/app.js"></script>
 </body>
 
