@@ -44,7 +44,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     scheduleUrl: 'https://torrevieja.aquopolis.es/horarios-y-precios/horarios'
   },
   {
-    name: 'Aquopolis VILL',
+    name: 'Aquopolis VIL',
     icon: '🏊',
     color: '#00BFFF',
     banner: 'img/parks/aquopolis-vill.jpg',
@@ -58,6 +58,15 @@ const PREDEFINED_PARKS_HORARIOS = [
     banner: 'img/parks/faunia.jpg',
     homeUrl: 'https://www.faunia.es',
     scheduleUrl: 'https://www.faunia.es/horarios-y-precios/horarios'
+  },
+  {
+    name: 'Hotel Selwo',
+    icon: '🏨',
+    color: '#8B4513',
+    banner: 'img/parks/hotel_selwo.jpg',
+    homeUrl: 'https://www.selwo.es/hotel-selwo-lodge',
+    scheduleUrl: 'https://app.mews.com/Commander/4ffbd3b4-3c3a-49c8-ac19-aebe00a3b6b1/Dashboard/Index',
+    actionLabel: 'News'
   },
   {
     name: 'PAM',
@@ -92,7 +101,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     scheduleUrl: 'https://www.telefericobenalmadena.com/horarios-y-precios/horarios'
   },
   {
-    name: 'Warner',
+    name: 'Parque Warner',
     icon: '🎬',
     color: '#004F9F',
     banner: 'img/parks/warner.jpg',
@@ -145,6 +154,7 @@ function renderParksCards() {
 
   container.innerHTML = visibleParks.map(park => {
     const hasBanner = !!park.banner;
+    const actionLabel = park.actionLabel || 'Horarios Oficiales';
     return `
       <div class="park-card">
         <div class="park-card-header${hasBanner ? ' has-banner' : ''}" style="background: linear-gradient(135deg, ${park.color}, ${adjustColor(park.color, -30)});">
@@ -162,14 +172,14 @@ function renderParksCards() {
             </svg>
             Página Principal
           </a>
-          <a href="${escapeHtml(park.scheduleUrl)}" target="_blank" class="park-action-btn primary">
+          <a href="${escapeHtml(park.actionLabel ? park.scheduleUrl : park.scheduleUrl)}" target="_blank" class="park-action-btn primary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
               <line x1="16" y1="2" x2="16" y2="6"></line>
               <line x1="8" y1="2" x2="8" y2="6"></line>
               <line x1="3" y1="10" x2="21" y2="10"></line>
             </svg>
-            Horarios Oficiales
+            ${escapeHtml(actionLabel)}
           </a>
         </div>
       </div>

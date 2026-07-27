@@ -33,13 +33,14 @@ const PREDEFINED_PARKS = [
   'Aquopolis CDA',
   'Aquopolis CULL',
   'Aquopolis TOR',
-  'Aquopolis VILL',
+  'Aquopolis VIL',
   'Faunia',
+  'Hotel Selwo',
   'PAM',
   'Selwo Aventura',
   'Selwo Marina',
   'Teleférico Benalmádena',
-  'Warner',
+  'Parque Warner',
   'Warner Beach',
   'ZOO'
 ];
