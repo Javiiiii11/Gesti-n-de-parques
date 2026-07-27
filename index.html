@@ -291,6 +291,24 @@
               </svg>
               Ajustes perfil
             </button>
+            <div class="tbm-separator"><span>BACKUP</span></div>
+            <button class="tbm-item backup-toggle-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 8v4l3 3" />
+                <circle cx="12" cy="13" r="8" />
+                <path d="M5 3 2 6M22 6l-3-3" />
+              </svg>
+              Activar copias automáticas
+            </button>
+            <button class="tbm-item backup-now-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <path d="M7 10l5 5 5-5" />
+                <path d="M12 15V3" />
+              </svg>
+              Hacer copia ahora
+            </button>
+            <div class="tbm-separator"><span>CUENTA</span></div>
             <button class="tbm-item danger" id="logout-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -1041,6 +1059,23 @@
             <div class="card export-card">
               <div class="ex-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 8v4l3 3" />
+                  <circle cx="12" cy="13" r="8" />
+                  <path d="M5 3 2 6M22 6l-3-3" />
+                </svg></div>
+              <h4>Copias de seguridad automáticas</h4>
+              <p>Guarda un backup al abrir la app y cada hora. Se guardan dentro del navegador (IndexedDB). Compatible con GitHub Pages.</p>
+              <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
+                <button class="btn btn-secondary" id="btn-enable-auto-backup">Activar copias automáticas</button>
+                <button class="btn btn-primary backup-now-btn">📁 Hacer copia ahora</button>
+                <button class="btn btn-ghost" id="btn-list-backups">📋 Ver backups guardados</button>
+              </div>
+              <p id="backup-auto-status" style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;"></p>
+              <p class="backup-folder-label" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;"></p>
+            </div>
+            <div class="card export-card">
+              <div class="ex-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <path d="M7 10l5 5 5-5" />
                   <path d="M12 15V3" />
@@ -1186,6 +1221,7 @@
   <script src="js/dashboard.js"></script>
   <script src="js/estadisticas.js"></script>
   <script src="js/exportar.js"></script>
+  <script src="js/backup-auto.js"></script>
   <script src="js/notas.js"></script>
   <script src="js/llamadas.js"></script>
   <script src="js/horarios.js"></script>

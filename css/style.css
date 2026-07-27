@@ -528,11 +528,73 @@ label:has(input[type="radio"]:checked) {
 .tbm-item.danger:hover {
   background: var(--danger-soft);
   color: var(--danger);
-  border-color: rgba(248, 113, 113, 0.25);
+}
+
+.tbm-separator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 4px 2px;
+  user-select: none;
+  pointer-events: none;
+}
+
+.tbm-separator::before,
+.tbm-separator::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-soft);
+  opacity: 0.6;
+}
+
+.tbm-separator span {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  opacity: 0.7;
 }
 
 .tbm-item.danger:hover svg {
   color: var(--danger);
+}
+
+/* ============ NOTIFICATION BADGE ============ */
+.notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 0 0 2px var(--bg);
+  animation: notifPulse 2s infinite ease-in-out;
+  z-index: 2;
+}
+
+@keyframes notifPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+#calls-notif-btn.has-alert {
+  color: var(--danger);
+  animation: notifBtnPulse 1.5s infinite ease-in-out;
+}
+
+@keyframes notifBtnPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 /* ============ TOPBAR POMODORO ============ */

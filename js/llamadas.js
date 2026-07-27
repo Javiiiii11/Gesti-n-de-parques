@@ -342,6 +342,61 @@ function deleteLlamada(id) {
 }
 
 /* ============================================================================
+   Indicador de notificaciones en la barra superior
+   ============================================================================ */
+function updateCallsNotifBadge() {
+  const badge = document.getElementById('calls-notif-badge');
+  const btn = document.getElementById('calls-notif-btn');
+  if (!badge || !btn) return;
+
+  const calls = getCalls();
+  const ahora = new Date();
+
+  // Contar llamadas pendientes (no completadas, no canceladas, en las próximas 2h)
+  const pendientes = calls.filter(c => {
+    if (c.completada || c.cancelada) return false;
+    const h = new Date(c.fecha_hora);
+    const diffMs = h - ahora;
+    return diffMs > -7200000; // hasta 2h después
+  });
+
+  // Contar las urgentes (menos de 10 min o vencidas)
+  const urgentes = pendientes.filter(c => {
+    const h = new Date(c.fecha_hora);
+    const diffMs = h - ahora;
+    return diffMs < 600000; // menos de 10 min
+  });
+
+  const total = pendientes.length;
+
+  if (total > 0) {
+    badge.textContent = total > 9 ? '9+' : total;
+    badge.style.display = 'flex';
+    if (urgentes.length > 0) {
+      btn.classList.add('has-alert');
+    } else {
+      btn.classList.remove('has-alert');
+    }
+  } else {
+    badge.style.display = 'none';
+    btn.classList.remove('has-alert');
+  }
+}
+
+// Click en el botón de notificaciones → ir a la vista de llamadas (se cablea inline)
+setTimeout(() => {
+  const btn = document.getElementById('calls-notif-btn');
+  if (btn && !btn.dataset.notifWired) {
+    btn.dataset.notifWired = '1';
+    btn.addEventListener('click', () => {
+      if (typeof switchView === 'function') {
+        switchView('llamadas');
+      }
+    });
+  }
+}, 500);
+
+/* ============================================================================
    Alarmas
    ============================================================================ */
 function startAlarmChecker() {
@@ -385,6 +440,9 @@ function checkAlarms() {
       callsNotifiedExact.delete(c.id);
     }
   });
+
+  // Update the notification badge in the topbar
+  updateCallsNotifBadge();
 }
 
 function showAlarmNotification(c, type) {

@@ -145,6 +145,7 @@ async function bootApp(user) {
   safe(initHistorialView, 'vista de historial');
   safe(initEstadisticasView, 'vista de estadísticas');
   safe(initExportView, 'vista de exportación');
+  safe(initAutoBackup, 'copia de seguridad automática');
   safe(wireParquesView, 'vista de parques');
   safe(wireContactosView, 'vista de contactos');
   safe(initNotasRapidas, 'bloc de notas rápidas');
