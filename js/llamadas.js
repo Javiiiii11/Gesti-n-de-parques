@@ -65,12 +65,18 @@ function renderLlamadasForm() {
 }
 
 function wireLlamadasForm() {
+  const form = document.getElementById('llamada-form');
+  if (!form || form.dataset.wired === '1') return;
+  form.dataset.wired = '1';
+
   // Tipo selector
   document.querySelectorAll('input[name="ll-tipo"]').forEach(el => {
     el.addEventListener('change', () => {
       const tipo = document.querySelector('input[name="ll-tipo"]:checked')?.value || 'entrada';
-      document.getElementById('ll-field-parque').style.display = tipo === 'entrada' ? 'block' : 'none';
-      document.getElementById('ll-field-bono').style.display = tipo === 'bono' ? 'block' : 'none';
+      const parqueField = document.getElementById('ll-field-parque');
+      const bonoField = document.getElementById('ll-field-bono');
+      if (parqueField) parqueField.style.display = tipo === 'entrada' ? '' : 'none';
+      if (bonoField) bonoField.style.display = tipo === 'bono' ? '' : 'none';
     });
   });
 
@@ -89,7 +95,6 @@ function wireLlamadasForm() {
   }
 
   // Submit
-  const form = document.getElementById('llamada-form');
   if (form) {
     form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -111,6 +116,13 @@ function guardarLlamada() {
   if (!fecha || !hora) { toast('Indica fecha y hora de la llamada', 'error'); return; }
   if (!telefono) { toast('Indica el teléfono', 'error'); return; }
   if (!cliente) { toast('Indica el nombre del cliente', 'error'); return; }
+  if (tipo === 'entrada') {
+    const parqueId = document.getElementById('ll-parque')?.value;
+    if (!parqueId) { toast('Selecciona un parque', 'error'); return; }
+  } else {
+    const bonoId = document.getElementById('ll-bono')?.value;
+    if (!bonoId) { toast('Selecciona un tipo de bono', 'error'); return; }
+  }
 
   let itemId = null;
   let itemNombre = '';
@@ -159,8 +171,10 @@ function guardarLlamada() {
 function resetLlamadaForm() {
   const form = document.getElementById('llamada-form');
   if (form) form.reset();
-  document.getElementById('ll-field-parque').style.display = 'block';
-  document.getElementById('ll-field-bono').style.display = 'none';
+  const parqueField = document.getElementById('ll-field-parque');
+  const bonoField = document.getElementById('ll-field-bono');
+  if (parqueField) parqueField.style.display = '';
+  if (bonoField) bonoField.style.display = 'none';
   const extras = document.getElementById('ll-section-extras');
   if (extras) extras.style.display = 'none';
   const text = document.getElementById('ll-toggle-extras-text');
@@ -342,59 +356,50 @@ function deleteLlamada(id) {
 }
 
 /* ============================================================================
-   Indicador de notificaciones en la barra superior
+   Indicador de notificaciones en la barra lateral
+   Solo aparece cuando YA ha saltado la alarma:
+   - Falta menos de 10 min (alarma pre)
+   - Ya pasó la hora exacta (alarma exact / vencida)
    ============================================================================ */
 function updateCallsNotifBadge() {
-  const badge = document.getElementById('calls-notif-badge');
-  const btn = document.getElementById('calls-notif-btn');
-  if (!badge || !btn) return;
+  const badge = document.getElementById('calls-sidebar-badge');
+  if (!badge) return;
 
   const calls = getCalls();
   const ahora = new Date();
 
-  // Contar llamadas pendientes (no completadas, no canceladas, en las próximas 2h)
-  const pendientes = calls.filter(c => {
+  // Solo mostrar badge para llamadas que YA deberían haber notificado:
+  // - A menos de 10 minutos (rango de la alarma pre)
+  // - Ya vencidas (pasó su hora)
+  const alarmadas = calls.filter(c => {
     if (c.completada || c.cancelada) return false;
     const h = new Date(c.fecha_hora);
     const diffMs = h - ahora;
-    return diffMs > -7200000; // hasta 2h después
+    // Menos de 10 min para que suene (o ya sonó) -> mostrar badge
+    return diffMs < 600000; // menos de 10 min o ya pasó
   });
 
-  // Contar las urgentes (menos de 10 min o vencidas)
-  const urgentes = pendientes.filter(c => {
+  // Contar las que están sonando ahora (menos de 1 min o recién pasadas)
+  const sonandoAhora = alarmadas.filter(c => {
     const h = new Date(c.fecha_hora);
     const diffMs = h - ahora;
-    return diffMs < 600000; // menos de 10 min
+    return diffMs < 60000; // menos de 1 minuto o ya pasó
   });
 
-  const total = pendientes.length;
+  const total = alarmadas.length;
 
   if (total > 0) {
     badge.textContent = total > 9 ? '9+' : total;
-    badge.style.display = 'flex';
-    if (urgentes.length > 0) {
-      btn.classList.add('has-alert');
+    badge.style.display = 'inline-flex';
+    if (sonandoAhora.length > 0) {
+      badge.style.animation = 'nav-badge-pop 0.3s cubic-bezier(.4,0,.2,1), notifPulse 2s infinite ease-in-out';
     } else {
-      btn.classList.remove('has-alert');
+      badge.style.animation = 'nav-badge-pop 0.3s cubic-bezier(.4,0,.2,1)';
     }
   } else {
     badge.style.display = 'none';
-    btn.classList.remove('has-alert');
   }
 }
-
-// Click en el botón de notificaciones → ir a la vista de llamadas (se cablea inline)
-setTimeout(() => {
-  const btn = document.getElementById('calls-notif-btn');
-  if (btn && !btn.dataset.notifWired) {
-    btn.dataset.notifWired = '1';
-    btn.addEventListener('click', () => {
-      if (typeof switchView === 'function') {
-        switchView('llamadas');
-      }
-    });
-  }
-}, 500);
 
 /* ============================================================================
    Alarmas
@@ -441,7 +446,7 @@ function checkAlarms() {
     }
   });
 
-  // Update the notification badge in the topbar
+  // Update the notification badge in the sidebar
   updateCallsNotifBadge();
 }
 

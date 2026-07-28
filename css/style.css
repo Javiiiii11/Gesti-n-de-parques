@@ -3450,10 +3450,28 @@ textarea:focus-visible,
   grid-template-columns: 1fr 1.4fr;
   gap: 18px;
   align-items: start;
+  height: calc(100vh - var(--topbar-h) - 48px - 90px);
+  overflow: hidden;
+}
+
+.ll-form-col {
+  align-self: start;
+  position: relative;
+}
+
+.ll-list-col {
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 @media (max-width: 980px) {
-  .ll-layout { grid-template-columns: 1fr; }
+  .ll-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+  }
+  .ll-list-col { height: auto; overflow-y: visible; }
 }
 
 .ll-form-col .card {
