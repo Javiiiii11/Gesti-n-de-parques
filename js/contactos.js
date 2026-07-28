@@ -202,7 +202,16 @@ function renderContactos() {
     if (c.tipo === 'entrada') {
       detalles = `${fmtNum(c.cantidad_entradas || 1)}x ${parqueNombre(c.parque_id)}<br><small style="color:var(--text-muted)">${c.extras ? 'Extras: ' + escapeHtml(c.extras) : 'Sin extras'}</small>`;
     } else {
-      detalles = `${fmtNum(c.cantidad_bonos || 1)}x ${bonoNombre(c.bono_id)}<br><small style="color:var(--text-muted)">Nº: ${escapeHtml(c.num_bono)}</small>`;
+      let bonosCount = c.cantidad_bonos || 1;
+      try {
+        if (c.extras && (c.extras.startsWith('[') || c.extras.startsWith('{'))) {
+          const parsed = JSON.parse(c.extras);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            bonosCount = parsed.length;
+          }
+        }
+      } catch (e) { }
+      detalles = `${fmtNum(bonosCount)}x ${bonoNombre(c.bono_id)}`;
     }
 
     let estadoBadge = '';
@@ -214,12 +223,15 @@ function renderContactos() {
       estadoBadge = '<span class="badge off" style="color:var(--accent); border-color:var(--accent)">Pendiente de pago</span>';
     }
 
+    const infoSubtext = [c.correo, c.telefono].filter(Boolean).map(escapeHtml).join(' · ');
+    const subtextHtml = infoSubtext || '&nbsp;';
+
     return `
       <tr>
         <td style="white-space:nowrap; color:var(--text-secondary)">${fmtDateShort(c.created_at)}</td>
         <td>
-          <b>${escapeHtml(c.nombre_apellidos)}</b><br>
-          <small style="color:var(--text-muted)">${escapeHtml(c.correo || '')} ${c.telefono ? '· ' + escapeHtml(c.telefono) : ''}</small>
+          <div style="font-weight:600; color:var(--text-primary);">${escapeHtml(c.nombre_apellidos)}</div>
+          <small style="color:var(--text-muted); display:block; min-height:16px; font-size:12px;">${subtextHtml}</small>
         </td>
         <td><span class="badge" style="background:var(--bg-hover)">${tipoLabel}</span></td>
         <td><span class="badge ${viaClasses[via] || 'badge-via-llamada'}">${viaLabels[via] || '📞 Llamada'}</span></td>
@@ -255,6 +267,8 @@ function renderContactos() {
 }
 
 let NUEVO_APUNTE_DRAFT = null;
+let CURRENT_BONOS_LIST = [];
+let SELECTED_MAIN_BONO_INDEX = 0;
 
 function saveNuevoApunteDraft() {
   const modal = document.getElementById('modal-body');
@@ -274,10 +288,8 @@ function saveNuevoApunteDraft() {
     telefono: document.getElementById('cf-telefono')?.value || '',
     cantidad_entradas: document.getElementById('cf-cantidad-entradas')?.value || '1',
     extras: document.getElementById('cf-extras')?.value || '',
-    dni: document.getElementById('cf-dni')?.value || '',
-    nacimiento: document.getElementById('cf-nacimiento')?.value || '',
-    cantidad_bonos: document.getElementById('cf-cantidad-bonos')?.value || '1',
-    num_bono: document.getElementById('cf-num-bono')?.value || '',
+    bonosList: JSON.parse(JSON.stringify(CURRENT_BONOS_LIST)),
+    selectedMainBonoIndex: SELECTED_MAIN_BONO_INDEX,
     showExtras: document.getElementById('cf-section-extras')?.style.display !== 'none'
   };
 }
@@ -299,12 +311,42 @@ function openContactoForm(id = null) {
       correo: NUEVO_APUNTE_DRAFT.correo,
       telefono: NUEVO_APUNTE_DRAFT.telefono,
       cantidad_entradas: NUEVO_APUNTE_DRAFT.cantidad_entradas,
-      extras: NUEVO_APUNTE_DRAFT.extras,
-      dni: NUEVO_APUNTE_DRAFT.dni,
-      fecha_nacimiento: NUEVO_APUNTE_DRAFT.nacimiento,
-      cantidad_bonos: NUEVO_APUNTE_DRAFT.cantidad_bonos,
-      num_bono: NUEVO_APUNTE_DRAFT.num_bono
+      extras: NUEVO_APUNTE_DRAFT.extras
     } : null);
+
+  if (isEdit) {
+    SELECTED_MAIN_BONO_INDEX = 0;
+    let list = [];
+    try {
+      if (c && c.extras && (c.extras.startsWith('[') || c.extras.startsWith('{'))) {
+        const parsed = JSON.parse(c.extras);
+        list = Array.isArray(parsed) ? parsed : [parsed];
+      }
+    } catch (e) { }
+    if (!list.length) {
+      list = [{
+        nombre_apellidos: c?.nombre_apellidos || '',
+        fecha_nacimiento: c?.fecha_nacimiento || '',
+        dni: c?.dni || '',
+        num_bono: c?.num_bono || '',
+        anotaciones: ''
+      }];
+    }
+    CURRENT_BONOS_LIST = list;
+  } else {
+    SELECTED_MAIN_BONO_INDEX = NUEVO_APUNTE_DRAFT?.selectedMainBonoIndex ?? 0;
+    if (NUEVO_APUNTE_DRAFT && Array.isArray(NUEVO_APUNTE_DRAFT.bonosList) && NUEVO_APUNTE_DRAFT.bonosList.length > 0) {
+      CURRENT_BONOS_LIST = JSON.parse(JSON.stringify(NUEVO_APUNTE_DRAFT.bonosList));
+    } else {
+      CURRENT_BONOS_LIST = [{
+        nombre_apellidos: '',
+        fecha_nacimiento: '',
+        dni: '',
+        num_bono: '',
+        anotaciones: ''
+      }];
+    }
+  }
 
   const initialTipo = c ? c.tipo : 'entrada';
 
@@ -439,23 +481,17 @@ function openContactoForm(id = null) {
         </div>
 
         <!-- Campos extra para Bonos -->
-        <div id="cf-seccion-bonos-extra" class="form-grid" style="margin-top:12px; display:none;">
-          <div class="form-field">
-            <label for="cf-dni">DNI</label>
-            <input type="text" id="cf-dni" value="${escapeHtml(c?.dni || '')}">
+        <div id="cf-seccion-bonos-extra" style="margin-top:12px; display:none;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:8px;">
+            <span style="font-weight:600; font-size:13px; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+              🪪 Detalle de Bonos (<span id="cf-bonos-count">1</span>)
+            </span>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-bono-item" style="gap:4px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              + Añadir otro bono al pedido
+            </button>
           </div>
-          <div class="form-field">
-            <label for="cf-nacimiento">Fecha de nacimiento</label>
-            <input type="date" id="cf-nacimiento" value="${c?.fecha_nacimiento || ''}">
-          </div>
-          <div class="form-field">
-            <label for="cf-cantidad-bonos">Cantidad de bonos</label>
-            <input type="number" min="1" id="cf-cantidad-bonos" value="${c?.cantidad_bonos || 1}">
-          </div>
-          <div class="form-field">
-            <label for="cf-num-bono">Nº de bono</label>
-            <input type="text" id="cf-num-bono" value="${escapeHtml(c?.num_bono || '')}">
-          </div>
+          <div id="cf-bonos-list-container" style="display:flex; flex-direction:column; gap:12px;"></div>
         </div>
       </div>
     `,
@@ -475,44 +511,155 @@ function openContactoForm(id = null) {
   }
 
   const updateFormVisibility = () => {
-    const tipo = document.querySelector('input[name="cf-tipo"]:checked').value;
-    document.getElementById('cf-field-parque').style.display = tipo === 'entrada' ? 'block' : 'none';
-    document.getElementById('cf-field-bono').style.display = tipo === 'bono' ? 'block' : 'none';
+    const tipoRadio = document.querySelector('input[name="cf-tipo"]:checked');
+    const tipo = tipoRadio ? tipoRadio.value : 'entrada';
+
+    const fieldParque = document.getElementById('cf-field-parque');
+    const fieldBono = document.getElementById('cf-field-bono');
+    if (fieldParque) fieldParque.style.display = tipo === 'entrada' ? 'block' : 'none';
+    if (fieldBono) fieldBono.style.display = tipo === 'bono' ? 'block' : 'none';
 
     const extrasContainer = document.getElementById('cf-section-extras');
-    if (extrasContainer && extrasContainer.style.display !== 'none') {
-      const secEntradasExtra = document.getElementById('cf-seccion-entradas-extra');
-      const secBonosExtra = document.getElementById('cf-seccion-bonos-extra');
+    const toggleText = document.getElementById('cf-toggle-extras-text');
+    const secEntradasExtra = document.getElementById('cf-seccion-entradas-extra');
+    const secBonosExtra = document.getElementById('cf-seccion-bonos-extra');
+
+    const isVisible = extrasContainer && extrasContainer.style.display !== 'none';
+
+    if (toggleText) {
+      if (tipo === 'bono') {
+        toggleText.textContent = isVisible ? 'Ocultar tarjetas de bonos' : 'Mostrar tarjetas de bonos';
+      } else {
+        toggleText.textContent = isVisible ? 'Ocultar campos extra' : 'Mostrar más campos';
+      }
+    }
+
+    if (isVisible) {
       if (secEntradasExtra) secEntradasExtra.style.display = tipo === 'entrada' ? 'grid' : 'none';
-      if (secBonosExtra) secBonosExtra.style.display = tipo === 'bono' ? 'grid' : 'none';
+      if (secBonosExtra) secBonosExtra.style.display = tipo === 'bono' ? 'block' : 'none';
     }
   };
 
-  document.querySelectorAll('input[name="cf-tipo"]').forEach(el => el.addEventListener('change', updateFormVisibility));
-  updateFormVisibility();
+  const renderBonosListUI = () => {
+    const container = document.getElementById('cf-bonos-list-container');
+    const countEl = document.getElementById('cf-bonos-count');
+    if (!container) return;
+    if (countEl) countEl.textContent = CURRENT_BONOS_LIST.length;
 
-  // Auto expand extras if draft/contact has extra values or was expanded
-  const hasExtras = c && (c.correo || c.telefono || c.extras || c.dni || c.fecha_nacimiento || c.num_bono);
-  if (hasExtras || (!isEdit && NUEVO_APUNTE_DRAFT && NUEVO_APUNTE_DRAFT.showExtras)) {
-    const extras = document.getElementById('cf-section-extras');
-    const text = document.getElementById('cf-toggle-extras-text');
-    if (extras) extras.style.display = 'block';
-    if (text) text.textContent = 'Ocultar campos extra';
-    updateFormVisibility();
+    if (SELECTED_MAIN_BONO_INDEX >= CURRENT_BONOS_LIST.length) {
+      SELECTED_MAIN_BONO_INDEX = 0;
+    }
+
+    container.innerHTML = CURRENT_BONOS_LIST.map((b, idx) => `
+      <div class="bono-item-card" data-index="${idx}" style="background:var(--bg-elevated); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:var(--radius-m); padding:16px 18px; margin-bottom:4px; box-shadow:0 2px 8px rgba(0,0,0,0.12);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-weight:700; font-size:13.5px; color:var(--accent); display:flex; align-items:center; gap:6px;">
+              🪪 Bono #${idx + 1}
+            </span>
+            <label title="Usar el nombre de esta tarjeta como titular principal del apunte" style="display:inline-flex; align-items:center; gap:5px; margin-left:6px; cursor:pointer; background:rgba(255,255,255,0.05); border:1px solid var(--border); padding:3px 9px; border-radius:12px; font-size:11px; color:var(--text-secondary);">
+              <input type="radio" name="cf-main-bono-check" class="bono-radio-main" value="${idx}" ${SELECTED_MAIN_BONO_INDEX === idx ? 'checked' : ''} style="width:auto; cursor:pointer; accent-color:var(--accent);">
+              <span>Titular principal</span>
+            </label>
+          </div>
+          ${CURRENT_BONOS_LIST.length > 1 ? `
+            <button type="button" class="btn btn-ghost btn-sm danger btn-remove-bono" data-index="${idx}" style="padding:4px 10px; font-size:12px; gap:4px;">
+              🗑️ Eliminar este bono
+            </button>
+          ` : ''}
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:14px;">
+          <div class="form-field" style="grid-column: 1 / -1;">
+            <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">👤 Nombre y Apellidos del titular</label>
+            <input type="text" class="bono-input-nombre" data-index="${idx}" value="${escapeHtml(b.nombre_apellidos || '')}" placeholder="Nombre completo del titular del bono...">
+          </div>
+          <div class="form-field">
+            <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">🎂 Fecha de nacimiento</label>
+            <input type="date" class="bono-input-nacimiento" data-index="${idx}" value="${b.fecha_nacimiento || ''}">
+          </div>
+          <div class="form-field">
+            <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">🪪 DNI / NIF</label>
+            <input type="text" class="bono-input-dni" data-index="${idx}" value="${escapeHtml(b.dni || '')}" placeholder="DNI...">
+          </div>
+          <div class="form-field">
+            <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">🔢 Nº de bono</label>
+            <input type="text" class="bono-input-num" data-index="${idx}" value="${escapeHtml(b.num_bono || '')}" placeholder="Ej: B-12345">
+          </div>
+          <div class="form-field" style="grid-column: 1 / -1;">
+            <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">📝 Anotaciones de este bono</label>
+            <input type="text" class="bono-input-anotaciones" data-index="${idx}" value="${escapeHtml(b.anotaciones || '')}" placeholder="Observaciones o notas específicas para este bono...">
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.bono-radio-main').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        SELECTED_MAIN_BONO_INDEX = parseInt(e.target.value);
+        const activeBono = CURRENT_BONOS_LIST[SELECTED_MAIN_BONO_INDEX];
+        if (activeBono && activeBono.nombre_apellidos) {
+          const mainNombre = document.getElementById('cf-nombre');
+          if (mainNombre) mainNombre.value = activeBono.nombre_apellidos;
+        }
+        saveNuevoApunteDraft();
+      });
+    });
+
+    container.querySelectorAll('input:not(.bono-radio-main)').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const index = parseInt(e.target.dataset.index);
+        if (isNaN(index) || !CURRENT_BONOS_LIST[index]) return;
+        if (e.target.classList.contains('bono-input-nombre')) {
+          CURRENT_BONOS_LIST[index].nombre_apellidos = e.target.value;
+          if (index === SELECTED_MAIN_BONO_INDEX) {
+            const mainNombre = document.getElementById('cf-nombre');
+            if (mainNombre) mainNombre.value = e.target.value;
+          }
+        }
+        if (e.target.classList.contains('bono-input-nacimiento')) CURRENT_BONOS_LIST[index].fecha_nacimiento = e.target.value;
+        if (e.target.classList.contains('bono-input-dni')) CURRENT_BONOS_LIST[index].dni = e.target.value;
+        if (e.target.classList.contains('bono-input-num')) CURRENT_BONOS_LIST[index].num_bono = e.target.value;
+        if (e.target.classList.contains('bono-input-anotaciones')) CURRENT_BONOS_LIST[index].anotaciones = e.target.value;
+        saveNuevoApunteDraft();
+      });
+    });
+
+    container.querySelectorAll('.btn-remove-bono').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const index = parseInt(btn.dataset.index);
+        if (!isNaN(index) && CURRENT_BONOS_LIST.length > 1) {
+          CURRENT_BONOS_LIST.splice(index, 1);
+          if (SELECTED_MAIN_BONO_INDEX >= CURRENT_BONOS_LIST.length) {
+            SELECTED_MAIN_BONO_INDEX = Math.max(0, CURRENT_BONOS_LIST.length - 1);
+          }
+          renderBonosListUI();
+          saveNuevoApunteDraft();
+        }
+      });
+    });
+  };
+
+  const addBonoBtn = document.getElementById('btn-add-bono-item');
+  if (addBonoBtn) {
+    addBonoBtn.addEventListener('click', () => {
+      CURRENT_BONOS_LIST.push({ nombre_apellidos: '', fecha_nacimiento: '', dni: '', num_bono: '', anotaciones: '' });
+      renderBonosListUI();
+      saveNuevoApunteDraft();
+    });
   }
+
+  document.querySelectorAll('input[name="cf-tipo"]').forEach(el => el.addEventListener('change', updateFormVisibility));
 
   // Toggle extra fields
   const toggleBtn = document.getElementById('cf-toggle-extras');
   if (toggleBtn) {
     toggleBtn.addEventListener('click', () => {
       const extras = document.getElementById('cf-section-extras');
-      const text = document.getElementById('cf-toggle-extras-text');
       if (extras) {
         const isHidden = extras.style.display === 'none';
         extras.style.display = isHidden ? 'block' : 'none';
-        if (text) text.textContent = isHidden ? 'Ocultar campos extra' : 'Mostrar más campos';
-        // Update visibility of tipo-specific extra sections
-        if (!isHidden) updateFormVisibility();
+        updateFormVisibility();
+        saveNuevoApunteDraft();
       }
     });
   }
@@ -522,30 +669,40 @@ function openContactoForm(id = null) {
     wireContactoQuickParse(updateFormVisibility);
   }
 
+  renderBonosListUI();
+
+  // Auto expand extras if bono, has extras or draft has showExtras
+  const isBono = (document.querySelector('input[name="cf-tipo"][value="bono"]:checked') || initialTipo === 'bono');
+  const hasExtras = c && (c.correo || c.telefono || c.extras || c.dni || c.fecha_nacimiento || c.num_bono);
+  const extrasContainer = document.getElementById('cf-section-extras');
+
+  if (extrasContainer) {
+    if (isBono || hasExtras || (!isEdit && NUEVO_APUNTE_DRAFT && NUEVO_APUNTE_DRAFT.showExtras !== false)) {
+      extrasContainer.style.display = 'block';
+    }
+  }
+
+  updateFormVisibility();
+
   document.getElementById('cf-cancel').addEventListener('click', closeModal);
   document.getElementById('cf-clear').addEventListener('click', () => {
     if (!isEdit) NUEVO_APUNTE_DRAFT = null;
+    CURRENT_BONOS_LIST = [{ nombre_apellidos: '', fecha_nacimiento: '', dni: '', num_bono: '', anotaciones: '' }];
+    renderBonosListUI();
     // Reset common fields
     document.getElementById('cf-nombre').value = '';
     document.getElementById('cf-importe').value = '';
     document.getElementById('cf-localizador').value = '';
     document.getElementById('cf-estado').value = 'Apunte rápido';
     document.getElementById('cf-anotaciones').value = '';
-    // Reset extra fields
     document.getElementById('cf-correo').value = '';
     if (document.getElementById('cf-field-parque').style.display !== 'none') {
-      // Entrada fields
       document.getElementById('cf-telefono').value = '';
       document.getElementById('cf-cantidad-entradas').value = '1';
       document.getElementById('cf-extras').value = '';
       document.getElementById('cf-parque').value = '';
     }
     if (document.getElementById('cf-field-bono').style.display !== 'none') {
-      // Bono fields
-      document.getElementById('cf-dni').value = '';
-      document.getElementById('cf-nacimiento').value = '';
-      document.getElementById('cf-cantidad-bonos').value = '1';
-      document.getElementById('cf-num-bono').value = '';
       document.getElementById('cf-bono').value = '';
     }
   });
@@ -580,12 +737,14 @@ function openContactoForm(id = null) {
     } else {
       const bono_id = document.getElementById('cf-bono').value;
       if (!bono_id) { toast('Selecciona un tipo de bono', 'error'); return; }
-      payload.num_bono = document.getElementById('cf-num-bono').value.trim();
-      payload.dni = document.getElementById('cf-dni').value.trim();
-      const fechaNacimientoValue = document.getElementById('cf-nacimiento').value;
-      payload.fecha_nacimiento = fechaNacimientoValue ? fechaNacimientoValue : null;
+
+      const firstBono = CURRENT_BONOS_LIST[0] || {};
+      payload.num_bono = firstBono.num_bono || '';
+      payload.dni = firstBono.dni || '';
+      payload.fecha_nacimiento = firstBono.fecha_nacimiento || null;
       payload.bono_id = bono_id;
-      payload.cantidad_bonos = Number(document.getElementById('cf-cantidad-bonos').value) || 1;
+      payload.cantidad_bonos = CURRENT_BONOS_LIST.length;
+      payload.extras = JSON.stringify(CURRENT_BONOS_LIST);
     }
 
     // Check if transitioning from unpaid to pagado

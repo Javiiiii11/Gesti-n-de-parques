@@ -64,7 +64,7 @@ function closeModal() {
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('modal-close').addEventListener('click', closeModal);
-  modalBackdrop().addEventListener('click', (e) => { if (e.target === modalBackdrop()) closeModal(); });
+  // Do not close on backdrop click per user setting
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 });
 
