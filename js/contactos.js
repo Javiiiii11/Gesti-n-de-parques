@@ -381,9 +381,9 @@ function openContactoForm(id = null) {
       </div>
       ` : ''}
       
-      <!-- Grid principal de campos (3 columnas) -->
-      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px;">
-        <div class="form-field" style="grid-column: 1 / -1;">
+      <!-- Grid principal de campos -->
+      <div style="display:flex; flex-wrap:wrap; gap:12px;">
+        <div class="form-field" style="flex: 1 1 100%; min-width: 0;">
           <label>Tipo de apunte</label>
           <div style="display:flex; gap:16px; margin-top:2px;">
             <label style="flex-direction:row; align-items:center; gap:8px; cursor:pointer;">
@@ -395,20 +395,20 @@ function openContactoForm(id = null) {
           </div>
         </div>
 
-        <div class="form-field" style="grid-column: span 2;">
+        <div class="form-field" style="flex: 2 1 240px; min-width: 0;">
           <label for="cf-nombre">👤 Nombre y apellidos</label>
           <input type="text" id="cf-nombre" placeholder="Nombre completo del cliente..." value="${escapeHtml(c?.nombre_apellidos || '')}" required>
         </div>
-        <div class="form-field">
+        <div class="form-field" style="flex: 1 1 140px; min-width: 0;">
           <label for="cf-importe">💵 Importe total (€)</label>
           <input type="number" placeholder="0.0€" step="0.01" min="0" id="cf-importe" value="${c?.importe_total || ''}" required>
         </div>
 
-        <div class="form-field">
+        <div class="form-field" style="flex: 1 1 140px; min-width: 0;">
           <label for="cf-localizador">🚩 Localizador</label>
           <input type="text" id="cf-localizador" value="${escapeHtml(c?.localizador || '')}" placeholder="Sin localizador">
         </div>
-        <div class="form-field">
+        <div class="form-field" style="flex: 1 1 140px; min-width: 0;">
           <label for="cf-via">Vía de venta</label>
           <select id="cf-via">
             <option value="llamada" ${(!c || c.via === 'llamada') ? 'selected' : ''}>📞 Llamada</option>
@@ -416,7 +416,7 @@ function openContactoForm(id = null) {
             <option value="chat" ${c?.via === 'chat' ? 'selected' : ''}>💬 Chat</option>
           </select>
         </div>
-        <div class="form-field">
+        <div class="form-field" style="flex: 1 1 140px; min-width: 0;">
           <label for="cf-estado">💳 Estado de pago</label>
           <select id="cf-estado">
             <option value="Apunte rápido" ${(!c || c.estado_pago === 'Apunte rápido') ? 'selected' : ''}>Apunte rápido</option>
@@ -426,7 +426,7 @@ function openContactoForm(id = null) {
         </div>
 
         <!-- Entrada-specific field -->
-        <div class="form-field" id="cf-field-parque" style="grid-column: 1 / -1;">
+        <div class="form-field" id="cf-field-parque" style="flex: 1 1 100%; min-width: 0;">
           <label for="cf-parque">🎢 Parque</label>
           <select id="cf-parque">
             <option value="">Selecciona un parque...</option>
@@ -434,7 +434,7 @@ function openContactoForm(id = null) {
           </select>
         </div>
         <!-- Bono-specific field -->
-        <div class="form-field" id="cf-field-bono" style="grid-column: 1 / -1; display:none;">
+        <div class="form-field" id="cf-field-bono" style="flex: 1 1 100%; min-width: 0; display:none;">
           <label for="cf-bono">🪪 Tipo de bono</label>
           <select id="cf-bono">
             <option value="">Selecciona un bono...</option>
@@ -442,7 +442,7 @@ function openContactoForm(id = null) {
           </select>
         </div>
 
-        <div class="form-field" style="grid-column: 1 / -1; margin-top:4px;">
+        <div class="form-field" style="flex: 1 1 100%; min-width: 0; margin-top:4px;">
           <label for="cf-anotaciones">📝 Anotaciones</label>
           <textarea id="cf-anotaciones" rows="2" placeholder="Apuntes sobre el cliente...">${escapeHtml(c?.anotaciones || '')}</textarea>
         </div>
@@ -568,24 +568,24 @@ function openContactoForm(id = null) {
             </button>
           ` : ''}
         </div>
-        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:14px;">
-          <div class="form-field" style="grid-column: 1 / -1;">
+        <div style="display:flex; flex-wrap:wrap; gap:12px;">
+          <div class="form-field" style="flex: 1 1 100%; min-width: 0;">
             <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">👤 Nombre y Apellidos del titular</label>
             <input type="text" class="bono-input-nombre" data-index="${idx}" value="${escapeHtml(b.nombre_apellidos || '')}" placeholder="Nombre completo del titular del bono...">
           </div>
-          <div class="form-field">
+          <div class="form-field" style="flex: 1 1 140px; min-width: 0;">
             <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">🎂 Fecha de nacimiento</label>
             <input type="date" class="bono-input-nacimiento" data-index="${idx}" value="${b.fecha_nacimiento || ''}">
           </div>
-          <div class="form-field">
+          <div class="form-field" style="flex: 1 1 140px; min-width: 0;">
             <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">🪪 DNI / NIF</label>
             <input type="text" class="bono-input-dni" data-index="${idx}" value="${escapeHtml(b.dni || '')}" placeholder="DNI...">
           </div>
-          <div class="form-field">
+          <div class="form-field" style="flex: 1 1 140px; min-width: 0;">
             <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">🔢 Nº de bono</label>
             <input type="text" class="bono-input-num" data-index="${idx}" value="${escapeHtml(b.num_bono || '')}" placeholder="Ej: B-12345">
           </div>
-          <div class="form-field" style="grid-column: 1 / -1;">
+          <div class="form-field" style="flex: 1 1 100%; min-width: 0;">
             <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">📝 Anotaciones de este bono</label>
             <input type="text" class="bono-input-anotaciones" data-index="${idx}" value="${escapeHtml(b.anotaciones || '')}" placeholder="Observaciones o notas específicas para este bono...">
           </div>

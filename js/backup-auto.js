@@ -97,9 +97,20 @@ function setBackupStatus(text) {
   const el = document.getElementById('backup-auto-status');
   if (el) el.textContent = text;
 }
+function setButtonTextKeepingIcon(btn, text) {
+  const textNode = Array.from(btn.childNodes).find((node) =>
+    node.nodeType === Node.TEXT_NODE && node.textContent.trim()
+  );
+
+  if (textNode) {
+    textNode.textContent = ` ${text}`;
+  } else {
+    btn.appendChild(document.createTextNode(text));
+  }
+}
 function setBackupButtonLabel(text) {
   const btn = document.getElementById('btn-enable-auto-backup');
-  if (btn) btn.textContent = text;
+  if (btn) setButtonTextKeepingIcon(btn, text);
 }
 
 /* --- Activar copias automáticas --- */
@@ -143,7 +154,10 @@ async function manualBackupNow() {
 /* --- Actualizar la UI de todos los botones --- */
 function updateBackupUI() {
   document.querySelectorAll('.backup-toggle-btn').forEach(btn => {
-    btn.textContent = autoBackupEnabled ? 'Desactivar copias automáticas' : 'Activar copias automáticas';
+    setButtonTextKeepingIcon(
+      btn,
+      autoBackupEnabled ? 'Desactivar copias automáticas' : 'Activar copias automáticas'
+    );
   });
   if (autoBackupEnabled) {
     document.querySelectorAll('.backup-folder-label').forEach(el => {

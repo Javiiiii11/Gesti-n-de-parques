@@ -52,8 +52,8 @@ function openModal({ title, bodyHtml, footHtml = '', width = null }) {
   document.getElementById('modal-foot').innerHTML = footHtml;
   const modalEl = document.getElementById('modal');
   if (modalEl) {
-    if (width) modalEl.style.maxWidth = width;
-    else modalEl.style.maxWidth = '';
+    if (width) modalEl.style.maxWidth = `min(${width}, 95vw)`;
+    else modalEl.style.maxWidth = '95vw';
   }
   modalBackdrop().classList.add('active');
 }

@@ -104,7 +104,7 @@ function fillBonoSelects() {
 
   const selContactoBono = document.getElementById('c-bono');
   if (selContactoBono) selContactoBono.innerHTML = optionsHtml || '<option value="">Sin bonos activos</option>';
-  
+
   const selVentaBono = document.getElementById('v-bono');
   if (selVentaBono) selVentaBono.innerHTML = '<option value="">Seleccionar bono...</option>' + (optionsHtml || '');
 }
@@ -113,6 +113,7 @@ function openParqueForm(id = null) {
   const parque = id ? STATE.parques.find((p) => p.id === id) : null;
   openModal({
     title: parque ? 'Editar parque' : 'Nuevo parque',
+    width: '520px',
     bodyHtml: `
       <div class="form-grid">
         <div class="form-field full">
@@ -181,7 +182,7 @@ function deleteParqueFlow(id) {
 function wireParquesView() {
   const btnParque = document.getElementById('btn-nuevo-parque');
   if (btnParque) btnParque.addEventListener('click', () => openParqueForm());
-  
+
   const btnBono = document.getElementById('btn-nuevo-bono');
   if (btnBono) btnBono.addEventListener('click', () => openBonoForm());
 }
@@ -190,6 +191,7 @@ function openBonoForm(id = null) {
   const bono = id ? STATE.tipos_bono.find((p) => p.id === id) : null;
   openModal({
     title: bono ? 'Editar bono' : 'Nuevo bono',
+    width: '520px',
     bodyHtml: `
       <div class="form-grid">
         <div class="form-field full">
