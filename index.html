@@ -399,6 +399,31 @@
           </div>
 
           <div class="quick-sale-layout">
+            <!-- ====== PARSER RÁPIDO ====== -->
+            <div class="card card-pad quick-parse-card">
+              <div class="qp-header">
+                <h3>⚡ Pegado rápido</h3>
+                <p class="desc">Pega una línea de la tabla para rellenar el formulario automáticamente</p>
+              </div>
+              <div class="qp-body">
+                <textarea id="venta-quick-parse" class="qp-textarea" placeholder="Pega aquí la línea de la tabla&#10;Ej: usuario    21280354    Cliente    00,00 €    2026/01/01 00:00:00    correo@gmail.com    +34 123456789    Estado del pago" rows="3"></textarea>
+                <div class="qp-actions">
+                  <button type="button" class="btn btn-secondary" id="btn-quick-parse">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    Interpretar
+                  </button>
+                  <button type="button" class="btn btn-primary" id="btn-quick-confirm" style="display:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Confirmar y rellenar
+                  </button>
+                  <button type="button" class="btn btn-ghost" id="btn-quick-cancel" style="display:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    Cancelar
+                  </button>
+                </div>
+                <div id="quick-parse-preview" style="display:none;"></div>
+              </div>
+            </div>
             <form class="card card-pad" id="venta-form">
               <div class="form-field full" style="margin-bottom: 16px;">
                 <label>Tipo de venta</label>

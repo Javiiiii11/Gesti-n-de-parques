@@ -3,7 +3,7 @@
    Una venta siempre se considera pagada. Al guardar se crea una venta en el
    historial Y un apunte (contacto) con estado "pagado" para tener todos los
    detalles del cliente.
-============================================================================ */
+   ============================================================================ */
 
 function getResumen(tipo, itemId) {
   if (tipo === 'entrada') {
@@ -34,8 +34,8 @@ function updateVentaFormVisibility() {
   
   const fieldParque = document.getElementById('v-field-parque');
   const fieldBono = document.getElementById('v-field-bono');
-  if (fieldParque) fieldParque.style.display = tipo === 'entrada' ? 'block' : 'none';
-  if (fieldBono) fieldBono.style.display = tipo === 'bono' ? 'block' : 'none';
+  if (fieldParque) fieldParque.style.display = tipo === 'entrada' ? '' : 'none';
+  if (fieldBono) fieldBono.style.display = tipo === 'bono' ? '' : 'none';
   
   // Toggle entrada/bono specific sections
   const secEntradas = document.getElementById('v-seccion-entradas');
@@ -116,6 +116,9 @@ function initVentaForm() {
       }
     });
   }
+
+  // Cablear el parseo rápido
+  wireQuickParse();
 
   updateVentaFormVisibility();
   updateTicketPreview();
@@ -200,6 +203,123 @@ function updateTicketPreview() {
       rowNotas.style.display = 'none';
     }
   }
+}
+
+/* ============================================================================
+   PARSER RÁPIDO — Pega una línea desde una tabla y rellena el formulario
+   Formato esperado para entradas:
+   username    localizador    nombre_cliente    precio    fecha_hora    correo    teléfono    método_pago
+   Ejemplo:
+   jrodriguezj    21280354    JUAN AMADOR HERNANDEZ    179,70 €    2026/07/23 18:55:27    paolavazkez20@gmail.com    +34613218953    Scalapay
+   ============================================================================ */
+function wireQuickParse() {
+  const textarea = document.getElementById('venta-quick-parse');
+  if (!textarea || textarea.dataset.wired === '1') return;
+  textarea.dataset.wired = '1';
+  
+  const btnParse = document.getElementById('btn-quick-parse');
+  const preview = document.getElementById('quick-parse-preview');
+  const btnConfirm = document.getElementById('btn-quick-confirm');
+  const btnCancel = document.getElementById('btn-quick-cancel');
+  
+  let parsedData = null;
+
+  function parseLine(line) {
+    // Split by tabs or multiple spaces
+    const parts = line.trim().split(/\t+|  +/).filter(p => p.length > 0);
+    if (parts.length < 5) return null;
+    
+    // Formato: username(0), localizador(1), nombre(2), precio(3), fecha(4), correo(5), tlf(6), metodo(7)
+    const localizador = parts[1] || '';
+    const nombreCliente = parts[2] || '';
+    // Precio: "179,70 €" -> 179.70
+    const precioStr = (parts[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
+    const precio = parseFloat(precioStr) || 0;
+    const correo = parts[5] || '';
+    // Teléfono: quitar +34 y espacios
+    let telefono = (parts[6] || '').replace(/\s/g, '');
+    if (telefono.startsWith('+34')) telefono = telefono.substring(3);
+    
+    return { localizador, nombreCliente, precio, correo, telefono };
+  }
+
+  function fillForm(data) {
+    if (!data) return;
+    
+    // Asegurar que estamos en modo "entrada"
+    const radioEntrada = document.querySelector('input[name="v-tipo"][value="entrada"]');
+    if (radioEntrada) radioEntrada.checked = true;
+    updateVentaFormVisibility();
+    
+    // Mostrar campos extra si es necesario (teléfono)
+    const extras = document.getElementById('v-section-extras');
+    const toggleText = document.getElementById('v-toggle-extras-text');
+    if (extras && extras.style.display === 'none') {
+      extras.style.display = 'block';
+      if (toggleText) toggleText.textContent = 'Ocultar campos extra';
+    }
+    
+    // Rellenar campos
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    };
+    setVal('v-localizador', data.localizador);
+    setVal('v-cliente', data.nombreCliente);
+    setVal('v-importe', data.precio);
+    setVal('v-correo', data.correo);
+    setVal('v-telefono', data.telefono);
+    
+    // Actualizar preview
+    updateTicketPreview();
+  }
+
+  btnParse.addEventListener('click', () => {
+    const line = textarea.value.trim();
+    if (!line) { toast('Pega el texto de la tabla primero', 'error'); return; }
+    
+    parsedData = parseLine(line);
+    if (!parsedData) {
+      toast('No se pudo interpretar el formato. Revisa que tenga: localizador, nombre, precio, correo y teléfono', 'error');
+      return;
+    }
+    
+    // Mostrar preview de lo parseado
+    if (preview) {
+      preview.innerHTML = `
+        <div class="qp-card">
+          <div class="qp-head">📋 Vista previa de datos detectados</div>
+          <div class="qp-row"><span>Localizador</span><strong>${escapeHtml(parsedData.localizador)}</strong></div>
+          <div class="qp-row"><span>Cliente</span><strong>${escapeHtml(parsedData.nombreCliente)}</strong></div>
+          <div class="qp-row"><span>Importe</span><strong>${typeof fmtEUR === 'function' ? fmtEUR(parsedData.precio) : parsedData.precio.toFixed(2) + ' €'}</strong></div>
+          <div class="qp-row"><span>Correo</span><strong>${escapeHtml(parsedData.correo)}</strong></div>
+          <div class="qp-row"><span>Teléfono</span><strong>${escapeHtml(parsedData.telefono)}</strong></div>
+        </div>
+      `;
+      preview.style.display = 'block';
+    }
+    if (btnConfirm) btnConfirm.style.display = 'inline-flex';
+    if (btnCancel) btnCancel.style.display = 'inline-flex';
+  });
+
+  btnConfirm.addEventListener('click', () => {
+    if (!parsedData) return;
+    fillForm(parsedData);
+    // Ocultar preview
+    if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+    if (btnConfirm) btnConfirm.style.display = 'none';
+    if (btnCancel) btnCancel.style.display = 'none';
+    textarea.value = '';
+    toast('Datos cargados en el formulario. Revisa y guarda.', 'success');
+  });
+
+  btnCancel.addEventListener('click', () => {
+    parsedData = null;
+    if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+    if (btnConfirm) btnConfirm.style.display = 'none';
+    if (btnCancel) btnCancel.style.display = 'none';
+    textarea.value = '';
+  });
 }
 
 async function guardarVenta({ keepOpen }) {
