@@ -46,10 +46,15 @@ function toast(message, type = 'info', timeout = 3400) {
 /* ---------------------------------- MODAL ------------------------------------ */
 const modalBackdrop = () => document.getElementById('modal-backdrop');
 
-function openModal({ title, bodyHtml, footHtml = '' }) {
+function openModal({ title, bodyHtml, footHtml = '', width = null }) {
   document.getElementById('modal-title').textContent = title;
   document.getElementById('modal-body').innerHTML = bodyHtml;
   document.getElementById('modal-foot').innerHTML = footHtml;
+  const modalEl = document.getElementById('modal');
+  if (modalEl) {
+    if (width) modalEl.style.maxWidth = width;
+    else modalEl.style.maxWidth = '';
+  }
   modalBackdrop().classList.add('active');
 }
 

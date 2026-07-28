@@ -45,6 +45,120 @@ function wireContactosView() {
   });
 }
 
+/* ============================================================================
+   PARSER RÁPIDO — Pega una línea desde una tabla y rellena el formulario
+   Formato esperado para entradas:
+   username    localizador    nombre_cliente    precio    fecha_hora    correo    teléfono    método_pago
+   ============================================================================ */
+function wireContactoQuickParse(updateFormVisibility) {
+  const textarea = document.getElementById('cf-quick-parse');
+  if (!textarea) return;
+
+  const btnParse = document.getElementById('btn-cf-quick-parse');
+  const preview = document.getElementById('cf-quick-parse-preview');
+  const btnConfirm = document.getElementById('btn-cf-quick-confirm');
+  const btnCancel = document.getElementById('btn-cf-quick-cancel');
+
+  if (!btnParse || !preview || !btnConfirm || !btnCancel) return;
+
+  let parsedData = null;
+
+  function parseLineContacto(line) {
+    // Split by tabs or multiple spaces
+    const parts = line.trim().split(/\t+|  +/).filter(p => p.length > 0);
+    if (parts.length < 5) return null;
+
+    // Formato: username(0), localizador(1), nombre(2), precio(3), fecha(4), correo(5), tlf(6), metodo(7)
+    const localizador = parts[1] || '';
+    const nombreCliente = parts[2] || '';
+    // Precio: "179,70 €" -> 179.70
+    const precioStr = (parts[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
+    const precio = parseFloat(precioStr) || 0;
+    const correo = parts[5] || '';
+    // Teléfono: quitar +34 y espacios
+    let telefono = (parts[6] || '').replace(/\s/g, '');
+    if (telefono.startsWith('+34')) telefono = telefono.substring(3);
+
+    return { localizador, nombreCliente, precio, correo, telefono };
+  }
+
+  function fillContactoForm(data) {
+    if (!data) return;
+
+    // Asegurar que estamos en modo "entrada"
+    const radioEntrada = document.querySelector('input[name="cf-tipo"][value="entrada"]');
+    if (radioEntrada) radioEntrada.checked = true;
+    if (typeof updateFormVisibility === 'function') updateFormVisibility();
+
+    // Mostrar campos extra si es necesario (teléfono, correo)
+    const extras = document.getElementById('cf-section-extras');
+    const toggleText = document.getElementById('cf-toggle-extras-text');
+    if (extras && extras.style.display === 'none') {
+      extras.style.display = 'block';
+      if (toggleText) toggleText.textContent = 'Ocultar campos extra';
+      if (typeof updateFormVisibility === 'function') updateFormVisibility();
+    }
+
+    // Rellenar campos
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    };
+    setVal('cf-localizador', data.localizador);
+    setVal('cf-nombre', data.nombreCliente);
+    setVal('cf-importe', data.precio);
+    setVal('cf-correo', data.correo);
+    setVal('cf-telefono', data.telefono);
+  }
+
+  btnParse.addEventListener('click', () => {
+    const line = textarea.value.trim();
+    if (!line) { toast('Pega el texto de la tabla primero', 'error'); return; }
+
+    parsedData = parseLineContacto(line);
+    if (!parsedData) {
+      toast('No se pudo interpretar el formato. Revisa que tenga: localizador, nombre, precio, correo y teléfono', 'error');
+      return;
+    }
+
+    // Mostrar preview de lo parseado
+    if (preview) {
+      preview.innerHTML = `
+        <div class="qp-card">
+          <div class="qp-head">📋 Vista previa de datos detectados</div>
+          <div class="qp-row"><span>Localizador</span><strong>${escapeHtml(parsedData.localizador)}</strong></div>
+          <div class="qp-row"><span>Cliente</span><strong>${escapeHtml(parsedData.nombreCliente)}</strong></div>
+          <div class="qp-row"><span>Importe</span><strong>${typeof fmtEUR === 'function' ? fmtEUR(parsedData.precio) : parsedData.precio.toFixed(2) + ' €'}</strong></div>
+          <div class="qp-row"><span>Correo</span><strong>${escapeHtml(parsedData.correo)}</strong></div>
+          <div class="qp-row"><span>Teléfono</span><strong>${escapeHtml(parsedData.telefono)}</strong></div>
+        </div>
+      `;
+      preview.style.display = 'block';
+    }
+    if (btnConfirm) btnConfirm.style.display = 'inline-flex';
+    if (btnCancel) btnCancel.style.display = 'inline-flex';
+  });
+
+  btnConfirm.addEventListener('click', () => {
+    if (!parsedData) return;
+    fillContactoForm(parsedData);
+    // Ocultar preview
+    if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+    if (btnConfirm) btnConfirm.style.display = 'none';
+    if (btnCancel) btnCancel.style.display = 'none';
+    textarea.value = '';
+    toast('Datos cargados en el formulario. Revisa y guarda.', 'success');
+  });
+
+  btnCancel.addEventListener('click', () => {
+    parsedData = null;
+    if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+    if (btnConfirm) btnConfirm.style.display = 'none';
+    if (btnCancel) btnCancel.style.display = 'none';
+    textarea.value = '';
+  });
+}
+
 function renderContactos() {
   const tbody = document.getElementById('contactos-tbody');
   if (!tbody) return;
@@ -173,47 +287,73 @@ function openContactoForm(id = null) {
   const c = isEdit
     ? STATE.contactos.find((x) => x.id === id)
     : (NUEVO_APUNTE_DRAFT ? {
-        tipo: NUEVO_APUNTE_DRAFT.tipo,
-        nombre_apellidos: NUEVO_APUNTE_DRAFT.nombre_apellidos,
-        importe_total: NUEVO_APUNTE_DRAFT.importe_total,
-        localizador: NUEVO_APUNTE_DRAFT.localizador,
-        via: NUEVO_APUNTE_DRAFT.via,
-        estado_pago: NUEVO_APUNTE_DRAFT.estado_pago,
-        anotaciones: NUEVO_APUNTE_DRAFT.anotaciones,
-        parque_id: NUEVO_APUNTE_DRAFT.parque_id,
-        bono_id: NUEVO_APUNTE_DRAFT.bono_id,
-        correo: NUEVO_APUNTE_DRAFT.correo,
-        telefono: NUEVO_APUNTE_DRAFT.telefono,
-        cantidad_entradas: NUEVO_APUNTE_DRAFT.cantidad_entradas,
-        extras: NUEVO_APUNTE_DRAFT.extras,
-        dni: NUEVO_APUNTE_DRAFT.dni,
-        fecha_nacimiento: NUEVO_APUNTE_DRAFT.nacimiento,
-        cantidad_bonos: NUEVO_APUNTE_DRAFT.cantidad_bonos,
-        num_bono: NUEVO_APUNTE_DRAFT.num_bono
-      } : null);
+      tipo: NUEVO_APUNTE_DRAFT.tipo,
+      nombre_apellidos: NUEVO_APUNTE_DRAFT.nombre_apellidos,
+      importe_total: NUEVO_APUNTE_DRAFT.importe_total,
+      localizador: NUEVO_APUNTE_DRAFT.localizador,
+      via: NUEVO_APUNTE_DRAFT.via,
+      estado_pago: NUEVO_APUNTE_DRAFT.estado_pago,
+      anotaciones: NUEVO_APUNTE_DRAFT.anotaciones,
+      parque_id: NUEVO_APUNTE_DRAFT.parque_id,
+      bono_id: NUEVO_APUNTE_DRAFT.bono_id,
+      correo: NUEVO_APUNTE_DRAFT.correo,
+      telefono: NUEVO_APUNTE_DRAFT.telefono,
+      cantidad_entradas: NUEVO_APUNTE_DRAFT.cantidad_entradas,
+      extras: NUEVO_APUNTE_DRAFT.extras,
+      dni: NUEVO_APUNTE_DRAFT.dni,
+      fecha_nacimiento: NUEVO_APUNTE_DRAFT.nacimiento,
+      cantidad_bonos: NUEVO_APUNTE_DRAFT.cantidad_bonos,
+      num_bono: NUEVO_APUNTE_DRAFT.num_bono
+    } : null);
 
   const initialTipo = c ? c.tipo : 'entrada';
 
   openModal({
     title: isEdit ? 'Editar apunte' : 'Nuevo apunte',
+    width: !isEdit ? '1050px' : '550px',
     bodyHtml: `
-      <div class="form-grid" style="margin-bottom:16px;">
-        <div class="form-field full">
+      ${!isEdit ? `
+      <!-- ====== PARSER RÁPIDO ====== -->
+      <div class="card card-pad quick-parse-card" style="margin-bottom: 16px; padding: 14px 16px; background: var(--bg-elevated); border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <div class="qp-header" style="margin-bottom:8px;">
+          <h3 style="margin:0; font-size:15px; color: var(--accent);">⚡ Pegado rápido</h3>
+          <p class="desc" style="margin:2px 0 0; font-size:12.5px;">Pega una línea de la tabla para rellenar automáticamente (solo entradas)</p>
+        </div>
+        <div class="qp-body">
+          <textarea id="cf-quick-parse" class="qp-textarea" placeholder="Pega aquí la línea de la tabla&#10;Ej: usuario    21280354    Cliente    00,00 €    2026/01/01 00:00:00    correo@gmail.com    +34 123456789    Estado del pago" rows="2" style="width:100%; min-height:54px;"></textarea>
+          <div class="qp-actions" style="margin-top:8px; display:flex; gap:8px;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-cf-quick-parse">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;margin-right:4px;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Interpretar
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-cf-quick-confirm" style="display:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;margin-right:4px;"><polyline points="20 6 9 17 4 12"/></svg>
+              Confirmar y rellenar
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-cf-quick-cancel" style="display:none;">
+              Cancelar
+            </button>
+          </div>
+          <div id="cf-quick-parse-preview" style="display:none; margin-top:12px;"></div>
+        </div>
+      </div>
+      ` : ''}
+      
+      <!-- Grid principal de campos (3 columnas) -->
+      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px;">
+        <div class="form-field" style="grid-column: 1 / -1;">
           <label>Tipo de apunte</label>
-          <div style="display:flex; gap:16px;">
-            <label style="flex-direction:row; align-items:center; gap:8px;">
+          <div style="display:flex; gap:16px; margin-top:2px;">
+            <label style="flex-direction:row; align-items:center; gap:8px; cursor:pointer;">
               <input type="radio" name="cf-tipo" value="entrada" ${initialTipo === 'entrada' ? 'checked' : ''} style="width:auto"> Entradas
             </label>
-            <label style="flex-direction:row; align-items:center; gap:8px;">
+            <label style="flex-direction:row; align-items:center; gap:8px; cursor:pointer;">
               <input type="radio" name="cf-tipo" value="bono" ${initialTipo === 'bono' ? 'checked' : ''} style="width:auto"> Bonos
             </label>
           </div>
         </div>
-      </div>
-      
-      <!-- Campos Comunes -->
-      <div class="form-grid">
-        <div class="form-field full">
+
+        <div class="form-field" style="grid-column: span 2;">
           <label for="cf-nombre">👤 Nombre y apellidos</label>
           <input type="text" id="cf-nombre" placeholder="Nombre completo del cliente..." value="${escapeHtml(c?.nombre_apellidos || '')}" required>
         </div>
@@ -221,6 +361,7 @@ function openContactoForm(id = null) {
           <label for="cf-importe">💵 Importe total (€)</label>
           <input type="number" placeholder="0.0€" step="0.01" min="0" id="cf-importe" value="${c?.importe_total || ''}" required>
         </div>
+
         <div class="form-field">
           <label for="cf-localizador">🚩 Localizador</label>
           <input type="text" id="cf-localizador" value="${escapeHtml(c?.localizador || '')}" placeholder="Sin localizador">
@@ -233,7 +374,7 @@ function openContactoForm(id = null) {
             <option value="chat" ${c?.via === 'chat' ? 'selected' : ''}>💬 Chat</option>
           </select>
         </div>
-        <div class="form-field full">
+        <div class="form-field">
           <label for="cf-estado">💳 Estado de pago</label>
           <select id="cf-estado">
             <option value="Apunte rápido" ${(!c || c.estado_pago === 'Apunte rápido') ? 'selected' : ''}>Apunte rápido</option>
@@ -241,32 +382,27 @@ function openContactoForm(id = null) {
             <option value="pagado" ${c?.estado_pago === 'pagado' ? 'selected' : ''}>Pagado (Sumará a ventas)</option>
           </select>
         </div>
-      </div>
 
-      <!-- Entrada-specific field -->
-      <div class="form-field" id="cf-field-parque">
-        </br>
-        <label for="cf-parque">🎢 Parque</label>
-        <select id="cf-parque">
-          <option value="">Selecciona un parque...</option>
-          ${STATE.parques.filter(p => p.activo !== false).map(p => `<option value="${p.id}" ${c?.parque_id === p.id ? 'selected' : ''}>${escapeHtml(p.nombre)}</option>`).join('')}
-        </select>
-      </div>
-      <!-- Bono-specific field -->
-      <div class="form-field" id="cf-field-bono" style="display:none;">
-        </br>
-        <label for="cf-bono">🪪 Tipo de bono</label>
-        <select id="cf-bono">
-          <option value="">Selecciona un bono...</option>
-          ${STATE.tipos_bono.filter(b => b.activo !== false).map(b => `<option value="${b.id}" ${c?.bono_id === b.id ? 'selected' : ''}>${escapeHtml(b.nombre)}</option>`).join('')}
-        </select>
-      </div>
+        <!-- Entrada-specific field -->
+        <div class="form-field" id="cf-field-parque" style="grid-column: 1 / -1;">
+          <label for="cf-parque">🎢 Parque</label>
+          <select id="cf-parque">
+            <option value="">Selecciona un parque...</option>
+            ${STATE.parques.filter(p => p.activo !== false).map(p => `<option value="${p.id}" ${c?.parque_id === p.id ? 'selected' : ''}>${escapeHtml(p.nombre)}</option>`).join('')}
+          </select>
+        </div>
+        <!-- Bono-specific field -->
+        <div class="form-field" id="cf-field-bono" style="grid-column: 1 / -1; display:none;">
+          <label for="cf-bono">🪪 Tipo de bono</label>
+          <select id="cf-bono">
+            <option value="">Selecciona un bono...</option>
+            ${STATE.tipos_bono.filter(b => b.activo !== false).map(b => `<option value="${b.id}" ${c?.bono_id === b.id ? 'selected' : ''}>${escapeHtml(b.nombre)}</option>`).join('')}
+          </select>
+        </div>
 
-      <!-- Campos Anotaciones -->
-      <div class="form-grid" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
-        <div class="form-field full">
+        <div class="form-field" style="grid-column: 1 / -1; margin-top:4px;">
           <label for="cf-anotaciones">📝 Anotaciones</label>
-          <textarea id="cf-anotaciones" rows="3" placeholder="Apuntes sobre el cliente...">${escapeHtml(c?.anotaciones || '')}</textarea>
+          <textarea id="cf-anotaciones" rows="2" placeholder="Apuntes sobre el cliente...">${escapeHtml(c?.anotaciones || '')}</textarea>
         </div>
       </div>
 
@@ -342,7 +478,7 @@ function openContactoForm(id = null) {
     const tipo = document.querySelector('input[name="cf-tipo"]:checked').value;
     document.getElementById('cf-field-parque').style.display = tipo === 'entrada' ? 'block' : 'none';
     document.getElementById('cf-field-bono').style.display = tipo === 'bono' ? 'block' : 'none';
-    
+
     const extrasContainer = document.getElementById('cf-section-extras');
     if (extrasContainer && extrasContainer.style.display !== 'none') {
       const secEntradasExtra = document.getElementById('cf-seccion-entradas-extra');
@@ -379,6 +515,11 @@ function openContactoForm(id = null) {
         if (!isHidden) updateFormVisibility();
       }
     });
+  }
+
+  // ===== Quick Parse para apuntes (solo modo nuevo) =====
+  if (!isEdit) {
+    wireContactoQuickParse(updateFormVisibility);
   }
 
   document.getElementById('cf-cancel').addEventListener('click', closeModal);
