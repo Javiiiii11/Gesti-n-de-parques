@@ -1,491 +1,296 @@
 /* ============================================================================
-   chat-ia.js — "Chat IA" interno de ParkSales
+   chat-ia.js — Asistente IA local con Ollama
    ----------------------------------------------------------------------------
-   Esto NO llama a ninguna API de inteligencia artificial ni sale a internet.
-   Es un buscador local: tú le das archivos y/o texto de páginas web, la app
-   los trocea e indexa en el navegador, y cuando preguntas algo te devuelve
-   los fragmentos de TUS documentos que mejor encajan con la pregunta.
-
-   Además incluye una biblioteca de frases hechas para redactar correos.
+   Se conecta a Ollama corriendo en localhost:11434 para ofrecer un asistente
+   de IA real dentro de ParkSales. Requiere que el PC esté encendido y Ollama
+   activo con al menos un modelo descargado.
 
    Estructura:
-   1. CHAT_DB       → guardado de fuentes (Supabase si está configurado,
-                       si no localStorage) — igual de simple que el resto de
-                       la app.
-   2. Extracción     → texto plano, PDF (pdf.js) y Word (mammoth.js).
-   3. Motor de búsqueda → tokenizado + trocitos (chunks) + puntuación
-                       tipo TF-IDF, 100% en el navegador.
-   4. UI             → pestañas Fuentes / Preguntar / Frases de email.
+   1. CONFIGURACIÓN   → URL de Ollama, system prompt, estado.
+   2. CONEXIÓN        → ping a Ollama, obtener modelos disponibles.
+   3. CHAT            → envío de mensajes, streaming de respuestas.
+   4. RENDERIZADO     → burbujas de chat, markdown básico, animaciones.
+   5. FRASES DE EMAIL → se mantienen del sistema anterior.
 ============================================================================ */
 
-/* ------------------------------------------------------------------------ */
-/* 1. ALMACENAMIENTO DE FUENTES                                             */
-/* ------------------------------------------------------------------------ */
+/* -------------------------------------------------------------------------- */
+/* 1. CONFIGURACIÓN                                                           */
+/* -------------------------------------------------------------------------- */
 
-const CHAT_LOCAL_KEY = 'parksales_chat_fuentes';
+const OLLAMA = {
+  baseUrl: 'http://localhost:11434',
+  model: localStorage.getItem('parksales_ollama_model') || '',
+  connected: false,
+  models: [],
+  messages: [],
+  generating: false,
+  systemPrompt: `Eres el asistente de IA de ParkSales, una aplicación de gestión de ventas de entradas a parques de ocio. Responde siempre en español.
 
-function getFuentesLocal() {
-  try { return JSON.parse(localStorage.getItem(CHAT_LOCAL_KEY)) || []; }
-  catch { return []; }
-}
-function saveFuentesLocal(list) {
-  localStorage.setItem(CHAT_LOCAL_KEY, JSON.stringify(list));
-}
-
-const CHAT_DB = {
-  async getFuentes() {
-    if (SUPABASE_CONFIGURED) {
-      const { data, error } = await supabaseClient
-        .from('chat_fuentes')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) { console.error('chat_fuentes select:', error); return getFuentesLocal(); }
-      return data || [];
-    }
-    return getFuentesLocal();
-  },
-
-  async addFuente(fuente) {
-    if (SUPABASE_CONFIGURED) {
-      const { data, error } = await supabaseClient
-        .from('chat_fuentes')
-        .insert([fuente])
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    }
-    const row = { id: uid(), created_at: new Date().toISOString(), ...fuente };
-    const list = getFuentesLocal();
-    list.unshift(row);
-    saveFuentesLocal(list);
-    return row;
-  },
-
-  async deleteFuente(id) {
-    if (SUPABASE_CONFIGURED) {
-      const { error } = await supabaseClient.from('chat_fuentes').delete().eq('id', id);
-      if (error) throw error;
-      return;
-    }
-    saveFuentesLocal(getFuentesLocal().filter((f) => f.id !== id));
-  },
+Reglas:
+- Sé amable, natural y conciso.
+- Si el usuario te saluda ("Hola", "Buenos días", etc.), responde con un saludo cordial y ofrécele tu ayuda.
+- Si te preguntan sobre algo específico, responde con tu mejor conocimiento.
+- Si no sabes algo, dilo con honestidad. No inventes datos.
+- Puedes usar formato: **negrita**, *cursiva*, listas con - o números, y \`código\`.
+- Si el usuario te pide información sobre un tema concreto (un parque, una empresa, etc.), da la información que tengas y si no la tienes, indícalo amablemente.`,
 };
 
-/* ------------------------------------------------------------------------ */
-/* 2. EXTRACCIÓN DE TEXTO DE ARCHIVOS                                       */
-/* ------------------------------------------------------------------------ */
+/* -------------------------------------------------------------------------- */
+/* 2. CONEXIÓN CON OLLAMA                                                     */
+/* -------------------------------------------------------------------------- */
 
-const CHAT_EXT_TEXTO = ['txt', 'md', 'csv', 'json', 'log'];
+async function checkOllamaStatus() {
+  const statusEl = document.getElementById('ollama-status');
+  const statusDot = document.getElementById('ollama-status-dot');
+  const statusText = document.getElementById('ollama-status-text');
+  const selectEl = document.getElementById('ollama-model-select');
 
-function fileExt(name) {
-  return (name.split('.').pop() || '').toLowerCase();
-}
-
-function readAsText(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result || ''));
-    r.onerror = () => reject(new Error('No se pudo leer el archivo'));
-    r.readAsText(file, 'utf-8');
-  });
-}
-
-function readAsArrayBuffer(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);
-    r.onerror = () => reject(new Error('No se pudo leer el archivo'));
-    r.readAsArrayBuffer(file);
-  });
-}
-
-async function extraerTextoPDF(file) {
-  if (typeof pdfjsLib === 'undefined') {
-    throw new Error('El lector de PDF no se ha cargado (revisa tu conexión a internet la primera vez).');
-  }
-  const buffer = await readAsArrayBuffer(file);
-  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-  let texto = '';
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    texto += content.items.map((it) => it.str).join(' ') + '\n\n';
-  }
-  return texto.trim();
-}
-
-async function extraerTextoDOCX(file) {
-  if (typeof mammoth === 'undefined') {
-    throw new Error('El lector de Word no se ha cargado (revisa tu conexión a internet la primera vez).');
-  }
-  const buffer = await readAsArrayBuffer(file);
-  const result = await mammoth.extractRawText({ arrayBuffer: buffer });
-  return (result.value || '').trim();
-}
-
-async function extraerTextoArchivo(file) {
-  const ext = fileExt(file.name);
-  if (ext === 'pdf') return extraerTextoPDF(file);
-  if (ext === 'docx') return extraerTextoDOCX(file);
-  if (ext === 'doc') {
-    throw new Error('Los .doc antiguos no se pueden leer, guarda el archivo como .docx o .pdf.');
-  }
-  if (CHAT_EXT_TEXTO.includes(ext)) return readAsText(file);
-  throw new Error(`Formato .${ext} no soportado. Usa .txt, .md, .csv, .json, .pdf o .docx.`);
-}
-
-/* ------------------------------------------------------------------------ */
-/* 3. MOTOR DE BÚSQUEDA LOCAL (tokenizado + chunks + TF-IDF simplificado)   */
-/* ------------------------------------------------------------------------ */
-
-const CHAT_STOPWORDS = new Set([
-  'de', 'la', 'que', 'el', 'en', 'y', 'a', 'los', 'del', 'se', 'las', 'por',
-  'un', 'para', 'con', 'no', 'una', 'su', 'al', 'lo', 'como', 'más', 'pero',
-  'sus', 'le', 'ya', 'o', 'este', 'sí', 'porque', 'esta', 'entre', 'cuando',
-  'muy', 'sin', 'sobre', 'también', 'me', 'hasta', 'hay', 'donde', 'quien',
-  'desde', 'todo', 'nos', 'durante', 'todos', 'uno', 'les', 'ni', 'contra',
-  'otros', 'ese', 'eso', 'ante', 'ellos', 'e', 'esto', 'mí', 'antes', 'algunos',
-  'qué', 'unos', 'yo', 'otro', 'otras', 'otra', 'él', 'tanto', 'esa', 'estos',
-  'mucho', 'quienes', 'nada', 'muchos', 'cual', 'poco', 'ella', 'estar', 'estas',
-  'algunas', 'algo', 'nosotros', 'mi', 'mis', 'tú', 'te', 'ti', 'tu', 'tus',
-  'ellas', 'nosotras', 'vosotros', 'vosotras', 'os', 'mío', 'mía', 'míos',
-  'mías', 'tuyo', 'tuya', 'tuyos', 'tuyas', 'suyo', 'suya', 'suyos', 'suyas',
-  'es', 'son', 'fue', 'ser', 'está', 'están', 'soy', 'eres', 'somos',
-]);
-
-function quitarAcentos(str) {
-  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-}
-
-function tokenize(text) {
-  return quitarAcentos(String(text).toLowerCase())
-    .replace(/[^a-z0-9ñ\s]/g, ' ')
-    .split(/\s+/)
-    .filter((t) => t.length > 2 && !CHAT_STOPWORDS.has(t));
-}
-
-// Trocea un texto largo en fragmentos solapados para no perder contexto
-// en los saltos entre trozos.
-function chunkText(text, chunkWords = 130, overlapWords = 35) {
-  const words = String(text).replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
-  if (words.length === 0) return [];
-  const chunks = [];
-  let start = 0;
-  while (start < words.length) {
-    const end = Math.min(start + chunkWords, words.length);
-    chunks.push(words.slice(start, end).join(' '));
-    if (end === words.length) break;
-    start += chunkWords - overlapWords;
-  }
-  return chunks;
-}
-
-function buildChunkIndex(fuentes) {
-  const chunks = [];
-  fuentes.forEach((f) => {
-    chunkText(f.contenido).forEach((texto, i) => {
-      chunks.push({ fuenteId: f.id, fuenteNombre: f.nombre, tipo: f.tipo, origen: f.origen, chunkIndex: i, texto, tokens: tokenize(texto) });
+  try {
+    const resp = await fetch(`${OLLAMA.baseUrl}/api/tags`, {
+      signal: AbortSignal.timeout(3000),
     });
-  });
-  return chunks;
-}
+    if (!resp.ok) throw new Error('Respuesta no válida');
+    const data = await resp.json();
 
-// Puntuación tipo TF-IDF muy simplificada: para cada término de la pregunta,
-// suma su frecuencia en el chunk ponderada por lo raro que sea ese término
-// en el conjunto de chunks (así "parque" pesa menos que un término concreto
-// que solo aparece un par de veces). Sin librerías externas.
-function scoreChunks(queryTokens, chunks) {
-  if (queryTokens.length === 0 || chunks.length === 0) return [];
-  const N = chunks.length;
-  const df = {};
-  queryTokens.forEach((term) => {
-    df[term] = chunks.filter((c) => c.tokens.includes(term)).length;
-  });
+    OLLAMA.connected = true;
+    OLLAMA.models = (data.models || []).map((m) => m.name);
 
-  const scored = chunks.map((chunk) => {
-    let score = 0;
-    const tf = {};
-    chunk.tokens.forEach((t) => { tf[t] = (tf[t] || 0) + 1; });
-    queryTokens.forEach((term) => {
-      if (!tf[term]) return;
-      const idf = Math.log((N + 1) / (df[term] + 1)) + 1;
-      score += tf[term] * idf;
-    });
-    // Pequeña normalización para no premiar solo a los chunks larguísimos
-    score = score / Math.sqrt(chunk.tokens.length || 1);
-    return { ...chunk, score };
-  });
+    if (statusDot) statusDot.className = 'ollama-dot connected';
+    if (statusText) statusText.textContent = 'Conectado';
+    if (statusEl) statusEl.className = 'ollama-status connected';
 
-  return scored.filter((c) => c.score > 0).sort((a, b) => b.score - a.score);
-}
+    // Llenar selector de modelos
+    if (selectEl && OLLAMA.models.length > 0) {
+      selectEl.innerHTML = OLLAMA.models.map((m) => {
+        const short = m.split(':')[0];
+        return `<option value="${m}" ${m === OLLAMA.model ? 'selected' : ''}>${short}</option>`;
+      }).join('');
 
-function resaltarTerminos(texto, queryTokens) {
-  let html = escapeHtml(texto);
-  const vistos = new Set();
-  queryTokens.forEach((term) => {
-    if (vistos.has(term) || term.length < 3) return;
-    vistos.add(term);
-    const re = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\w*)`, 'gi');
-    html = html.replace(re, '<mark>$1</mark>');
-  });
-  return html;
-}
-
-// Responde una pregunta: primero busca solo en archivos; si no hay nada con
-// una puntuación mínima decente, amplía la búsqueda a las webs guardadas.
-function responderPregunta(pregunta, fuentes) {
-  const queryTokens = tokenize(pregunta);
-  if (queryTokens.length === 0) return { resultados: [], fallback: false, sinTerminos: true };
-
-  const chunksArchivo = buildChunkIndex(fuentes.filter((f) => f.tipo === 'archivo'));
-  let resultados = scoreChunks(queryTokens, chunksArchivo).slice(0, 5);
-  let fallback = false;
-
-  const UMBRAL_MINIMO = 0.35;
-  if (resultados.length === 0 || resultados[0].score < UMBRAL_MINIMO) {
-    const chunksWeb = buildChunkIndex(fuentes.filter((f) => f.tipo === 'web'));
-    const resultadosWeb = scoreChunks(queryTokens, chunksWeb).slice(0, 5);
-    if (resultadosWeb.length > 0 && (resultados.length === 0 || resultadosWeb[0].score > resultados[0]?.score)) {
-      resultados = resultadosWeb;
-      fallback = true;
+      // Si no hay modelo guardado o el guardado ya no existe, usar el primero
+      if (!OLLAMA.model || !OLLAMA.models.includes(OLLAMA.model)) {
+        OLLAMA.model = OLLAMA.models[0];
+        selectEl.value = OLLAMA.model;
+        localStorage.setItem('parksales_ollama_model', OLLAMA.model);
+      }
+      selectEl.disabled = false;
+    } else if (selectEl) {
+      selectEl.innerHTML = '<option>Sin modelos</option>';
+      selectEl.disabled = true;
     }
-  }
 
-  return { resultados, fallback, queryTokens, sinTerminos: false };
+    return true;
+  } catch (err) {
+    OLLAMA.connected = false;
+    OLLAMA.models = [];
+
+    if (statusDot) statusDot.className = 'ollama-dot disconnected';
+    if (statusText) statusText.textContent = 'Desconectado';
+    if (statusEl) statusEl.className = 'ollama-status disconnected';
+    if (selectEl) {
+      selectEl.innerHTML = '<option>—</option>';
+      selectEl.disabled = true;
+    }
+
+    return false;
+  }
 }
 
-/* ------------------------------------------------------------------------ */
-/* 4. INTERFAZ — pestañas, fuentes, chat de preguntas                       */
-/* ------------------------------------------------------------------------ */
+/* -------------------------------------------------------------------------- */
+/* 3. CHAT CON OLLAMA (streaming)                                             */
+/* -------------------------------------------------------------------------- */
 
-const CHAT_STATE = { fuentes: [], tab: 'preguntar' };
+async function sendToOllama(userMessage) {
+  if (OLLAMA.generating) return;
+  if (!OLLAMA.connected) {
+    pintarMensajeIA('bot', '<p class="chat-ia-error">⚠️ Ollama no está conectado. Asegúrate de que está ejecutándose en tu PC.</p>');
+    return;
+  }
+  if (!OLLAMA.model) {
+    pintarMensajeIA('bot', '<p class="chat-ia-error">⚠️ No hay ningún modelo seleccionado. Descarga uno en Ollama (ej: <code>ollama pull llama3.2</code>).</p>');
+    return;
+  }
+
+  // Añadir mensaje del usuario al historial
+  OLLAMA.messages.push({ role: 'user', content: userMessage });
+  pintarMensajeIA('user', `<p>${escapeHtml(userMessage)}</p>`);
+
+  // Crear burbuja del bot con indicador de escritura
+  const botBubble = crearBurbujaBot();
+  OLLAMA.generating = true;
+  actualizarBtnEnviar();
+
+  try {
+    const body = {
+      model: OLLAMA.model,
+      messages: [
+        { role: 'system', content: OLLAMA.systemPrompt },
+        ...OLLAMA.messages,
+      ],
+      stream: true,
+    };
+
+    const resp = await fetch(`${OLLAMA.baseUrl}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => '');
+      throw new Error(`Error ${resp.status}: ${errText}`);
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let fullResponse = '';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // Ollama envía JSON separados por newline
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const chunk = JSON.parse(line);
+          if (chunk.message && chunk.message.content) {
+            fullResponse += chunk.message.content;
+            actualizarBurbujaBot(botBubble, fullResponse);
+          }
+        } catch (e) {
+          // línea JSON inválida, ignorar
+        }
+      }
+    }
+
+    // Procesar lo que quede en el buffer
+    if (buffer.trim()) {
+      try {
+        const chunk = JSON.parse(buffer);
+        if (chunk.message && chunk.message.content) {
+          fullResponse += chunk.message.content;
+          actualizarBurbujaBot(botBubble, fullResponse);
+        }
+      } catch (e) { /* ignorar */ }
+    }
+
+    // Si no hubo respuesta
+    if (!fullResponse) {
+      actualizarBurbujaBot(botBubble, '_El modelo no devolvió ninguna respuesta._');
+    }
+
+    // Guardar respuesta en historial
+    OLLAMA.messages.push({ role: 'assistant', content: fullResponse });
+
+  } catch (err) {
+    console.error('Error Ollama:', err);
+    actualizarBurbujaBot(botBubble, `⚠️ Error al comunicarse con Ollama: ${err.message}`);
+    // Quitar el mensaje del usuario del historial si falló
+    OLLAMA.messages.pop();
+  } finally {
+    OLLAMA.generating = false;
+    actualizarBtnEnviar();
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 4. RENDERIZADO — UI del chat                                               */
+/* -------------------------------------------------------------------------- */
 
 function initChatIA() {
-  wireChatTabs();
-  wireFuentesForm();
-  wireChatForm();
+  wireChatIATabs();
+  wireChatIAForm();
+  wireModelSelect();
+  wireClearChat();
   wireFrasesBuscador();
   renderFrases('');
-  cargarFuentes();
+
+  // Comprobar conexión con Ollama al arrancar
+  checkOllamaStatus();
+  // Recomprobar cada 15 segundos
+  setInterval(checkOllamaStatus, 15000);
 }
 
-async function cargarFuentes() {
-  try {
-    CHAT_STATE.fuentes = await CHAT_DB.getFuentes();
-  } catch (err) {
-    console.error(err);
-    toast('No se pudieron cargar las fuentes guardadas: ' + err.message, 'error');
-    CHAT_STATE.fuentes = getFuentesLocal();
-  }
-  renderFuentesList();
-  actualizarContadorFuentes();
-}
-
-function wireChatTabs() {
+function wireChatIATabs() {
   document.querySelectorAll('#view-chat-ia .chat-ia-tab').forEach((btn) => {
     btn.addEventListener('click', () => {
-      CHAT_STATE.tab = btn.dataset.tab;
       document.querySelectorAll('#view-chat-ia .chat-ia-tab').forEach((b) => b.classList.toggle('active', b === btn));
       document.querySelectorAll('#view-chat-ia .chat-ia-panel').forEach((p) => p.classList.toggle('active', p.id === `chat-ia-panel-${btn.dataset.tab}`));
     });
   });
 }
 
-function actualizarContadorFuentes() {
-  const nArchivos = CHAT_STATE.fuentes.filter((f) => f.tipo === 'archivo').length;
-  const nWebs = CHAT_STATE.fuentes.filter((f) => f.tipo === 'web').length;
-  const el = document.getElementById('chat-ia-fuentes-resumen');
-  if (el) {
-    el.textContent = CHAT_STATE.fuentes.length === 0
-      ? 'Todavía no has añadido ninguna fuente.'
-      : `${nArchivos} archivo${nArchivos === 1 ? '' : 's'} · ${nWebs} web${nWebs === 1 ? '' : 's'} guardadas`;
-  }
-}
-
-/* ---- Alta de fuentes (archivo o web) ---- */
-
-function wireFuentesForm() {
-  const inputArchivo = document.getElementById('chat-ia-file-input');
-  const btnArchivo = document.getElementById('chat-ia-file-btn');
-  btnArchivo.addEventListener('click', () => inputArchivo.click());
-  inputArchivo.addEventListener('change', async (e) => {
-    const files = Array.from(e.target.files || []);
-    for (const file of files) await subirArchivo(file);
-    inputArchivo.value = '';
-  });
-
-  // drag & drop
-  const dropZone = document.getElementById('chat-ia-dropzone');
-  ['dragover', 'dragenter'].forEach((ev) => dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.add('dragover'); }));
-  ['dragleave', 'drop'].forEach((ev) => dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); }));
-  dropZone.addEventListener('drop', async (e) => {
-    const files = Array.from(e.dataTransfer.files || []);
-    for (const file of files) await subirArchivo(file);
-  });
-
-  document.getElementById('chat-ia-web-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await añadirWeb();
-  });
-
-  document.getElementById('chat-ia-web-autofetch-btn').addEventListener('click', intentarDescargarWeb);
-}
-
-async function subirArchivo(file) {
-  const MAX_MB = 8;
-  if (file.size > MAX_MB * 1024 * 1024) {
-    toast(`"${file.name}" pesa demasiado (máx. ${MAX_MB} MB).`, 'error');
-    return;
-  }
-  toast(`Leyendo "${file.name}"…`, 'info', 2000);
-  try {
-    const texto = await extraerTextoArchivo(file);
-    if (!texto || texto.trim().length < 5) {
-      toast(`No se ha encontrado texto legible en "${file.name}".`, 'error');
-      return;
-    }
-    const fuente = await CHAT_DB.addFuente({
-      tipo: 'archivo',
-      nombre: file.name,
-      origen: file.name,
-      contenido: texto,
-      tamano_bytes: file.size,
-    });
-    CHAT_STATE.fuentes.unshift(fuente);
-    renderFuentesList();
-    actualizarContadorFuentes();
-    toast(`"${file.name}" añadido (${tokenize(texto).length} palabras clave indexadas).`, 'success');
-  } catch (err) {
-    console.error(err);
-    toast(`Error con "${file.name}": ${err.message}`, 'error', 5000);
-  }
-}
-
-async function intentarDescargarWeb() {
-  const urlInput = document.getElementById('chat-ia-web-url');
-  const textarea = document.getElementById('chat-ia-web-texto');
-  const url = urlInput.value.trim();
-  if (!url) { toast('Escribe primero la URL de la web.', 'error'); return; }
-  toast('Intentando descargar la página… si falla, pega el texto a mano.', 'info', 3000);
-  try {
-    const resp = await fetch(url, { mode: 'cors' });
-    if (!resp.ok) throw new Error('Respuesta no válida (' + resp.status + ')');
-    const html = await resp.text();
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    doc.querySelectorAll('script, style, noscript, nav, footer').forEach((el) => el.remove());
-    const texto = (doc.body?.innerText || '').replace(/\n{3,}/g, '\n\n').trim();
-    if (!texto) throw new Error('La página no devolvió texto legible.');
-    textarea.value = texto;
-    toast('Texto descargado. Revísalo y pulsa "Guardar web".', 'success');
-  } catch (err) {
-    toast('No se ha podido descargar automáticamente (bloqueo CORS del sitio). Pega el texto a mano abajo.', 'error', 6000);
-  }
-}
-
-async function añadirWeb() {
-  const urlInput = document.getElementById('chat-ia-web-url');
-  const nombreInput = document.getElementById('chat-ia-web-nombre');
-  const textarea = document.getElementById('chat-ia-web-texto');
-  const url = urlInput.value.trim();
-  const nombre = nombreInput.value.trim() || url || 'Web sin nombre';
-  const texto = textarea.value.trim();
-
-  if (!texto) {
-    toast('Pega o descarga el contenido de la web antes de guardar.', 'error');
-    return;
-  }
-
-  try {
-    const fuente = await CHAT_DB.addFuente({
-      tipo: 'web',
-      nombre,
-      origen: url || null,
-      contenido: texto,
-      tamano_bytes: new Blob([texto]).size,
-    });
-    CHAT_STATE.fuentes.unshift(fuente);
-    renderFuentesList();
-    actualizarContadorFuentes();
-    urlInput.value = '';
-    nombreInput.value = '';
-    textarea.value = '';
-    toast(`Web "${nombre}" guardada.`, 'success');
-  } catch (err) {
-    console.error(err);
-    toast('Error al guardar la web: ' + err.message, 'error');
-  }
-}
-
-function renderFuentesList() {
-  const cont = document.getElementById('chat-ia-fuentes-list');
-  if (!cont) return;
-  if (CHAT_STATE.fuentes.length === 0) {
-    cont.innerHTML = `
-      <div class="empty-state">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/></svg>
-        <span>Todavía no has añadido archivos ni webs. Sube algo arriba para empezar a preguntar.</span>
-      </div>`;
-    return;
-  }
-  cont.innerHTML = CHAT_STATE.fuentes.map((f) => `
-    <div class="fuente-item">
-      <div class="fuente-item-icon ${f.tipo}">
-        ${f.tipo === 'archivo'
-          ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/></svg>'
-          : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>'}
-      </div>
-      <div class="fuente-item-info">
-        <strong>${escapeHtml(f.nombre)}</strong>
-        <span>${f.tipo === 'web' ? (f.origen ? escapeHtml(f.origen) : 'Texto pegado') : fmtBytes(f.tamano_bytes)} · ${tokenize(f.contenido).length} palabras clave</span>
-      </div>
-      <button class="btn btn-ghost btn-sm fuente-item-del" data-id="${f.id}" title="Eliminar esta fuente">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-      </button>
-    </div>
-  `).join('');
-
-  cont.querySelectorAll('.fuente-item-del').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const f = CHAT_STATE.fuentes.find((x) => x.id === btn.dataset.id);
-      confirmDialog({
-        title: 'Eliminar fuente',
-        message: `Se eliminará "${f?.nombre || ''}" y dejará de usarse para responder preguntas.`,
-        onConfirm: async () => {
-          await CHAT_DB.deleteFuente(btn.dataset.id);
-          CHAT_STATE.fuentes = CHAT_STATE.fuentes.filter((x) => x.id !== btn.dataset.id);
-          renderFuentesList();
-          actualizarContadorFuentes();
-          toast('Fuente eliminada.', 'success');
-        },
-      });
-    });
-  });
-}
-
-function fmtBytes(n) {
-  if (!n) return '—';
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-/* ---- Chat de preguntas ---- */
-
-function wireChatForm() {
+function wireChatIAForm() {
   const form = document.getElementById('chat-ia-form');
+  const input = document.getElementById('chat-ia-input');
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const input = document.getElementById('chat-ia-input');
-    const pregunta = input.value.trim();
-    if (!pregunta) return;
+    const msg = input.value.trim();
+    if (!msg || OLLAMA.generating) return;
     input.value = '';
-    procesarPregunta(pregunta);
+    sendToOllama(msg);
+  });
+
+  // Enter para enviar (shift+enter para nueva línea si fuera textarea)
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      form.dispatchEvent(new Event('submit'));
+    }
   });
 }
 
-function pintarMensaje(rol, html) {
+function wireModelSelect() {
+  const select = document.getElementById('ollama-model-select');
+  if (!select) return;
+  select.addEventListener('change', () => {
+    OLLAMA.model = select.value;
+    localStorage.setItem('parksales_ollama_model', OLLAMA.model);
+    toast(`Modelo cambiado a ${OLLAMA.model.split(':')[0]}`, 'success', 2000);
+  });
+}
+
+function wireClearChat() {
+  const btn = document.getElementById('chat-ia-clear-btn');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    OLLAMA.messages = [];
+    const cont = document.getElementById('chat-ia-mensajes');
+    if (cont) {
+      cont.innerHTML = `
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 2a8.5 8.5 0 0 0-8.5 8.5c0 3.03 1.6 5.7 4 7.2V21l3.3-1.8a8.6 8.6 0 0 0 1.2.1 8.5 8.5 0 0 0 0-17z"/>
+            <path d="M8 10h.01M12 10h.01M16 10h.01"/>
+          </svg>
+          <span>Escribe lo que necesites. Puedo ayudarte con cualquier pregunta.</span>
+        </div>`;
+    }
+    toast('Conversación limpiada', 'success', 1500);
+  });
+}
+
+function actualizarBtnEnviar() {
+  const btn = document.querySelector('#chat-ia-form button[type="submit"]');
+  if (!btn) return;
+  btn.disabled = OLLAMA.generating;
+  if (OLLAMA.generating) {
+    btn.classList.add('generating');
+  } else {
+    btn.classList.remove('generating');
+  }
+}
+
+function pintarMensajeIA(rol, html) {
   const cont = document.getElementById('chat-ia-mensajes');
+  if (!cont) return;
   const empty = cont.querySelector('.empty-state');
   if (empty) empty.remove();
   const div = document.createElement('div');
@@ -495,46 +300,72 @@ function pintarMensaje(rol, html) {
   cont.scrollTop = cont.scrollHeight;
 }
 
-function procesarPregunta(pregunta) {
-  pintarMensaje('user', `<p>${escapeHtml(pregunta)}</p>`);
+function crearBurbujaBot() {
+  const cont = document.getElementById('chat-ia-mensajes');
+  if (!cont) return null;
+  const empty = cont.querySelector('.empty-state');
+  if (empty) empty.remove();
 
-  if (CHAT_STATE.fuentes.length === 0) {
-    pintarMensaje('bot', `<p>Todavía no tengo ninguna fuente añadida. Ve a la pestaña <strong>Fuentes</strong> y sube algún archivo o web primero.</p>`);
-    return;
-  }
-
-  const { resultados, fallback, sinTerminos } = responderPregunta(pregunta, CHAT_STATE.fuentes);
-
-  if (sinTerminos) {
-    pintarMensaje('bot', `<p>No he podido sacar ninguna palabra clave de esa pregunta, intenta reformularla.</p>`);
-    return;
-  }
-
-  if (resultados.length === 0) {
-    pintarMensaje('bot', `<p>No he encontrado nada relacionado en tus archivos ni en tus webs guardadas.</p>`);
-    return;
-  }
-
-  const queryTokens = tokenize(pregunta);
-  const avisoFallback = fallback
-    ? `<p class="chat-ia-aviso">No encontré nada claro en tus archivos, esto viene de tus webs guardadas:</p>`
-    : '';
-
-  const bloques = resultados.slice(0, 3).map((r) => `
-    <div class="chat-ia-resultado">
-      <div class="chat-ia-resultado-fuente">
-        ${r.tipo === 'archivo' ? '📄' : '🌐'} <strong>${escapeHtml(r.fuenteNombre)}</strong>
-      </div>
-      <p>${resaltarTerminos(r.texto, queryTokens)}</p>
-    </div>
-  `).join('');
-
-  pintarMensaje('bot', `${avisoFallback}${bloques}`);
+  const div = document.createElement('div');
+  div.className = 'chat-ia-msg bot';
+  div.innerHTML = `
+    <div class="chat-ia-typing">
+      <span></span><span></span><span></span>
+    </div>`;
+  cont.appendChild(div);
+  cont.scrollTop = cont.scrollHeight;
+  return div;
 }
 
-/* ------------------------------------------------------------------------ */
-/* 5. FRASES PARA EMAIL                                                     */
-/* ------------------------------------------------------------------------ */
+function actualizarBurbujaBot(bubble, rawText) {
+  if (!bubble) return;
+  bubble.innerHTML = `<div class="chat-ia-markdown">${renderMarkdownBasico(rawText)}</div>`;
+  const cont = document.getElementById('chat-ia-mensajes');
+  if (cont) cont.scrollTop = cont.scrollHeight;
+}
+
+/* --- Renderizado de markdown básico --- */
+
+function renderMarkdownBasico(text) {
+  if (!text) return '';
+  let html = escapeHtml(text);
+
+  // Bloques de código (``` ... ```)
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    return `<pre><code class="lang-${lang || 'text'}">${code.trim()}</code></pre>`;
+  });
+
+  // Código inline (`...`)
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Negritas (**...**)
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+  // Cursivas (*...*)
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+  // Listas con guión
+  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`);
+
+  // Listas numeradas
+  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+
+  // Headers
+  html = html.replace(/^### (.+)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^# (.+)$/gm, '<h3>$1</h3>');
+
+  // Párrafos (doble newline)
+  html = html.replace(/\n\n/g, '</p><p>');
+  html = html.replace(/\n/g, '<br>');
+
+  return `<p>${html}</p>`;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 5. FRASES PARA EMAIL (se mantienen intactas)                               */
+/* -------------------------------------------------------------------------- */
 
 const FRASES_EMAIL = [
   { cat: 'Saludo inicial', texto: 'Espero que este correo le encuentre bien.' },
@@ -569,11 +400,13 @@ const FRASES_EMAIL = [
 
 function wireFrasesBuscador() {
   const input = document.getElementById('chat-ia-frases-buscador');
+  if (!input) return;
   input.addEventListener('input', debounce((e) => renderFrases(e.target.value.trim().toLowerCase()), 150));
 }
 
 function renderFrases(filtro) {
   const cont = document.getElementById('chat-ia-frases-list');
+  if (!cont) return;
   const items = FRASES_EMAIL.filter((f) =>
     !filtro || f.texto.toLowerCase().includes(filtro) || f.cat.toLowerCase().includes(filtro)
   );
