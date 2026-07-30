@@ -644,6 +644,7 @@ function openProfileSettings() {
   const workdays = getWorkdaysPerMonth();
   openModal({
     title: 'Mi perfil y objetivos',
+    width: '500px',
     bodyHtml: `
       <div class="profile-modal-grid">
         <div class="profile-intro">
