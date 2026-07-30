@@ -69,6 +69,10 @@ function wireLlamadasForm() {
   if (!form || form.dataset.wired === '1') return;
   form.dataset.wired = '1';
 
+  // Deshabilitar validación nativa del navegador para que el submit
+  // event se dispare siempre y la validación la maneje nuestro JS
+  form.noValidate = true;
+
   // Tipo selector
   document.querySelectorAll('input[name="ll-tipo"]').forEach(el => {
     el.addEventListener('change', () => {
@@ -104,68 +108,73 @@ function wireLlamadasForm() {
 }
 
 function guardarLlamada() {
-  const tipo = document.querySelector('input[name="ll-tipo"]:checked')?.value || 'entrada';
-  const fecha = document.getElementById('ll-fecha')?.value;
-  const hora = document.getElementById('ll-hora')?.value;
-  const telefono = document.getElementById('ll-telefono')?.value.trim() || '';
-  const cliente = document.getElementById('ll-cliente')?.value.trim() || '';
-  const notas = document.getElementById('ll-notas')?.value.trim() || '';
-  const correo = document.getElementById('ll-correo')?.value.trim() || '';
-  const localizador = document.getElementById('ll-localizador')?.value.trim() || '';
+  try {
+    const tipo = document.querySelector('input[name="ll-tipo"]:checked')?.value || 'entrada';
+    const fecha = document.getElementById('ll-fecha')?.value;
+    const hora = document.getElementById('ll-hora')?.value;
+    const telefono = document.getElementById('ll-telefono')?.value.trim() || '';
+    const cliente = document.getElementById('ll-cliente')?.value.trim() || '';
+    const notas = document.getElementById('ll-notas')?.value.trim() || '';
+    const correo = document.getElementById('ll-correo')?.value.trim() || '';
+    const localizador = document.getElementById('ll-localizador')?.value.trim() || '';
 
-  if (!fecha || !hora) { toast('Indica fecha y hora de la llamada', 'error'); return; }
-  if (!telefono) { toast('Indica el teléfono', 'error'); return; }
-  if (!cliente) { toast('Indica el nombre del cliente', 'error'); return; }
-  if (tipo === 'entrada') {
-    const parqueId = document.getElementById('ll-parque')?.value;
-    if (!parqueId) { toast('Selecciona un parque', 'error'); return; }
-  } else {
-    const bonoId = document.getElementById('ll-bono')?.value;
-    if (!bonoId) { toast('Selecciona un tipo de bono', 'error'); return; }
+    if (!fecha || !hora) { toast('Indica fecha y hora de la llamada', 'error'); return; }
+    if (!telefono) { toast('Indica el teléfono', 'error'); return; }
+    if (!cliente) { toast('Indica el nombre del cliente', 'error'); return; }
+    if (tipo === 'entrada') {
+      const parqueId = document.getElementById('ll-parque')?.value;
+      if (!parqueId) { toast('Selecciona un parque', 'error'); return; }
+    } else {
+      const bonoId = document.getElementById('ll-bono')?.value;
+      if (!bonoId) { toast('Selecciona un tipo de bono', 'error'); return; }
+    }
+
+    let itemId = null;
+    let itemNombre = '';
+    if (tipo === 'entrada') {
+      itemId = document.getElementById('ll-parque')?.value || null;
+      const parque = itemId ? STATE.parques.find(p => p.id === itemId) : null;
+      itemNombre = parque ? parque.nombre : '';
+    } else {
+      itemId = document.getElementById('ll-bono')?.value || null;
+      const bono = itemId ? STATE.tipos_bono.find(b => b.id === itemId) : null;
+      itemNombre = bono ? bono.nombre : '';
+    }
+
+    const fechaHora = `${fecha}T${hora}:00`;
+
+    const llamada = {
+      id: uid(),
+      created_at: new Date().toISOString(),
+      fecha_hora: fechaHora,
+      tipo,
+      item_id: itemId,
+      item_nombre: itemNombre,
+      telefono,
+      cliente,
+      notas,
+      correo,
+      localizador,
+      completada: false,
+      cancelada: false,
+    };
+
+    const calls = getCalls();
+    calls.push(llamada);
+    saveCalls(calls);
+
+    toast('Llamada programada ✓', 'success');
+
+    // Play a subtle confirmation sound
+    playBeep(800, 100);
+
+    resetLlamadaForm();
+    renderLlamadasList();
+    startAlarmChecker();
+  } catch (err) {
+    console.error('Error al guardar la llamada:', err);
+    toast('Error al programar la llamada: ' + err.message, 'error');
   }
-
-  let itemId = null;
-  let itemNombre = '';
-  if (tipo === 'entrada') {
-    itemId = document.getElementById('ll-parque')?.value || null;
-    const parque = itemId ? STATE.parques.find(p => p.id === itemId) : null;
-    itemNombre = parque ? parque.nombre : '';
-  } else {
-    itemId = document.getElementById('ll-bono')?.value || null;
-    const bono = itemId ? STATE.tipos_bono.find(b => b.id === itemId) : null;
-    itemNombre = bono ? bono.nombre : '';
-  }
-
-  const fechaHora = `${fecha}T${hora}:00`;
-
-  const llamada = {
-    id: uid(),
-    created_at: new Date().toISOString(),
-    fecha_hora: fechaHora,
-    tipo,
-    item_id: itemId,
-    item_nombre: itemNombre,
-    telefono,
-    cliente,
-    notas,
-    correo,
-    localizador,
-    completada: false,
-    cancelada: false,
-  };
-
-  const calls = getCalls();
-  calls.push(llamada);
-  saveCalls(calls);
-
-  toast('Llamada programada ✓', 'success');
-
-  // Play a subtle confirmation sound
-  playBeep(800, 100);
-
-  resetLlamadaForm();
-  renderLlamadasList();
-  startAlarmChecker();
 }
 
 function resetLlamadaForm() {
