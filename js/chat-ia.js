@@ -1,16 +1,17 @@
 /* ============================================================================
-   chat-ia.js — Asistente IA local con Ollama
+   chat-ia.js — Asistente IA con doble backend: Ollama (local) + Gemini (nube)
    ----------------------------------------------------------------------------
-   Se conecta a Ollama corriendo en localhost:11434 para ofrecer un asistente
-   de IA real dentro de ParkSales. Requiere que el PC esté encendido y Ollama
-   activo con al menos un modelo descargado.
+   Permite usar el asistente de IA tanto desde localhost (Ollama) como desde
+   GitHub Pages o cualquier otro dispositivo (Google Gemini API).
 
    Estructura:
-   1. CONFIGURACIÓN   → URL de Ollama, system prompt, estado.
-   2. CONEXIÓN        → ping a Ollama, obtener modelos disponibles.
-   3. CHAT            → envío de mensajes, streaming de respuestas.
-   4. RENDERIZADO     → burbujas de chat, markdown básico, animaciones.
-   5. FRASES DE EMAIL → se mantienen del sistema anterior.
+   1. CONFIGURACIÓN   → URLs, API keys, system prompt, estado.
+   2. BACKEND          → selector de backend, auto-detección.
+   3. OLLAMA           → conexión y chat con Ollama local.
+   4. GEMINI           → conexión y chat con Google Gemini API.
+   5. CHAT COMÚN       → envío de mensajes según backend activo.
+   6. RENDERIZADO      → burbujas de chat, markdown básico, animaciones.
+   7. FRASES DE EMAIL  → se mantienen del sistema anterior.
 ============================================================================ */
 
 /* -------------------------------------------------------------------------- */
@@ -22,8 +23,6 @@ const OLLAMA = {
   model: localStorage.getItem('parksales_ollama_model') || '',
   connected: false,
   models: [],
-  messages: [],
-  generating: false,
   systemPrompt: `Eres el asistente de IA de ParkSales, una aplicación de gestión de ventas de entradas a parques de ocio. Responde siempre en español.
 
 Reglas:
@@ -32,11 +31,99 @@ Reglas:
 - Si te preguntan sobre algo específico, responde con tu mejor conocimiento.
 - Si no sabes algo, dilo con honestidad. No inventes datos.
 - Puedes usar formato: **negrita**, *cursiva*, listas con - o números, y \`código\`.
+- Busca informacion en https://www.parquewarner.com/ si necesitas información sobre el parque.
 - Si el usuario te pide información sobre un tema concreto (un parque, una empresa, etc.), da la información que tengas y si no la tienes, indícalo amablemente.`,
 };
 
+const GEMINI = {
+  baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+  apiKey: localStorage.getItem('parksales_gemini_apikey') || '',
+  model: localStorage.getItem('parksales_gemini_model') || 'gemini-2.0-flash',
+  connected: false,
+  availableModels: [
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
+    { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite' },
+    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
+    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
+  ],
+};
+
+const CHAT_STATE = {
+  messages: [],
+  generating: false,
+  // 'ollama' | 'gemini'
+  activeBackend: localStorage.getItem('parksales_chat_backend') || 'gemini',
+};
+
 /* -------------------------------------------------------------------------- */
-/* 2. CONEXIÓN CON OLLAMA                                                     */
+/* 2. BACKEND — selector y auto-detección                                     */
+/* -------------------------------------------------------------------------- */
+
+function getActiveBackend() {
+  return CHAT_STATE.activeBackend;
+}
+
+function setActiveBackend(backend) {
+  CHAT_STATE.activeBackend = backend;
+  localStorage.setItem('parksales_chat_backend', backend);
+  updateBackendUI();
+}
+
+/** Actualiza toda la UI de la toolbar según el backend activo */
+function updateBackendUI() {
+  const backend = getActiveBackend();
+  const ollamaStatusEl = document.getElementById('ollama-status');
+  const ollamaSelectEl = document.getElementById('ollama-model-select');
+  const geminiStatusEl = document.getElementById('gemini-status');
+  const geminiSelectEl = document.getElementById('gemini-model-select');
+  const geminiConfigBtn = document.getElementById('gemini-config-btn');
+  const backendSelect = document.getElementById('chat-ia-backend-select');
+
+  if (backendSelect) backendSelect.value = backend;
+
+  // Mostrar/ocultar elementos según backend
+  const ollamaEls = [ollamaStatusEl, ollamaSelectEl];
+  const geminiEls = [geminiStatusEl, geminiSelectEl, geminiConfigBtn];
+
+  ollamaEls.forEach((el) => { if (el) el.style.display = backend === 'ollama' ? '' : 'none'; });
+  geminiEls.forEach((el) => { if (el) el.style.display = backend === 'gemini' ? '' : 'none'; });
+}
+
+function wireBackendSelector() {
+  const select = document.getElementById('chat-ia-backend-select');
+  if (!select) return;
+  select.addEventListener('change', () => {
+    const newBackend = select.value;
+    if (newBackend === 'ollama' && !OLLAMA.connected) {
+      toast('Ollama no está conectado. Comprueba que está ejecutándose en tu PC.', 'error');
+    }
+    if (newBackend === 'gemini' && !GEMINI.apiKey) {
+      toast('Configura tu API Key de Gemini para usar este backend.', 'info');
+      openGeminiConfigModal();
+    }
+    setActiveBackend(newBackend);
+  });
+}
+
+/** Auto-detect: si Ollama conecta, sugerir Ollama; si no, usar Gemini */
+async function autoDetectBackend() {
+  const ollamaOk = await checkOllamaStatus();
+  if (ollamaOk && getActiveBackend() === 'gemini' && !GEMINI.apiKey) {
+    // Ollama está disponible y no hay key de Gemini → usar Ollama
+    setActiveBackend('ollama');
+  } else if (!ollamaOk && getActiveBackend() === 'ollama') {
+    // Ollama cayó → cambiar a Gemini
+    setActiveBackend('gemini');
+    if (!GEMINI.apiKey) {
+      toast('Ollama no disponible. Configura la API Key de Gemini para usar el asistente.', 'info');
+    }
+  }
+  await checkGeminiStatus();
+  updateBackendUI();
+}
+
+/* -------------------------------------------------------------------------- */
+/* 3. CONEXIÓN CON OLLAMA                                                     */
 /* -------------------------------------------------------------------------- */
 
 async function checkOllamaStatus() {
@@ -95,36 +182,15 @@ async function checkOllamaStatus() {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* 3. CHAT CON OLLAMA (streaming)                                             */
-/* -------------------------------------------------------------------------- */
+/* ---- Chat con Ollama (streaming) ---- */
 
-async function sendToOllama(userMessage) {
-  if (OLLAMA.generating) return;
-  if (!OLLAMA.connected) {
-    pintarMensajeIA('bot', '<p class="chat-ia-error">⚠️ Ollama no está conectado. Asegúrate de que está ejecutándose en tu PC.</p>');
-    return;
-  }
-  if (!OLLAMA.model) {
-    pintarMensajeIA('bot', '<p class="chat-ia-error">⚠️ No hay ningún modelo seleccionado. Descarga uno en Ollama (ej: <code>ollama pull llama3.2</code>).</p>');
-    return;
-  }
-
-  // Añadir mensaje del usuario al historial
-  OLLAMA.messages.push({ role: 'user', content: userMessage });
-  pintarMensajeIA('user', `<p>${escapeHtml(userMessage)}</p>`);
-
-  // Crear burbuja del bot con indicador de escritura
-  const botBubble = crearBurbujaBot();
-  OLLAMA.generating = true;
-  actualizarBtnEnviar();
-
+async function sendToOllama(userMessage, botBubble) {
   try {
     const body = {
       model: OLLAMA.model,
       messages: [
         { role: 'system', content: OLLAMA.systemPrompt },
-        ...OLLAMA.messages,
+        ...CHAT_STATE.messages,
       ],
       stream: true,
     };
@@ -180,41 +246,337 @@ async function sendToOllama(userMessage) {
       } catch (e) { /* ignorar */ }
     }
 
+    return fullResponse;
+  } catch (err) {
+    throw err;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 4. CONEXIÓN CON GEMINI                                                     */
+/* -------------------------------------------------------------------------- */
+
+async function checkGeminiStatus() {
+  const statusEl = document.getElementById('gemini-status');
+  const statusDot = document.getElementById('gemini-status-dot');
+  const statusText = document.getElementById('gemini-status-text');
+
+  if (!GEMINI.apiKey) {
+    GEMINI.connected = false;
+    if (statusDot) statusDot.className = 'ollama-dot disconnected';
+    if (statusText) statusText.textContent = 'Sin API Key';
+    if (statusEl) statusEl.className = 'ollama-status disconnected';
+    return false;
+  }
+
+  try {
+    const resp = await fetch(
+      `${GEMINI.baseUrl}/models?key=${GEMINI.apiKey}`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}));
+      throw new Error(errData?.error?.message || `Error ${resp.status}`);
+    }
+
+    GEMINI.connected = true;
+    if (statusDot) statusDot.className = 'ollama-dot connected';
+    if (statusText) statusText.textContent = 'Conectado';
+    if (statusEl) statusEl.className = 'ollama-status connected';
+    return true;
+  } catch (err) {
+    GEMINI.connected = false;
+    if (statusDot) statusDot.className = 'ollama-dot disconnected';
+    if (statusText) statusText.textContent = 'Error';
+    if (statusEl) statusEl.className = 'ollama-status disconnected';
+    return false;
+  }
+}
+
+function wireGeminiModelSelect() {
+  const select = document.getElementById('gemini-model-select');
+  if (!select) return;
+
+  // Llenar opciones
+  select.innerHTML = GEMINI.availableModels.map((m) =>
+    `<option value="${m.id}" ${m.id === GEMINI.model ? 'selected' : ''}>${m.name}</option>`
+  ).join('');
+
+  select.addEventListener('change', () => {
+    GEMINI.model = select.value;
+    localStorage.setItem('parksales_gemini_model', GEMINI.model);
+    const modelName = GEMINI.availableModels.find((m) => m.id === GEMINI.model)?.name || GEMINI.model;
+    toast(`Modelo cambiado a ${modelName}`, 'success', 2000);
+  });
+}
+
+function wireGeminiConfig() {
+  const btn = document.getElementById('gemini-config-btn');
+  if (!btn) return;
+  btn.addEventListener('click', openGeminiConfigModal);
+}
+
+function openGeminiConfigModal() {
+  const currentKey = GEMINI.apiKey;
+  const masked = currentKey ? currentKey.slice(0, 8) + '••••••••' + currentKey.slice(-4) : '';
+
+  openModal({
+    title: '🔑 Configurar API Key de Gemini',
+    bodyHtml: `
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <p style="color:var(--text-secondary);font-size:13px;line-height:1.6;margin:0;">
+          Para usar el asistente IA desde la nube, necesitas una API Key gratuita de Google AI.
+        </p>
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener"
+           style="display:inline-flex;align-items:center;gap:6px;color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+          Obtener API Key en Google AI Studio (gratis)
+        </a>
+        ${masked ? `<p style="color:var(--text-muted);font-size:12px;margin:0;">Key actual: <code style="color:var(--accent);">${escapeHtml(masked)}</code></p>` : ''}
+        <input type="text" id="gemini-apikey-input"
+          placeholder="Pega aquí tu API Key (ej: AIzaSy...)"
+          value="${escapeHtml(currentKey)}"
+          style="width:100%;padding:10px 14px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-s);color:var(--text-primary);font-size:13px;outline:none;">
+        <p style="color:var(--text-muted);font-size:11.5px;margin:0;line-height:1.5;">
+          ℹ️ La API Key se guarda solo en este navegador (localStorage). Nunca se sube a GitHub ni se comparte.
+        </p>
+      </div>
+    `,
+    footHtml: `
+      <button class="btn btn-ghost" id="gemini-config-cancel">Cancelar</button>
+      ${currentKey ? '<button class="btn btn-danger btn-sm" id="gemini-config-remove">Eliminar Key</button>' : ''}
+      <button class="btn btn-primary" id="gemini-config-save">Guardar</button>
+    `,
+    width: '480px',
+  });
+
+  document.getElementById('gemini-config-cancel').addEventListener('click', closeModal);
+
+  const removeBtn = document.getElementById('gemini-config-remove');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', () => {
+      GEMINI.apiKey = '';
+      localStorage.removeItem('parksales_gemini_apikey');
+      GEMINI.connected = false;
+      checkGeminiStatus();
+      updateBackendUI();
+      closeModal();
+      toast('API Key de Gemini eliminada.', 'success', 2000);
+    });
+  }
+
+  document.getElementById('gemini-config-save').addEventListener('click', async () => {
+    const input = document.getElementById('gemini-apikey-input');
+    const key = input.value.trim();
+    if (!key) {
+      toast('Introduce una API Key válida.', 'error');
+      return;
+    }
+    // Validar probando la API
+    GEMINI.apiKey = key;
+    localStorage.setItem('parksales_gemini_apikey', key);
+
+    const ok = await checkGeminiStatus();
+    if (ok) {
+      toast('✅ API Key de Gemini configurada correctamente.', 'success');
+      updateBackendUI();
+      closeModal();
+    } else {
+      toast('❌ La API Key no es válida o hay un error de conexión. Revísala.', 'error');
+      GEMINI.apiKey = currentKey; // Revertir
+      localStorage.setItem('parksales_gemini_apikey', currentKey);
+    }
+  });
+}
+
+/* ---- Chat con Gemini (streaming) ---- */
+
+async function sendToGemini(userMessage, botBubble) {
+  if (!GEMINI.apiKey) {
+    throw new Error('No hay API Key de Gemini configurada.');
+  }
+
+  try {
+    // Construir historial en formato Gemini
+    const contents = [];
+
+    // System instruction se envía aparte en Gemini
+    const geminiMessages = CHAT_STATE.messages.map((m) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
+
+    contents.push(...geminiMessages);
+
+    const body = {
+      contents,
+      systemInstruction: {
+        parts: [{ text: OLLAMA.systemPrompt }],
+      },
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 4096,
+      },
+    };
+
+    const url = `${GEMINI.baseUrl}/models/${GEMINI.model}:streamGenerateContent?alt=sse&key=${GEMINI.apiKey}`;
+
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}));
+      const errMsg = errData?.error?.message || `Error ${resp.status}`;
+      throw new Error(errMsg);
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let fullResponse = '';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // Gemini SSE: cada evento empieza con "data: " seguido de JSON
+      const lines = buffer.split('\n');
+      buffer = '';
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        if (line.startsWith('data: ')) {
+          const jsonStr = line.slice(6);
+          try {
+            const chunk = JSON.parse(jsonStr);
+            if (chunk.candidates && chunk.candidates[0]?.content?.parts) {
+              for (const part of chunk.candidates[0].content.parts) {
+                if (part.text) {
+                  fullResponse += part.text;
+                  actualizarBurbujaBot(botBubble, fullResponse);
+                }
+              }
+            }
+          } catch (e) {
+            // JSON incompleto, guardar para la siguiente iteración
+            // Solo si es la última línea (puede estar cortada)
+            if (i === lines.length - 1) {
+              buffer = line;
+            }
+          }
+        } else if (line.trim() === '' || line.startsWith(':')) {
+          // Línea vacía o comentario SSE, ignorar
+        } else {
+          // Puede ser continuación de una línea cortada
+          if (i === lines.length - 1) {
+            buffer = line;
+          }
+        }
+      }
+    }
+
+    return fullResponse;
+  } catch (err) {
+    throw err;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 5. CHAT COMÚN — envío según backend activo                                 */
+/* -------------------------------------------------------------------------- */
+
+async function sendChatMessage(userMessage) {
+  if (CHAT_STATE.generating) return;
+
+  const backend = getActiveBackend();
+
+  // Validaciones
+  if (backend === 'ollama') {
+    if (!OLLAMA.connected) {
+      pintarMensajeIA('bot', '<p class="chat-ia-error">⚠️ Ollama no está conectado. Asegúrate de que está ejecutándose en tu PC, o cambia al backend Gemini.</p>');
+      return;
+    }
+    if (!OLLAMA.model) {
+      pintarMensajeIA('bot', '<p class="chat-ia-error">⚠️ No hay ningún modelo seleccionado. Descarga uno en Ollama (ej: <code>ollama pull llama3.2</code>).</p>');
+      return;
+    }
+  } else if (backend === 'gemini') {
+    if (!GEMINI.apiKey) {
+      pintarMensajeIA('bot', '<p class="chat-ia-error">⚠️ No hay API Key de Gemini configurada. Haz clic en ⚙️ para configurarla.</p>');
+      openGeminiConfigModal();
+      return;
+    }
+  }
+
+  // Añadir mensaje del usuario al historial
+  CHAT_STATE.messages.push({ role: 'user', content: userMessage });
+  pintarMensajeIA('user', `<p>${escapeHtml(userMessage)}</p>`);
+
+  // Crear burbuja del bot con indicador de escritura
+  const botBubble = crearBurbujaBot();
+  CHAT_STATE.generating = true;
+  actualizarBtnEnviar();
+
+  try {
+    let fullResponse = '';
+
+    if (backend === 'ollama') {
+      fullResponse = await sendToOllama(userMessage, botBubble);
+    } else {
+      fullResponse = await sendToGemini(userMessage, botBubble);
+    }
+
     // Si no hubo respuesta
     if (!fullResponse) {
       actualizarBurbujaBot(botBubble, '_El modelo no devolvió ninguna respuesta._');
     }
 
     // Guardar respuesta en historial
-    OLLAMA.messages.push({ role: 'assistant', content: fullResponse });
+    CHAT_STATE.messages.push({ role: 'assistant', content: fullResponse || '' });
 
   } catch (err) {
-    console.error('Error Ollama:', err);
-    actualizarBurbujaBot(botBubble, `⚠️ Error al comunicarse con Ollama: ${err.message}`);
+    console.error(`Error ${backend}:`, err);
+    actualizarBurbujaBot(botBubble, `⚠️ Error al comunicarse con ${backend === 'ollama' ? 'Ollama' : 'Gemini'}: ${err.message}`);
     // Quitar el mensaje del usuario del historial si falló
-    OLLAMA.messages.pop();
+    CHAT_STATE.messages.pop();
   } finally {
-    OLLAMA.generating = false;
+    CHAT_STATE.generating = false;
     actualizarBtnEnviar();
   }
 }
 
 /* -------------------------------------------------------------------------- */
-/* 4. RENDERIZADO — UI del chat                                               */
+/* 6. RENDERIZADO — UI del chat                                               */
 /* -------------------------------------------------------------------------- */
 
 function initChatIA() {
   wireChatIATabs();
   wireChatIAForm();
   wireModelSelect();
+  wireBackendSelector();
+  wireGeminiModelSelect();
+  wireGeminiConfig();
   wireClearChat();
   wireFrasesBuscador();
   renderFrases('');
 
-  // Comprobar conexión con Ollama al arrancar
-  checkOllamaStatus();
+  // Detección y comprobación inicial
+  autoDetectBackend();
   // Recomprobar cada 15 segundos
-  setInterval(checkOllamaStatus, 15000);
+  setInterval(async () => {
+    await checkOllamaStatus();
+    await checkGeminiStatus();
+  }, 15000);
 }
 
 function wireChatIATabs() {
@@ -233,9 +595,9 @@ function wireChatIAForm() {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const msg = input.value.trim();
-    if (!msg || OLLAMA.generating) return;
+    if (!msg || CHAT_STATE.generating) return;
     input.value = '';
-    sendToOllama(msg);
+    sendChatMessage(msg);
   });
 
   // Enter para enviar (shift+enter para nueva línea si fuera textarea)
@@ -261,7 +623,7 @@ function wireClearChat() {
   const btn = document.getElementById('chat-ia-clear-btn');
   if (!btn) return;
   btn.addEventListener('click', () => {
-    OLLAMA.messages = [];
+    CHAT_STATE.messages = [];
     const cont = document.getElementById('chat-ia-mensajes');
     if (cont) {
       cont.innerHTML = `
@@ -280,8 +642,8 @@ function wireClearChat() {
 function actualizarBtnEnviar() {
   const btn = document.querySelector('#chat-ia-form button[type="submit"]');
   if (!btn) return;
-  btn.disabled = OLLAMA.generating;
-  if (OLLAMA.generating) {
+  btn.disabled = CHAT_STATE.generating;
+  if (CHAT_STATE.generating) {
     btn.classList.add('generating');
   } else {
     btn.classList.remove('generating');
@@ -364,7 +726,7 @@ function renderMarkdownBasico(text) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 5. FRASES PARA EMAIL (se mantienen intactas)                               */
+/* 7. FRASES PARA EMAIL (se mantienen intactas)                               */
 /* -------------------------------------------------------------------------- */
 
 const FRASES_EMAIL = [

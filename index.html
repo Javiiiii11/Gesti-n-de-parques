@@ -1223,7 +1223,7 @@
           <div class="view-header">
             <div>
               <h2>Asistente IA</h2>
-              <p class="desc">Asistente inteligente conectado a Ollama en tu PC. Necesitas tener Ollama activo en localhost:11434.</p>
+              <p class="desc">Asistente inteligente con doble backend: Ollama (local) o Gemini (nube). Úsalo desde cualquier dispositivo.</p>
             </div>
           </div>
 
@@ -1234,16 +1234,43 @@
 
           <!-- ---- PANEL: ASISTENTE ---- -->
           <div class="chat-ia-panel active" id="chat-ia-panel-asistente">
-            <!-- Toolbar: estado + modelo + limpiar -->
+            <!-- Toolbar: backend + estado + modelo + config + limpiar -->
             <div class="chat-ia-toolbar">
-              <div class="ollama-status disconnected" id="ollama-status">
-                <span class="ollama-dot disconnected" id="ollama-status-dot"></span>
-                <span id="ollama-status-text">Comprobando…</span>
+              <div class="chat-ia-toolbar-left">
+                <!-- Selector de backend -->
+                <select class="chat-ia-backend-select" id="chat-ia-backend-select">
+                  <option value="ollama">🖥️ Ollama (local)</option>
+                  <option value="gemini" selected>☁️ Gemini (nube)</option>
+                </select>
+
+                <!-- Estado Ollama (visible solo si backend = ollama) -->
+                <div class="ollama-status disconnected" id="ollama-status" style="display:none;">
+                  <span class="ollama-dot disconnected" id="ollama-status-dot"></span>
+                  <span id="ollama-status-text">Comprobando…</span>
+                </div>
+
+                <!-- Estado Gemini (visible solo si backend = gemini) -->
+                <div class="ollama-status disconnected" id="gemini-status">
+                  <span class="ollama-dot disconnected" id="gemini-status-dot"></span>
+                  <span id="gemini-status-text">Comprobando…</span>
+                </div>
               </div>
               <div class="chat-ia-toolbar-right">
-                <select class="ollama-model-select" id="ollama-model-select" disabled>
+                <!-- Selector modelo Ollama (visible solo si backend = ollama) -->
+                <select class="ollama-model-select" id="ollama-model-select" disabled style="display:none;">
                   <option>—</option>
                 </select>
+                <!-- Selector modelo Gemini (visible solo si backend = gemini) -->
+                <select class="ollama-model-select" id="gemini-model-select">
+                  <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                </select>
+                <!-- Botón configurar API Key Gemini -->
+                <button type="button" class="btn btn-ghost btn-sm" id="gemini-config-btn" title="Configurar API Key de Gemini">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                  </svg>
+                </button>
                 <button type="button" class="btn btn-ghost btn-sm" id="chat-ia-clear-btn" title="Limpiar conversación">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;">
                     <polyline points="3 6 5 6 21 6"/>
