@@ -68,16 +68,31 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 });
 
-function confirmDialog({ title, message, confirmLabel = 'Eliminar', danger = true, onConfirm }) {
+function confirmDialog({
+  title,
+  message,
+  confirmLabel = 'Eliminar',
+  danger = true,
+  width = '500px',
+  onConfirm
+}) {
+
   openModal({
     title,
+    width,
+
     bodyHtml: `<p style="color:var(--text-secondary); font-size:13.5px; line-height:1.6;">${escapeHtml(message)}</p>`,
+
     footHtml: `
       <button class="btn btn-ghost" id="confirm-cancel">Cancelar</button>
-      <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" id="confirm-ok">${escapeHtml(confirmLabel)}</button>
+      <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" id="confirm-ok">
+        ${escapeHtml(confirmLabel)}
+      </button>
     `,
   });
+
   document.getElementById('confirm-cancel').addEventListener('click', closeModal);
+
   document.getElementById('confirm-ok').addEventListener('click', async () => {
     await onConfirm();
     closeModal();

@@ -7,6 +7,7 @@ const CALLS_STORAGE_KEY = 'parksales_llamadas';
 let callsAlarmInterval = null;
 let callsNotified10min = new Set();
 let callsNotifiedExact = new Set();
+let editingCallId = null;
 
 function getCalls() {
   try {
@@ -68,6 +69,15 @@ function wireLlamadasForm() {
   const form = document.getElementById('llamada-form');
   if (!form || form.dataset.wired === '1') return;
   form.dataset.wired = '1';
+
+  // Botón cancelar edición
+  const cancelEditBtn = document.getElementById('ll-cancel-edit');
+  if (cancelEditBtn) {
+    cancelEditBtn.addEventListener('click', () => {
+      resetLlamadaForm();
+      toast('Edición cancelada', 'info');
+    });
+  }
 
   // Deshabilitar validación nativa del navegador para que el submit
   // event se dispare siempre y la validación la maneje nuestro JS
@@ -143,6 +153,46 @@ function guardarLlamada() {
 
     const fechaHora = `${fecha}T${hora}:00`;
 
+    const calls = getCalls();
+
+    if (editingCallId) {
+      // === MODO EDICIÓN: actualizar llamada existente ===
+      const idx = calls.findIndex(c => c.id === editingCallId);
+      if (idx === -1) {
+        toast('No se encontró la llamada a editar', 'error');
+        resetLlamadaForm();
+        return;
+      }
+      const existing = calls[idx];
+      calls[idx] = {
+        ...existing,
+        fecha_hora: fechaHora,
+        tipo,
+        item_id: itemId,
+        item_nombre: itemNombre,
+        telefono,
+        cliente,
+        notas,
+        correo,
+        localizador,
+        // Al editar, reactivamos la llamada (quita completada/cancelada)
+        completada: false,
+        cancelada: false,
+        updated_at: new Date().toISOString(),
+      };
+      saveCalls(calls);
+      toast('Llamada actualizada ✓', 'success');
+      playBeep(900, 100);
+      // Limpiar notificaciones previas para que las alarmas vuelvan a sonar
+      callsNotified10min.delete(editingCallId);
+      callsNotifiedExact.delete(editingCallId);
+      resetLlamadaForm();
+      renderLlamadasList();
+      startAlarmChecker();
+      return;
+    }
+
+    // === MODO NUEVO: crear llamada ===
     const llamada = {
       id: uid(),
       created_at: new Date().toISOString(),
@@ -159,7 +209,6 @@ function guardarLlamada() {
       cancelada: false,
     };
 
-    const calls = getCalls();
     calls.push(llamada);
     saveCalls(calls);
 
@@ -178,6 +227,7 @@ function guardarLlamada() {
 }
 
 function resetLlamadaForm() {
+  editingCallId = null;
   const form = document.getElementById('llamada-form');
   if (form) form.reset();
   const parqueField = document.getElementById('ll-field-parque');
@@ -188,6 +238,13 @@ function resetLlamadaForm() {
   if (extras) extras.style.display = 'none';
   const text = document.getElementById('ll-toggle-extras-text');
   if (text) text.textContent = 'Más opciones';
+  // Reset título y botones
+  const title = document.getElementById('llamada-form-title');
+  if (title) title.textContent = '📞 Programar llamada';
+  const submitText = document.getElementById('llamada-submit-text');
+  if (submitText) submitText.textContent = 'Programar llamada';
+  const cancelBtn = document.getElementById('ll-cancel-edit');
+  if (cancelBtn) cancelBtn.style.display = 'none';
 }
 
 function renderLlamadasList() {
@@ -251,6 +308,10 @@ function renderLlamadasList() {
       const phone = btn.dataset.callPhone;
       if (phone) window.open(`tel:${phone}`, '_self');
     }));
+  container.querySelectorAll('[data-edit-llamada]').forEach(btn =>
+    btn.addEventListener('click', () => editarLlamada(btn.dataset.editLlamada)));
+  container.querySelectorAll('[data-reactivate-llamada]').forEach(btn =>
+    btn.addEventListener('click', () => reactivarLlamada(btn.dataset.reactivateLlamada)));
 }
 
 function renderLlamadaCard(c) {
@@ -274,6 +335,7 @@ function renderLlamadaCard(c) {
   else if (isUrgent) { estadoClass = 'll-status-urgent'; estadoIcon = '🔔'; estadoText = '¡Ahora!'; }
 
   const showActions = estado === 'pendiente' || estado === 'vencida';
+  const showReactivate = estado === 'completada' || estado === 'cancelada';
 
   return `
     <div class="ll-card ${estadoClass} ${isUrgent ? 'll-urgent-pulse' : ''}">
@@ -314,6 +376,15 @@ function renderLlamadaCard(c) {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
               </button>
             ` : ``}
+            ${showReactivate ? `
+              <button class="ll-action-btn reactivate" data-reactivate-llamada="${c.id}" title="Reactivar llamada">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                Reactivar
+              </button>
+            ` : ``}
+            <button class="ll-action-btn edit" data-edit-llamada="${c.id}" title="Editar llamada">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
             <button class="ll-action-btn ghost" data-delete-llamada="${c.id}" title="Eliminar">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
             </button>
@@ -350,9 +421,92 @@ function toggleCancelarLlamada(id) {
   renderLlamadasList();
 }
 
+function editarLlamada(id) {
+  const calls = getCalls();
+  const c = calls.find(c => c.id === id);
+  if (!c) return;
+
+  editingCallId = id;
+
+  // Rellenar el formulario con los datos de la llamada
+  const tipoRadio = document.querySelector(`input[name="ll-tipo"][value="${c.tipo}"]`);
+  if (tipoRadio) tipoRadio.checked = true;
+
+  // Mostrar/ocultar campos según tipo
+  const parqueField = document.getElementById('ll-field-parque');
+  const bonoField = document.getElementById('ll-field-bono');
+  if (parqueField) parqueField.style.display = c.tipo === 'entrada' ? '' : 'none';
+  if (bonoField) bonoField.style.display = c.tipo === 'bono' ? '' : 'none';
+
+  // Rellenar selects
+  const selParque = document.getElementById('ll-parque');
+  const selBono = document.getElementById('ll-bono');
+  if (selParque && c.tipo === 'entrada') selParque.value = c.item_id || '';
+  if (selBono && c.tipo === 'bono') selBono.value = c.item_id || '';
+
+  // Rellenar campos (usar hora local para no desviar con UTC)
+  const fechaHora = new Date(c.fecha_hora);
+  const pad = n => String(n).padStart(2, '0');
+  const fechaStr = `${fechaHora.getFullYear()}-${pad(fechaHora.getMonth() + 1)}-${pad(fechaHora.getDate())}`;
+  const horaStr = `${pad(fechaHora.getHours())}:${pad(fechaHora.getMinutes())}`;
+
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val || '';
+  };
+  setVal('ll-fecha', fechaStr);
+  setVal('ll-hora', horaStr);
+  setVal('ll-telefono', c.telefono);
+  setVal('ll-cliente', c.cliente);
+  setVal('ll-notas', c.notas);
+  setVal('ll-correo', c.correo);
+  setVal('ll-localizador', c.localizador);
+
+  // Mostrar extras si hay correo o localizador
+  const extras = document.getElementById('ll-section-extras');
+  if (extras && (c.correo || c.localizador)) {
+    extras.style.display = 'block';
+    const text = document.getElementById('ll-toggle-extras-text');
+    if (text) text.textContent = 'Ocultar opciones extra';
+  }
+
+  // Actualizar título y botones
+  const title = document.getElementById('llamada-form-title');
+  if (title) title.textContent = '✏️ Editando llamada';
+  const submitText = document.getElementById('llamada-submit-text');
+  if (submitText) submitText.textContent = 'Guardar cambios';
+  const cancelBtn = document.getElementById('ll-cancel-edit');
+  if (cancelBtn) cancelBtn.style.display = '';
+
+  // Scroll al formulario
+  const form = document.getElementById('llamada-form');
+  if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  toast('Editando llamada — modifica los datos y guarda', 'info');
+}
+
+function reactivarLlamada(id) {
+  const calls = getCalls();
+  const c = calls.find(c => c.id === id);
+  if (!c) return;
+
+  // Reactivar: quitar completada/cancelada y limpiar notificaciones previas
+  c.completada = false;
+  c.cancelada = false;
+  callsNotified10min.delete(c.id);
+  callsNotifiedExact.delete(c.id);
+
+  saveCalls(calls);
+  renderLlamadasList();
+  startAlarmChecker();
+  playBeep(1000, 150);
+  toast('Llamada reactivada 🔄', 'success');
+}
+
 function deleteLlamada(id) {
   confirmDialog({
     title: 'Eliminar llamada',
+    width: '500px',
     message: '¿Estás seguro de que quieres eliminar esta llamada? Esta acción no se puede deshacer.',
     onConfirm: () => {
       let calls = getCalls();
