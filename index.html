@@ -7,7 +7,7 @@
   <title>ParkSales · Gestión de ventas de entradas</title>
   <meta name="description" content="Registra y analiza tus ventas de entradas a parques de ocio">
   <link rel="icon"
-    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%23F5A623%22/><text x=%2212%22 y=%2217%22 font-size=%2214%22 text-anchor=%22middle%22 fill=%22%230A0F1C%22 font-family=%22sans-serif%22 font-weight=%22bold%22>P</text></svg>">
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 34 34%22><defs><linearGradient id=%22l%22 x1=%220%22 y1=%220%22 x2=%2234%22 y2=%2234%22><stop offset=%220%%22 stop-color=%22%23FF9A44%22/><stop offset=%22100%%22 stop-color=%22%23FC6076%22/></linearGradient></defs><rect width=%2234%22 height=%2234%22 rx=%2210%22 fill=%22url(%23l)%22/><circle cx=%2217%22 cy=%2217%22 r=%227%22 stroke=%22white%22 stroke-width=%222%22 stroke-dasharray=%223 3%22/><circle cx=%2217%22 cy=%2217%22 r=%223%22 fill=%22white%22/><path d=%22M17 17 L22 27 M17 17 L12 27%22 stroke=%22white%22 stroke-width=%222%22 stroke-linecap=%22round%22/></svg>">
   <link rel="stylesheet" href="css/style.css">
 
   <!-- Chart.js para gráficos interactivos (con fallback de CDN secundario) -->
@@ -32,10 +32,16 @@
     <div class="auth-card">
       <div class="auth-logo">
         <svg class="ticket-mark" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="34" height="34" rx="9" fill="#F5A623" />
-          <path
-            d="M9 13a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v.5a1.5 1.5 0 0 0 0 3v.5h0v.5a1.5 1.5 0 0 0 0 3V21a2 2 0 0 1-2 2H11a2 2 0 0 1-2-2v-.5a1.5 1.5 0 0 0 0-3V17a1.5 1.5 0 0 0 0-3V13z"
-            fill="#0A0F1C" />
+          <defs>
+            <linearGradient id="logo-solid-auth" x1="0" y1="0" x2="34" y2="34">
+              <stop offset="0%" stop-color="#FF9A44"/>
+              <stop offset="100%" stop-color="#FC6076"/>
+            </linearGradient>
+          </defs>
+          <rect width="34" height="34" rx="10" fill="url(#logo-solid-auth)"/>
+          <circle cx="17" cy="17" r="7" stroke="white" stroke-width="2" stroke-dasharray="3 3"/>
+          <circle cx="17" cy="17" r="3" fill="white"/>
+          <path d="M17 17 L22 27 M17 17 L12 27" stroke="white" stroke-width="2" stroke-linecap="round"/>
         </svg>
         <span>ParkSales</span>
       </div>
@@ -67,10 +73,16 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
         <svg class="ticket-mark" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="34" height="34" rx="9" fill="#F5A623" />
-          <path
-            d="M9 13a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v.5a1.5 1.5 0 0 0 0 3v.5h0v.5a1.5 1.5 0 0 0 0 3V21a2 2 0 0 1-2 2H11a2 2 0 0 1-2-2v-.5a1.5 1.5 0 0 0 0-3V17a1.5 1.5 0 0 0 0-3V13z"
-            fill="#0A0F1C" />
+          <defs>
+            <linearGradient id="logo-solid-side" x1="0" y1="0" x2="34" y2="34">
+              <stop offset="0%" stop-color="#FF9A44"/>
+              <stop offset="100%" stop-color="#FC6076"/>
+            </linearGradient>
+          </defs>
+          <rect width="34" height="34" rx="10" fill="url(#logo-solid-side)"/>
+          <circle cx="17" cy="17" r="7" stroke="white" stroke-width="2" stroke-dasharray="3 3"/>
+          <circle cx="17" cy="17" r="3" fill="white"/>
+          <path d="M17 17 L22 27 M17 17 L12 27" stroke="white" stroke-width="2" stroke-linecap="round"/>
         </svg>
         <span>ParkSales</span>
       </div>
