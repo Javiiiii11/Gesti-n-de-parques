@@ -1,16 +1,21 @@
 /* ============================================================================
-   chat-ia.js — Asistente IA con Ollama (local o remoto vía túnel)
+   chat-ia.js — Asistente IA con doble backend: Ollama (local/túnel) o Gemini (nube)
    ----------------------------------------------------------------------------
-   Se conecta a Ollama ya sea en localhost:11434 (cuando estás en tu PC) o a
-   una URL remota configurada por el usuario (por ejemplo un túnel ngrok o
-   Cloudflare Tunnel), para usar el asistente desde GitHub Pages u otro
-   dispositivo.
+   El usuario elige el proveedor desde la toolbar. Ollama se conecta a
+   localhost:11434 o a una URL remota (túnel ngrok/Cloudflare). Gemini usa la
+   API pública de Google (gratuita) directamente desde el navegador con una
+   API key guardada en localStorage.
+
+   ⚠️ AVISO DE SEGURIDAD: la API key de Gemini queda visible en el JS del
+   cliente (localStorage + petición fetch). Válido para uso personal; si la
+   app se abre a varios usuarios, cualquiera con acceso a devtools podría ver
+   la key. Para eso haría falta un backend/proxy que la oculte.
 
    Estructura:
-   1. CONFIGURACIÓN   → URL de Ollama, system prompt, estado.
-   2. CONEXIÓN        → ping a Ollama, obtener modelos disponibles.
-   3. CHAT            → envío de mensajes, streaming de respuestas.
-   4. CONFIG UI       → modal para configurar URL remota de Ollama.
+   1. CONFIGURACIÓN   → estado de Ollama y Gemini, proveedor activo, system prompt.
+   2. CONEXIÓN        → ping a Ollama / validación de Gemini.
+   3. CHAT            → envío de mensajes (Ollama streaming, Gemini respuesta única).
+   4. CONFIG UI       → modal para configurar Ollama y la API key de Gemini.
    5. RENDERIZADO     → burbujas de chat, markdown básico, animaciones.
    6. FRASES DE EMAIL → se mantienen del sistema anterior.
 ============================================================================ */
@@ -25,8 +30,21 @@ const OLLAMA = {
   model: localStorage.getItem('parksales_ollama_model') || '',
   connected: false,
   models: [],
-  messages: [],
   generating: false,
+};
+
+const GEMINI = {
+  apiKey: localStorage.getItem('parksales_gemini_key') || '',
+  model: 'gemini-2.0-flash-lite',
+  connected: false,
+  generating: false,
+};
+
+// Historial de conversación compartido entre proveedores
+const IA_STATE = {
+  messages: [],
+  // 'ollama' | 'gemini'
+  provider: localStorage.getItem('parksales_ia_provider') || 'ollama',
   systemPrompt: `Eres el asistente de IA de ParkSales, una aplicación de gestión de ventas de entradas a parques de ocio. Responde siempre en español.
 
 Reglas:
@@ -103,8 +121,22 @@ async function checkOllamaStatus() {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 3. CHAT CON OLLAMA (streaming)                                             */
+/* 3. CHAT — despacha al proveedor activo (Ollama o Gemini)                   */
 /* -------------------------------------------------------------------------- */
+
+/** true si el proveedor activo está generando una respuesta ahora mismo */
+function isGenerating() {
+  return IA_STATE.provider === 'gemini' ? GEMINI.generating : OLLAMA.generating;
+}
+
+/** Punto de entrada único desde el formulario del chat */
+async function enviarMensajeIA(userMessage) {
+  if (IA_STATE.provider === 'gemini') {
+    await sendToGemini(userMessage);
+  } else {
+    await sendToOllama(userMessage);
+  }
+}
 
 async function sendToOllama(userMessage) {
   if (OLLAMA.generating) return;
@@ -123,7 +155,7 @@ async function sendToOllama(userMessage) {
   }
 
   // Añadir mensaje del usuario al historial
-  OLLAMA.messages.push({ role: 'user', content: userMessage });
+  IA_STATE.messages.push({ role: 'user', content: userMessage });
   pintarMensajeIA('user', `<p>${escapeHtml(userMessage)}</p>`);
 
   // Crear burbuja del bot con indicador de escritura
@@ -135,8 +167,8 @@ async function sendToOllama(userMessage) {
     const body = {
       model: OLLAMA.model,
       messages: [
-        { role: 'system', content: OLLAMA.systemPrompt },
-        ...OLLAMA.messages,
+        { role: 'system', content: IA_STATE.systemPrompt },
+        ...IA_STATE.messages,
       ],
       stream: true,
     };
@@ -198,17 +230,150 @@ async function sendToOllama(userMessage) {
     }
 
     // Guardar respuesta en historial
-    OLLAMA.messages.push({ role: 'assistant', content: fullResponse });
+    IA_STATE.messages.push({ role: 'assistant', content: fullResponse });
 
   } catch (err) {
     console.error('Error Ollama:', err);
     actualizarBurbujaBot(botBubble, `⚠️ Error al comunicarse con Ollama: ${err.message}`);
     // Quitar el mensaje del usuario del historial si falló
-    OLLAMA.messages.pop();
+    IA_STATE.messages.pop();
   } finally {
     OLLAMA.generating = false;
     actualizarBtnEnviar();
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 3b. CHAT CON GEMINI (respuesta única, con reintentos automáticos)          */
+/* -------------------------------------------------------------------------- */
+
+async function sendToGemini(userMessage) {
+  if (GEMINI.generating) return;
+  if (!GEMINI.apiKey) {
+    pintarMensajeIA('bot', '<p class="chat-ia-error">⚠️ No has configurado tu API key de Gemini. Consíguela gratis en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> y pégala en ⚙️.</p>');
+    return;
+  }
+
+  IA_STATE.messages.push({ role: 'user', content: userMessage });
+  pintarMensajeIA('user', `<p>${escapeHtml(userMessage)}</p>`);
+
+  const botBubble = crearBurbujaBot();
+  GEMINI.generating = true;
+  actualizarBtnEnviar();
+
+  try {
+    const contents = IA_STATE.messages.map((m) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI.model}:generateContent?key=${GEMINI.apiKey}`;
+    const fetchBody = JSON.stringify({
+      system_instruction: { parts: [{ text: IA_STATE.systemPrompt }] },
+      contents,
+    });
+
+    // Intenta con reintento automático en caso de cuota por minuto (429)
+    const MAX_RETRIES = 3;
+    let resp = null;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: fetchBody,
+      });
+
+      if (resp.status !== 429) break;
+
+      let errJson = null;
+      try { errJson = await resp.clone().json(); } catch { /* ignorar */ }
+
+      // Si la cuota diaria está agotada, no tiene sentido reintentar
+      const isDailyExhausted = errJson?.error?.details?.some(
+        (d) => d.violations?.some((v) => v.quotaId?.includes('PerDay'))
+      );
+      if (isDailyExhausted) {
+        throw new Error('Cuota diaria agotada. Inténtalo mañana o genera una nueva API key en aistudio.google.com/apikey.');
+      }
+
+      if (attempt === MAX_RETRIES) {
+        throw new Error('Límite de peticiones por minuto superado tras varios intentos. Espera un momento e intenta de nuevo.');
+      }
+
+      // Extraer segundos de espera del campo retryDelay (ej: "9s" → 9)
+      let waitSecs = 15;
+      try {
+        const retryInfo = errJson?.error?.details?.find((d) => d['@type']?.includes('RetryInfo'));
+        if (retryInfo?.retryDelay) {
+          const parsed = parseInt(retryInfo.retryDelay, 10);
+          if (!isNaN(parsed)) waitSecs = parsed + 1;
+        }
+      } catch { /* usar default */ }
+
+      await geminiCountdown(botBubble, waitSecs, attempt + 1, MAX_RETRIES);
+    }
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => '');
+      throw new Error(`Error ${resp.status}: ${errText}`);
+    }
+
+    const data = await resp.json();
+    const fullResponse = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') || '';
+
+    if (!fullResponse) {
+      actualizarBurbujaBot(botBubble, '_Gemini no devolvió ninguna respuesta._');
+    } else {
+      actualizarBurbujaBot(botBubble, fullResponse);
+    }
+
+    IA_STATE.messages.push({ role: 'assistant', content: fullResponse });
+    GEMINI.connected = true;
+
+  } catch (err) {
+    console.error('Error Gemini:', err);
+    actualizarBurbujaBot(botBubble, `<p class="chat-ia-error">⚠️ ${escapeHtml(err.message)}</p>`);
+    IA_STATE.messages.pop();
+    GEMINI.connected = false;
+  } finally {
+    GEMINI.generating = false;
+    actualizarBtnEnviar();
+  }
+}
+
+/**
+ * Muestra una cuenta atrás en la burbuja del bot mientras espera el reintento.
+ */
+function geminiCountdown(bubble, seconds, attempt, maxAttempts) {
+  return new Promise((resolve) => {
+    let remaining = seconds;
+    const render = () => {
+      if (!bubble) return;
+      bubble.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:6px;padding:4px 0;">
+          <span>⏳ Límite de peticiones alcanzado. Reintentando en <strong>${remaining}s</strong>…</span>
+          <span style="font-size:11px;opacity:0.6;">Intento ${attempt} de ${maxAttempts}</span>
+        </div>`;
+      const cont = document.getElementById('chat-ia-mensajes');
+      if (cont) cont.scrollTop = cont.scrollHeight;
+    };
+    render();
+    const interval = setInterval(() => {
+      remaining--;
+      if (remaining <= 0) {
+        clearInterval(interval);
+        if (bubble) {
+          bubble.innerHTML = `<div class="chat-ia-typing"><span></span><span></span><span></span></div>`;
+          const cont = document.getElementById('chat-ia-mensajes');
+          if (cont) cont.scrollTop = cont.scrollHeight;
+        }
+        resolve();
+      } else {
+        render();
+      }
+    }, 1000);
+  });
 }
 
 /* -------------------------------------------------------------------------- */
@@ -260,14 +425,50 @@ function openOllamaConfigModal() {
         <p style="color:var(--text-muted);font-size:11.5px;margin:0;line-height:1.5;">
           ℹ️ La URL se guarda solo en este navegador. Cada dispositivo puede tener su propia configuración.
         </p>` : ''}
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;">
+
+        <div>
+          <p style="color:var(--accent);font-weight:700;font-size:12.5px;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.03em;">
+            ✨ Gemini (nube, gratis)
+          </p>
+          <p style="color:var(--text-secondary);font-size:12.5px;line-height:1.6;margin:0 0 10px;">
+            Alternativa sin instalar nada. Consigue tu API key gratis en
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600;">aistudio.google.com/apikey</a>.
+          </p>
+          <label style="display:block;color:var(--text-muted);font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">
+            API key de Gemini
+          </label>
+          <input type="password" id="gemini-key-input"
+            placeholder="AIza…"
+            value="${escapeHtml(GEMINI.apiKey)}"
+            style="width:100%;padding:10px 14px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-s);color:var(--text-primary);font-size:13px;font-family:'Fira Code','Consolas',monospace;outline:none;">
+          <p style="color:var(--text-muted);font-size:11px;margin:8px 0 0;line-height:1.5;">
+            ⚠️ Se guarda solo en este navegador (localStorage). Cualquiera con acceso a las devtools de este dispositivo podría verla.
+          </p>
+        </div>
       </div>
     `,
     footHtml: `
       <button class="btn btn-ghost" id="ollama-config-cancel">Cancelar</button>
       ${!isDefault ? '<button class="btn btn-danger btn-sm" id="ollama-config-reset">Restaurar local</button>' : ''}
-      <button class="btn btn-primary" id="ollama-config-save">Guardar y probar</button>
+      <button class="btn btn-secondary" id="gemini-key-save">Guardar clave Gemini</button>
+      <button class="btn btn-primary" id="ollama-config-save">Guardar y probar Ollama</button>
     `,
     width: '520px',
+  });
+
+  document.getElementById('gemini-key-save').addEventListener('click', () => {
+    const keyInput = document.getElementById('gemini-key-input');
+    const key = keyInput.value.trim();
+    if (!key) {
+      toast('Introduce una API key de Gemini.', 'error');
+      return;
+    }
+    GEMINI.apiKey = key;
+    localStorage.setItem('parksales_gemini_key', key);
+    if (IA_STATE.provider === 'gemini') actualizarUIProveedor();
+    toast('✅ API key de Gemini guardada.', 'success');
   });
 
   document.getElementById('ollama-config-cancel').addEventListener('click', closeModal);
@@ -354,17 +555,48 @@ function updateConnectionLabel() {
 function initChatIA() {
   wireChatIATabs();
   wireChatIAForm();
+  wireProviderSelect();
   wireModelSelect();
   wireOllamaConfig();
   wireClearChat();
   wireFrasesBuscador();
   renderFrases('');
 
-  // Comprobar conexión con Ollama al arrancar
-  checkOllamaStatus();
-  updateConnectionLabel();
-  // Recomprobar cada 15 segundos
-  setInterval(checkOllamaStatus, 15000);
+  actualizarUIProveedor();
+  // Recomprobar cada 15 segundos (solo aplica al proveedor Ollama)
+  setInterval(() => {
+    if (IA_STATE.provider === 'ollama') checkOllamaStatus();
+  }, 15000);
+}
+
+/** Cambia el proveedor activo y refresca la UI de estado/modelo */
+function actualizarUIProveedor() {
+  const select = document.getElementById('ia-provider-select');
+  if (select) select.value = IA_STATE.provider;
+
+  const modelSelect = document.getElementById('ollama-model-select');
+
+  if (IA_STATE.provider === 'gemini') {
+    if (modelSelect) {
+      modelSelect.innerHTML = '<option>gemini-2.0-flash-lite</option>';
+      modelSelect.disabled = true;
+    }
+    updateStatusPill(!!GEMINI.apiKey, GEMINI.apiKey ? 'Gemini (clave configurada)' : 'Falta API key de Gemini');
+    updateConnectionLabel();
+  } else {
+    checkOllamaStatus();
+    updateConnectionLabel();
+  }
+}
+
+/** Actualiza el punto/texto de estado de la toolbar de forma genérica */
+function updateStatusPill(connected, text) {
+  const statusEl = document.getElementById('ollama-status');
+  const statusDot = document.getElementById('ollama-status-dot');
+  const statusText = document.getElementById('ollama-status-text');
+  if (statusDot) statusDot.className = `ollama-dot ${connected ? 'connected' : 'disconnected'}`;
+  if (statusText) statusText.textContent = text;
+  if (statusEl) statusEl.className = `ollama-status ${connected ? 'connected' : 'disconnected'}`;
 }
 
 function wireChatIATabs() {
@@ -383,9 +615,9 @@ function wireChatIAForm() {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const msg = input.value.trim();
-    if (!msg || OLLAMA.generating) return;
+    if (!msg || isGenerating()) return;
     input.value = '';
-    sendToOllama(msg);
+    enviarMensajeIA(msg);
   });
 
   // Enter para enviar (shift+enter para nueva línea si fuera textarea)
@@ -397,10 +629,24 @@ function wireChatIAForm() {
   });
 }
 
+/** Selector de proveedor (Ollama / Gemini) en la toolbar */
+function wireProviderSelect() {
+  const select = document.getElementById('ia-provider-select');
+  if (!select) return;
+  select.value = IA_STATE.provider;
+  select.addEventListener('change', () => {
+    IA_STATE.provider = select.value;
+    localStorage.setItem('parksales_ia_provider', IA_STATE.provider);
+    actualizarUIProveedor();
+    toast(`Proveedor cambiado a ${IA_STATE.provider === 'gemini' ? 'Gemini' : 'Ollama'}`, 'success', 2000);
+  });
+}
+
 function wireModelSelect() {
   const select = document.getElementById('ollama-model-select');
   if (!select) return;
   select.addEventListener('change', () => {
+    if (IA_STATE.provider !== 'ollama') return; // en Gemini el modelo es fijo
     OLLAMA.model = select.value;
     localStorage.setItem('parksales_ollama_model', OLLAMA.model);
     toast(`Modelo cambiado a ${OLLAMA.model.split(':')[0]}`, 'success', 2000);
@@ -417,7 +663,7 @@ function wireClearChat() {
   const btn = document.getElementById('chat-ia-clear-btn');
   if (!btn) return;
   btn.addEventListener('click', () => {
-    OLLAMA.messages = [];
+    IA_STATE.messages = [];
     const cont = document.getElementById('chat-ia-mensajes');
     if (cont) {
       cont.innerHTML = `
@@ -436,8 +682,9 @@ function wireClearChat() {
 function actualizarBtnEnviar() {
   const btn = document.querySelector('#chat-ia-form button[type="submit"]');
   if (!btn) return;
-  btn.disabled = OLLAMA.generating;
-  if (OLLAMA.generating) {
+  const generating = isGenerating();
+  btn.disabled = generating;
+  if (generating) {
     btn.classList.add('generating');
   } else {
     btn.classList.remove('generating');

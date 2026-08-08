@@ -229,6 +229,14 @@ function renderDashboard() {
   const workdaysRemaining = Math.max(1, workdays - workdaysElapsed);
   const dailyGoalRemaining = goalRemaining / workdaysRemaining;
 
+  // Get this week's sales (from Monday)
+  const inicioSemana = new Date(now);
+  inicioSemana.setDate(now.getDate() - (now.getDay() || 7) + 1); // Lunes
+  inicioSemana.setHours(0, 0, 0, 0);
+  const ventasSemana = STATE.ventas.filter((venta) => new Date(venta.fecha) >= inicioSemana);
+  const totalSemana = sum(ventasSemana, 'importe_total');
+  const countSemana = ventasSemana.length;
+
   document.getElementById('dashboard-filter-summary').textContent = filteredSummary;
 
   const stats = [
@@ -237,7 +245,7 @@ function renderDashboard() {
     { label: 'Parque más vendido', value: topParkName, sub: topParkEntry ? `${fmtNum(topParkEntries)} entradas · ${fmtEUR(topParkRevenue)}` : 'Sin ventas en el filtro', icon: 'M3 21l7-14 4 8 3-5 4 11H3z' },
     { label: 'Media por día', value: fmtEUR(dailyAverageFiltered), sub: firstFilteredSale ? `Desde ${fmtDateShort(firstFilteredSale.fecha)}` : 'Sin datos aún', icon: 'M4 19h16M6 16V9M12 16V5M18 16v-4' },
     { label: 'Ventas totales del día', value: fmtEUR(totalHoy), sub: countHoy ? `${fmtNum(countHoy)} entradas hoy` : 'Sin ventas hoy', icon: 'M3 3v18h18' },
-    { label: 'Días para terminar el mes', value: `${fmtNum(daysLeft)} días`, sub: `${fmtNum(monthDays)} días en total este mes`, icon: 'M8 2v3M16 2v3M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z' },
+    { label: 'Ventas de la semana', value: fmtEUR(totalSemana), sub: countSemana ? `${fmtNum(countSemana)} entradas esta semana` : 'Sin ventas esta semana', icon: 'M16 2v4M8 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M12 14v4M10 16h4' },
   ];
 
   document.getElementById('dashboard-stats').innerHTML = stats.map((stat) => `

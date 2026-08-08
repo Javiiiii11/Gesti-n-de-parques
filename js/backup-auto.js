@@ -166,20 +166,27 @@ function updateBackupUI() {
   }
 }
 
-/* --- Intento silencioso al arrancar la app --- */
+/* --- Activación automática al arrancar la app --- */
 async function initAutoBackup() {
-  // Comprobamos si hay backups guardados para mostrar estado
+  // Las copias automáticas se activan SIEMPRE al iniciar la app
+  autoBackupEnabled = true;
+  updateBackupUI();
+  startBackupInterval();
+
+  // Mostrar estado con el último backup guardado (si existe)
   try {
     const backups = await getBackupsFromDB();
     if (backups.length > 0) {
       setBackupStatus(`${backups.length} backup(s) guardados. Último: ${new Date(backups[0].fecha).toLocaleString('es-ES')}`);
     } else {
-      setBackupStatus('Todavía no hay backups. Actívalos o haz uno manual.');
+      // Primera vez: hacer una copia inmediatamente
+      await runBackupNow();
     }
   } catch (err) {
     setBackupStatus('Listo para guardar backups');
   }
 }
+
 
 function startBackupInterval() {
   if (backupIntervalId) clearInterval(backupIntervalId);

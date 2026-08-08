@@ -209,3 +209,24 @@ function initTopbarPomo() {
     if (e.key === 'Escape') togglePomoMenu(false);
   });
 }
+
+/* -------------------------------------------------------------------------- */
+/* COPILOT FLOTANTE — abre Microsoft Copilot en ventana popup centrada        */
+/* -------------------------------------------------------------------------- */
+
+function abrirCopilot() {
+  const url = 'https://m365.cloud.microsoft/chat/';
+  const w = 820;
+  const h = 660;
+  const left = Math.round((screen.width  - w) / 2);
+  const top  = Math.round((screen.height - h) / 2);
+  const features = `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes,toolbar=no,menubar=no,location=no,status=no`;
+
+  const popup = window.open(url, 'copilot-popup', features);
+
+  // Si el navegador bloqueó el popup, abrir en pestaña nueva como fallback
+  if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+    window.open(url, '_blank', 'noopener,noreferrer');
+    toast('💡 Activa las ventanas emergentes para una mejor experiencia con Copilot.', 'info', 4000);
+  }
+}
