@@ -652,22 +652,35 @@ function openProfileSettings() {
   const workdays = getWorkdaysPerMonth();
   openModal({
     title: 'Mi perfil y objetivos',
-    width: '500px',
+    width: '480px',
     bodyHtml: `
-      <div class="profile-modal-grid">
-        <div class="profile-intro">
-          <div class="dashboard-eyebrow">Perfil</div>
-          <h4>Configura tu meta mensual desde aquí</h4>
-          <p>Deja el dashboard limpio y guarda tus objetivos y días de trabajo en tu perfil. Esto se conserva en este navegador.</p>
-        </div>
-        <div class="profile-settings-grid">
-          <div class="form-field full">
-            <label for="profile-goal">Meta mensual (€)</label>
-            <input type="number" id="profile-goal" min="0" step="1" value="${goal}">
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <!-- Panel superior informativo -->
+        <div style="background: rgba(255,255,255,0.02); border-radius: var(--radius-m); border: 1px solid var(--border); padding: 16px; display: flex; align-items: flex-start; gap: 16px;">
+          <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(245, 166, 35, 0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #F5A623;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:22px;height:22px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
-          <div class="form-field full">
-            <label for="profile-workdays">Días de trabajo al mes</label>
-            <input type="number" id="profile-workdays" min="1" max="31" step="1" value="${workdays}">
+          <div style="flex: 1;">
+            <h4 style="margin: 0 0 4px 0; font-size: 14.5px; font-weight: 700; color: var(--text-primary);">Configura tu meta mensual</h4>
+            <p style="margin: 0; font-size: 12.5px; color: var(--text-secondary); line-height: 1.45;">Estos valores se guardan localmente en tu navegador y controlan los cálculos de ritmo de ventas de tu panel principal.</p>
+          </div>
+        </div>
+        
+        <!-- Grid de inputs -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div>
+            <label for="profile-goal" style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;stroke:#F5A623;"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Meta mensual (€)
+            </label>
+            <input type="number" id="profile-goal" min="0" step="1" value="${goal}" style="width: 100%; padding: 11px 14px; font-size: 14.5px; font-weight: 600; background: var(--bg-body); border: 1px solid var(--border); border-radius: var(--radius-s); color: var(--text-primary); outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--border-hover)'" onblur="this.style.borderColor='var(--border)'">
+          </div>
+          <div>
+            <label for="profile-workdays" style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;stroke:#00C6FF;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Días laborales / mes
+            </label>
+            <input type="number" id="profile-workdays" min="1" max="31" step="1" value="${workdays}" style="width: 100%; padding: 11px 14px; font-size: 14.5px; font-weight: 600; background: var(--bg-body); border: 1px solid var(--border); border-radius: var(--radius-s); color: var(--text-primary); outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--border-hover)'" onblur="this.style.borderColor='var(--border)'">
           </div>
         </div>
       </div>
