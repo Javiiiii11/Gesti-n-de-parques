@@ -74,6 +74,7 @@ function confirmDialog({
   confirmLabel = 'Eliminar',
   danger = true,
   width = '500px',
+  isHtmlMessage = false,
   onConfirm
 }) {
 
@@ -81,7 +82,7 @@ function confirmDialog({
     title,
     width,
 
-    bodyHtml: `<p style="color:var(--text-secondary); font-size:13.5px; line-height:1.6;">${escapeHtml(message)}</p>`,
+    bodyHtml: `<p style="color:var(--text-secondary); font-size:13.5px; line-height:1.6;">${isHtmlMessage ? message : escapeHtml(message)}</p>`,
 
     footHtml: `
       <button class="btn btn-ghost" id="confirm-cancel">Cancelar</button>

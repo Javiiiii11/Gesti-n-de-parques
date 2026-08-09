@@ -34,14 +34,14 @@
         <svg class="ticket-mark" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="logo-solid-auth" x1="0" y1="0" x2="34" y2="34">
-              <stop offset="0%" stop-color="#FF9A44"/>
-              <stop offset="100%" stop-color="#FC6076"/>
+              <stop offset="0%" stop-color="#FF9A44" />
+              <stop offset="100%" stop-color="#FC6076" />
             </linearGradient>
           </defs>
-          <rect width="34" height="34" rx="10" fill="url(#logo-solid-auth)"/>
-          <circle cx="17" cy="17" r="7" stroke="white" stroke-width="2" stroke-dasharray="3 3"/>
-          <circle cx="17" cy="17" r="3" fill="white"/>
-          <path d="M17 17 L22 27 M17 17 L12 27" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <rect width="34" height="34" rx="10" fill="url(#logo-solid-auth)" />
+          <circle cx="17" cy="17" r="7" stroke="white" stroke-width="2" stroke-dasharray="3 3" />
+          <circle cx="17" cy="17" r="3" fill="white" />
+          <path d="M17 17 L22 27 M17 17 L12 27" stroke="white" stroke-width="2" stroke-linecap="round" />
         </svg>
         <span>ParkSales</span>
       </div>
@@ -75,14 +75,14 @@
         <svg class="ticket-mark" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="logo-solid-side" x1="0" y1="0" x2="34" y2="34">
-              <stop offset="0%" stop-color="#FF9A44"/>
-              <stop offset="100%" stop-color="#FC6076"/>
+              <stop offset="0%" stop-color="#FF9A44" />
+              <stop offset="100%" stop-color="#FC6076" />
             </linearGradient>
           </defs>
-          <rect width="34" height="34" rx="10" fill="url(#logo-solid-side)"/>
-          <circle cx="17" cy="17" r="7" stroke="white" stroke-width="2" stroke-dasharray="3 3"/>
-          <circle cx="17" cy="17" r="3" fill="white"/>
-          <path d="M17 17 L22 27 M17 17 L12 27" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <rect width="34" height="34" rx="10" fill="url(#logo-solid-side)" />
+          <circle cx="17" cy="17" r="7" stroke="white" stroke-width="2" stroke-dasharray="3 3" />
+          <circle cx="17" cy="17" r="3" fill="white" />
+          <path d="M17 17 L22 27 M17 17 L12 27" stroke="white" stroke-width="2" stroke-linecap="round" />
         </svg>
         <span>ParkSales</span>
       </div>
@@ -153,8 +153,9 @@
         <div class="nav-item" data-view="chat-ia">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
-            <path d="M12 2a8.5 8.5 0 0 0-8.5 8.5c0 3.03 1.6 5.7 4 7.2V21l3.3-1.8a8.6 8.6 0 0 0 1.2.1 8.5 8.5 0 0 0 0-17z"/>
-            <path d="M8 10h.01M12 10h.01M16 10h.01"/>
+            <path
+              d="M12 2a8.5 8.5 0 0 0-8.5 8.5c0 3.03 1.6 5.7 4 7.2V21l3.3-1.8a8.6 8.6 0 0 0 1.2.1 8.5 8.5 0 0 0 0-17z" />
+            <path d="M8 10h.01M12 10h.01M16 10h.01" />
           </svg>
           Asistente IA
         </div>
@@ -633,7 +634,8 @@
           <div class="view-header" style="margin-bottom: 24px;">
             <div>
               <h2>Gestión de Parques y Bonos</h2>
-              <p class="desc">Administra el catálogo de recintos, sus estados de actividad y los tipos de pases disponibles.</p>
+              <p class="desc">Administra el catálogo de recintos, sus estados de actividad y los tipos de pases
+                disponibles.</p>
             </div>
           </div>
 
@@ -643,6 +645,7 @@
               grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
               gap: 24px;
             }
+
             .parques-panel {
               background: var(--bg-elevated);
               border: 1px solid var(--border);
@@ -654,19 +657,30 @@
               position: relative;
               overflow: hidden;
             }
+
             .parques-panel:hover {
               transform: translateY(-2px);
-              box-shadow: 0 12px 30px rgba(0,0,0,0.15), 0 0 0 1px var(--border-hover);
+              box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--border-hover);
             }
+
             .parques-panel::before {
               content: '';
               position: absolute;
-              top: 0; left: 0; width: 100%; height: 4px;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 4px;
               background: var(--panel-accent, transparent);
               opacity: 0.85;
             }
-            .parques-panel.accent-cyan { --panel-accent: linear-gradient(90deg, #00C6FF, #0072FF); }
-            .parques-panel.accent-amber { --panel-accent: linear-gradient(90deg, #F5A623, #FF4B2B); }
+
+            .parques-panel.accent-cyan {
+              --panel-accent: linear-gradient(90deg, #00C6FF, #0072FF);
+            }
+
+            .parques-panel.accent-amber {
+              --panel-accent: linear-gradient(90deg, #F5A623, #FF4B2B);
+            }
 
             .parques-panel-header {
               display: flex;
@@ -675,11 +689,13 @@
               gap: 12px;
               margin-bottom: 16px;
             }
+
             .parques-panel-title-wrap {
               display: flex;
               align-items: center;
               gap: 12px;
             }
+
             .parques-icon {
               width: 40px;
               height: 40px;
@@ -690,9 +706,19 @@
               justify-content: center;
               flex-shrink: 0;
             }
-            .parques-icon svg { width: 20px; height: 20px; }
-            .accent-cyan .parques-icon svg { stroke: #00C6FF; }
-            .accent-amber .parques-icon svg { stroke: #F5A623; }
+
+            .parques-icon svg {
+              width: 20px;
+              height: 20px;
+            }
+
+            .accent-cyan .parques-icon svg {
+              stroke: #00C6FF;
+            }
+
+            .accent-amber .parques-icon svg {
+              stroke: #F5A623;
+            }
 
             .parques-panel-title {
               font-size: 17px;
@@ -700,12 +726,13 @@
               color: var(--text-primary);
               margin: 0;
             }
+
             .parques-panel-sub {
               font-size: 12px;
               color: var(--text-muted);
               margin: 2px 0 0 0;
             }
-            
+
             @media (max-width: 768px) {
               .parques-view-grid {
                 grid-template-columns: 1fr;
@@ -719,7 +746,8 @@
               <div class="parques-panel-header">
                 <div class="parques-panel-title-wrap">
                   <div class="parques-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round">
                       <path d="M3 21l7-14 4 8 3-5 4 11H3z" />
                     </svg>
                   </div>
@@ -729,7 +757,10 @@
                   </div>
                 </div>
                 <button class="btn btn-primary btn-sm" id="btn-nuevo-parque">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:middle;margin-right:2px;"><path d="M12 5v14M5 12h14"/></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    style="width:14px;height:14px;vertical-align:middle;margin-right:2px;">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
                   Nuevo parque
                 </button>
               </div>
@@ -739,7 +770,7 @@
                     <tr>
                       <th>Nombre</th>
                       <th>Estado</th>
-                      <th style="text-align:right;">Ventas</th>
+                      <th style="text-align:center;">Ventas</th>
                       <th style="text-align:right;">Acciones</th>
                     </tr>
                   </thead>
@@ -753,7 +784,8 @@
               <div class="parques-panel-header">
                 <div class="parques-panel-title-wrap">
                   <div class="parques-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round">
                       <circle cx="12" cy="12" r="9" />
                       <path d="M12 8v8M8 12h8" />
                     </svg>
@@ -764,7 +796,10 @@
                   </div>
                 </div>
                 <button class="btn btn-primary btn-sm" id="btn-nuevo-bono">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:middle;margin-right:2px;"><path d="M12 5v14M5 12h14"/></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    style="width:14px;height:14px;vertical-align:middle;margin-right:2px;">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
                   Nuevo bono
                 </button>
               </div>
@@ -774,6 +809,7 @@
                     <tr>
                       <th>Nombre</th>
                       <th>Estado</th>
+                      <th style="text-align:center;">Ventas</th>
                       <th style="text-align:right;">Acciones</th>
                     </tr>
                   </thead>
@@ -824,11 +860,16 @@
               <option value="Apunte rápido">Apunte rápido</option>
             </select>
             <button class="btn btn-ghost btn-sm" id="contactos-filtro-clear">Limpiar filtros</button>
+            <button class="btn btn-danger btn-sm" id="contactos-batch-delete" style="display:none; margin-left:auto;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;margin-right:4px;"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+              Eliminar (<span id="contactos-batch-count">0</span>)
+            </button>
           </div>
           <div class="table-scroll">
             <table class="data-table" id="contactos-table">
               <thead>
                 <tr>
+                  <th style="width:40px; text-align:center;"><input type="checkbox" id="contactos-select-all" title="Seleccionar todos"></th>
                   <th>Fecha</th>
                   <th>Cliente</th>
                   <th>Tipo</th>
@@ -1085,7 +1126,7 @@
         </section>
 
         <!-- ============================ HISTORIAL ============================ -->
-        <section class="view" id="view-historial">
+        <section class="view" id="view-historial" style="padding-bottom: 50px;">
           <div class="view-header">
             <div>
               <h2>Historial de ventas</h2>
@@ -1120,11 +1161,20 @@
             <input type="date" class="filter-select" id="hist-filtro-desde">
             <input type="date" class="filter-select" id="hist-filtro-hasta">
             <button class="btn btn-ghost btn-sm" id="hist-filtro-clear">Limpiar filtros</button>
+            <button class="btn btn-danger btn-sm" id="hist-batch-delete" style="display:none; margin-left:auto;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                style="width:14px;height:14px;margin-right:4px;">
+                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+              Eliminar (<span id="hist-batch-count">0</span>)
+            </button>
           </div>
           <div class="table-scroll">
             <table class="data-table" id="historial-table">
               <thead>
                 <tr>
+                  <th style="width:40px; text-align:center;"><input type="checkbox" id="hist-select-all"
+                      title="Seleccionar todos"></th>
                   <th data-sort="fecha">Fecha <span class="sort-arrow"></span></th>
                   <th data-sort="tipo">Tipo <span class="sort-arrow"></span></th>
                   <th data-sort="via">Vía <span class="sort-arrow"></span></th>
@@ -1138,7 +1188,7 @@
               <tbody id="historial-tbody"></tbody>
             </table>
           </div>
-          <div class="pagination">
+          <div class="pagination" style="padding-right: 80px;">
             <div class="info" id="hist-pagination-info">—</div>
             <div class="controls">
               <button class="btn btn-secondary btn-sm" id="hist-prev">Anterior</button>
@@ -1154,7 +1204,8 @@
               <h2>Estadísticas y Análisis</h2>
               <p class="desc">Descubre patrones, visualiza ingresos y optimiza tus estrategias de venta.</p>
             </div>
-            <select class="filter-select" id="stats-periodo" style="padding: 10px 16px; border-radius: var(--radius-m); background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-primary); font-weight: 600;">
+            <select class="filter-select" id="stats-periodo"
+              style="padding: 10px 16px; border-radius: var(--radius-m); background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-primary); font-weight: 600;">
               <option value="30">Últimos 30 días</option>
               <option value="90">Últimos 90 días</option>
               <option value="365">Último año</option>
@@ -1169,9 +1220,11 @@
               gap: 20px;
               margin-bottom: 24px;
             }
+
             .stats-view-grid.three-col {
               grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             }
+
             .stat-panel {
               background: var(--bg-elevated);
               border: 1px solid var(--border);
@@ -1183,21 +1236,38 @@
               position: relative;
               overflow: hidden;
             }
+
             .stat-panel:hover {
               transform: translateY(-2px);
-              box-shadow: 0 12px 30px rgba(0,0,0,0.15), 0 0 0 1px var(--border-hover);
+              box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--border-hover);
             }
+
             .stat-panel::before {
               content: '';
               position: absolute;
-              top: 0; left: 0; width: 100%; height: 4px;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 4px;
               background: var(--panel-accent, transparent);
               opacity: 0.85;
             }
-            .stat-panel.accent-cyan { --panel-accent: linear-gradient(90deg, #00C6FF, #0072FF); }
-            .stat-panel.accent-magenta { --panel-accent: linear-gradient(90deg, #FF4B2B, #FF416C); }
-            .stat-panel.accent-amber { --panel-accent: linear-gradient(90deg, #F5A623, #F76B1C); }
-            .stat-panel.accent-emerald { --panel-accent: linear-gradient(90deg, #11998E, #38EF7D); }
+
+            .stat-panel.accent-cyan {
+              --panel-accent: linear-gradient(90deg, #00C6FF, #0072FF);
+            }
+
+            .stat-panel.accent-magenta {
+              --panel-accent: linear-gradient(90deg, #FF4B2B, #FF416C);
+            }
+
+            .stat-panel.accent-amber {
+              --panel-accent: linear-gradient(90deg, #F5A623, #F76B1C);
+            }
+
+            .stat-panel.accent-emerald {
+              --panel-accent: linear-gradient(90deg, #11998E, #38EF7D);
+            }
 
             .stat-header {
               display: flex;
@@ -1205,6 +1275,7 @@
               gap: 12px;
               margin-bottom: 8px;
             }
+
             .stat-icon {
               width: 36px;
               height: 36px;
@@ -1215,41 +1286,65 @@
               justify-content: center;
               flex-shrink: 0;
             }
-            .stat-icon svg { width: 18px; height: 18px; }
-            .accent-cyan .stat-icon svg { stroke: #00C6FF; }
-            .accent-magenta .stat-icon svg { stroke: #FF416C; }
-            .accent-amber .stat-icon svg { stroke: #F5A623; }
-            .accent-emerald .stat-icon svg { stroke: #38EF7D; }
-            
+
+            .stat-icon svg {
+              width: 18px;
+              height: 18px;
+            }
+
+            .accent-cyan .stat-icon svg {
+              stroke: #00C6FF;
+            }
+
+            .accent-magenta .stat-icon svg {
+              stroke: #FF416C;
+            }
+
+            .accent-amber .stat-icon svg {
+              stroke: #F5A623;
+            }
+
+            .accent-emerald .stat-icon svg {
+              stroke: #38EF7D;
+            }
+
             .stat-title {
               font-size: 16px;
               font-weight: 700;
               color: var(--text-primary);
               margin: 0;
             }
+
             .stat-desc {
               font-size: 13px;
               color: var(--text-muted);
               margin: 0 0 16px 0;
             }
+
             .stat-chart-container {
               flex-grow: 1;
               min-height: 250px;
               position: relative;
             }
-            .stat-chart-container.small { min-height: 220px; }
-            
+
+            .stat-chart-container.small {
+              min-height: 220px;
+            }
+
             .stat-table-wrapper {
               background: var(--bg-body);
               border-radius: var(--radius-m);
               overflow: hidden;
               border: 1px solid var(--border);
             }
-            
+
             @media (max-width: 768px) {
-              .stats-view-grid, .stats-view-grid.three-col {
+
+              .stats-view-grid,
+              .stats-view-grid.three-col {
                 grid-template-columns: 1fr;
               }
+
               .stat-panel.accent-emerald {
                 grid-column: span 1 !important;
               }
@@ -1260,7 +1355,10 @@
             <!-- Ingresos Mensuales -->
             <div class="stat-panel accent-cyan">
               <div class="stat-header">
-                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 9l-5 5-4-4-4 4"/></svg></div>
+                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 3v18h18" />
+                    <path d="M18 9l-5 5-4-4-4 4" />
+                  </svg></div>
                 <h3 class="stat-title">Ingresos por mes</h3>
               </div>
               <p class="stat-desc">Evolución histórica del importe total de ventas.</p>
@@ -1270,7 +1368,10 @@
             <!-- Ventas por Parque -->
             <div class="stat-panel accent-magenta">
               <div class="stat-header">
-                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg></div>
+                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+                    <path d="M22 12A10 10 0 0 0 12 2v10z" />
+                  </svg></div>
                 <h3 class="stat-title">Ventas por parque</h3>
               </div>
               <p class="stat-desc">Proporción de ingresos generados por cada parque.</p>
@@ -1282,7 +1383,12 @@
             <!-- Ventas por Día de la Semana -->
             <div class="stat-panel accent-amber">
               <div class="stat-header">
-                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg></div>
                 <h3 class="stat-title">Días de mayor actividad</h3>
               </div>
               <p class="stat-desc">Volumen de ventas según el día de la semana.</p>
@@ -1292,11 +1398,15 @@
             <!-- Ranking de días -->
             <div class="stat-panel accent-emerald" style="grid-column: span 2;">
               <div class="stat-header">
-                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20"/><path d="M5 20V4l5 5 5-5 5 5v11"/></svg></div>
+                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M2 20h20" />
+                    <path d="M5 20V4l5 5 5-5 5 5v11" />
+                  </svg></div>
                 <h3 class="stat-title">Mejores días históricos</h3>
               </div>
               <p class="stat-desc">Ranking de los días con mayor volumen de ventas registrado.</p>
-              <div class="ranking-list" id="ranking-dias" style="margin-top: 10px; max-height: 220px; overflow-y: auto; padding-right: 8px;"></div>
+              <div class="ranking-list" id="ranking-dias"
+                style="margin-top: 10px; max-height: 220px; overflow-y: auto; padding-right: 8px;"></div>
             </div>
           </div>
 
@@ -1304,13 +1414,15 @@
           <div class="stat-panel accent-cyan" style="margin-top: 24px;">
             <div class="stat-header">
               <div class="stat-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M18 20V10M12 20V4M6 20v-6"/>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M18 20V10M12 20V4M6 20v-6" />
                 </svg>
               </div>
               <h3 class="stat-title">Comparativa detallada mensual</h3>
             </div>
-            <p class="stat-desc">Desglose mes a mes con volumen de ventas, facturación total, ticket medio y variación porcentual.</p>
+            <p class="stat-desc">Desglose mes a mes con volumen de ventas, facturación total, ticket medio y variación
+              porcentual.</p>
             <div class="stat-table-wrapper table-scroll">
               <table class="data-table" id="tabla-comparativa">
                 <thead>
@@ -1344,6 +1456,7 @@
               gap: 20px;
               margin-bottom: 32px;
             }
+
             .ex-card {
               background: var(--bg-elevated);
               border: 1px solid var(--border);
@@ -1356,28 +1469,46 @@
               position: relative;
               overflow: hidden;
             }
+
             .ex-card:hover {
               transform: translateY(-4px);
-              box-shadow: 0 12px 30px rgba(0,0,0,0.2), 0 0 0 1px var(--border-hover);
+              box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--border-hover);
             }
+
             .ex-card::before {
               content: '';
               position: absolute;
-              top: 0; left: 0; width: 100%; height: 4px;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 4px;
               background: var(--card-accent, transparent);
               opacity: 0.8;
             }
-            .ex-card.accent-blue { --card-accent: linear-gradient(90deg, #00C6FF, #0072FF); }
-            .ex-card.accent-green { --card-accent: linear-gradient(90deg, #11998E, #38EF7D); }
-            .ex-card.accent-purple { --card-accent: linear-gradient(90deg, #8E2DE2, #4A00E0); }
-            .ex-card.accent-orange { --card-accent: linear-gradient(90deg, #F5A623, #FF4B2B); }
-            
+
+            .ex-card.accent-blue {
+              --card-accent: linear-gradient(90deg, #00C6FF, #0072FF);
+            }
+
+            .ex-card.accent-green {
+              --card-accent: linear-gradient(90deg, #11998E, #38EF7D);
+            }
+
+            .ex-card.accent-purple {
+              --card-accent: linear-gradient(90deg, #8E2DE2, #4A00E0);
+            }
+
+            .ex-card.accent-orange {
+              --card-accent: linear-gradient(90deg, #F5A623, #FF4B2B);
+            }
+
             .ex-header {
               display: flex;
               align-items: center;
               gap: 16px;
               margin-bottom: 4px;
             }
+
             .ex-icon-wrap {
               width: 48px;
               height: 48px;
@@ -1388,14 +1519,27 @@
               justify-content: center;
               flex-shrink: 0;
             }
+
             .ex-icon-wrap svg {
               width: 24px;
               height: 24px;
             }
-            .accent-blue .ex-icon-wrap svg { stroke: #00C6FF; }
-            .accent-green .ex-icon-wrap svg { stroke: #38EF7D; }
-            .accent-purple .ex-icon-wrap svg { stroke: #B27BFF; }
-            .accent-orange .ex-icon-wrap svg { stroke: #F5A623; }
+
+            .accent-blue .ex-icon-wrap svg {
+              stroke: #00C6FF;
+            }
+
+            .accent-green .ex-icon-wrap svg {
+              stroke: #38EF7D;
+            }
+
+            .accent-purple .ex-icon-wrap svg {
+              stroke: #B27BFF;
+            }
+
+            .accent-orange .ex-icon-wrap svg {
+              stroke: #F5A623;
+            }
 
             .ex-title {
               font-size: 16px;
@@ -1403,6 +1547,7 @@
               color: var(--text-primary);
               margin: 0;
             }
+
             .ex-desc {
               font-size: 13px;
               line-height: 1.5;
@@ -1410,6 +1555,7 @@
               flex-grow: 1;
               margin: 0;
             }
+
             .ex-actions {
               display: flex;
               flex-wrap: wrap;
@@ -1417,6 +1563,7 @@
               margin-top: auto;
               padding-top: 12px;
             }
+
             .ex-section-title {
               font-size: 13px;
               font-weight: 700;
@@ -1427,6 +1574,7 @@
               border-bottom: 1px solid var(--border);
               padding-bottom: 8px;
             }
+
             .ex-file-drop {
               border: 2px dashed var(--border-hover);
               border-radius: var(--radius-s);
@@ -1436,12 +1584,13 @@
               font-size: 13px;
               cursor: pointer;
               transition: all 0.2s;
-              background: rgba(255,255,255,0.02);
+              background: rgba(255, 255, 255, 0.02);
               margin-top: auto;
             }
+
             .ex-file-drop:hover {
               border-color: #B27BFF;
-              background: rgba(178,123,255,0.05);
+              background: rgba(178, 123, 255, 0.05);
               color: var(--text-primary);
             }
           </style>
@@ -1451,11 +1600,19 @@
             <!-- Backups Auto -->
             <div class="ex-card accent-blue">
               <div class="ex-header">
-                <div class="ex-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3" /><circle cx="12" cy="13" r="8" /><path d="M5 3 2 6M22 6l-3-3" /></svg></div>
+                <div class="ex-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 8v4l3 3" />
+                    <circle cx="12" cy="13" r="8" />
+                    <path d="M5 3 2 6M22 6l-3-3" />
+                  </svg></div>
                 <h4 class="ex-title">Backups Automáticos</h4>
               </div>
-              <p class="ex-desc">Protege tus datos sin esfuerzo. Se guardan dentro del navegador de forma segura y transparente.</p>
-              <div style="font-size: 11px; background: rgba(0,198,255,0.1); color: #00C6FF; padding: 8px 12px; border-radius: 6px; margin-bottom: 4px; font-weight: 600;" id="backup-auto-status">Iniciando comprobación...</div>
+              <p class="ex-desc">Protege tus datos sin esfuerzo. Se guardan dentro del navegador de forma segura y
+                transparente.</p>
+              <div
+                style="font-size: 11px; background: rgba(0,198,255,0.1); color: #00C6FF; padding: 8px 12px; border-radius: 6px; margin-bottom: 4px; font-weight: 600;"
+                id="backup-auto-status">Iniciando comprobación...</div>
               <div class="ex-actions">
                 <button class="btn btn-secondary backup-toggle-btn" id="btn-enable-auto-backup">Activar copias</button>
                 <button class="btn btn-primary backup-now-btn">Hacer copia ahora</button>
@@ -1466,10 +1623,16 @@
             <!-- Exportar JSON -->
             <div class="ex-card accent-green">
               <div class="ex-header">
-                <div class="ex-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="M7 10l5 5 5-5" /><path d="M12 15V3" /></svg></div>
+                <div class="ex-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <path d="M7 10l5 5 5-5" />
+                    <path d="M12 15V3" />
+                  </svg></div>
                 <h4 class="ex-title">Descargar Backup Total</h4>
               </div>
-              <p class="ex-desc">Genera un archivo <strong>.json</strong> con absolutamente todo (ventas, parques, bonos, apuntes) para guardarlo en un pendrive o la nube.</p>
+              <p class="ex-desc">Genera un archivo <strong>.json</strong> con absolutamente todo (ventas, parques,
+                bonos, apuntes) para guardarlo en un pendrive o la nube.</p>
               <div class="ex-actions">
                 <button class="btn btn-secondary" id="btn-export-json">Descargar .json</button>
               </div>
@@ -1478,10 +1641,16 @@
             <!-- Importar JSON -->
             <div class="ex-card accent-purple">
               <div class="ex-header">
-                <div class="ex-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="M17 8l-5-5-5 5" /><path d="M12 3v12" /></svg></div>
+                <div class="ex-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <path d="M17 8l-5-5-5 5" />
+                    <path d="M12 3v12" />
+                  </svg></div>
                 <h4 class="ex-title">Restaurar Datos</h4>
               </div>
-              <p class="ex-desc">Restaura un backup .json generado previamente. <strong style="color:var(--text-primary)">Cuidado:</strong> reemplazará los datos actuales.</p>
+              <p class="ex-desc">Restaura un backup .json generado previamente. <strong
+                  style="color:var(--text-primary)">Cuidado:</strong> reemplazará los datos actuales.</p>
               <div class="ex-file-drop" id="import-drop">Haz clic o arrastra un archivo .json aquí</div>
               <input type="file" id="import-file" accept="application/json" style="display:none;">
             </div>
@@ -1492,10 +1661,15 @@
             <!-- Excel -->
             <div class="ex-card accent-green">
               <div class="ex-header">
-                <div class="ex-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg></div>
+                <div class="ex-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <path d="M3 9h18M9 21V9" />
+                  </svg></div>
                 <h4 class="ex-title">Informe Completo (Excel)</h4>
               </div>
-              <p class="ex-desc">Genera un archivo .xlsx perfecto para contabilidad, con pestañas ordenadas para Ventas, Parques, Bonos y Apuntes.</p>
+              <p class="ex-desc">Genera un archivo .xlsx perfecto para contabilidad, con pestañas ordenadas para Ventas,
+                Parques, Bonos y Apuntes.</p>
               <div class="ex-actions">
                 <button class="btn btn-primary" id="btn-export-xlsx">Descargar Excel (.xlsx)</button>
               </div>
@@ -1504,10 +1678,15 @@
             <!-- CSV Individuales -->
             <div class="ex-card accent-orange">
               <div class="ex-header">
-                <div class="ex-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" /></svg></div>
+                <div class="ex-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                    <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" />
+                  </svg></div>
                 <h4 class="ex-title">Exportar tablas (CSV)</h4>
               </div>
-              <p class="ex-desc">Descarga tablas individuales en formato plano CSV si necesitas procesarlas en otras herramientas o sistemas.</p>
+              <p class="ex-desc">Descarga tablas individuales en formato plano CSV si necesitas procesarlas en otras
+                herramientas o sistemas.</p>
               <div class="ex-actions">
                 <button class="btn btn-secondary btn-sm" id="btn-export-ventas">Ventas</button>
                 <button class="btn btn-secondary btn-sm" id="btn-export-parques">Parques</button>
@@ -1516,13 +1695,37 @@
               </div>
             </div>
 
+            <!-- Importar CSV Telemarketing -->
+            <div class="ex-card accent-purple">
+              <div class="ex-header">
+                <div class="ex-icon-wrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="12" y1="18" x2="12" y2="12" />
+                    <line x1="9" y1="15" x2="15" y2="15" />
+                  </svg>
+                </div>
+                <h4 class="ex-title">Importar CSV Telemarketing</h4>
+              </div>
+              <p class="ex-desc">Sube el informe en CSV. Identifica parque y ventas nuevas automáticamente (sin
+                duplicar).</p>
+              <div class="ex-file-drop" id="import-csv-drop">Haz clic o arrastra uno o varios archivos .csv aquí</div>
+              <input type="file" id="import-csv-file" accept=".csv" style="display:none;" multiple>
+            </div>
+
             <!-- Predefinidos -->
             <div class="ex-card accent-blue">
               <div class="ex-header">
-                <div class="ex-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l7-14 4 8 3-5 4 11H3z" /></svg></div>
+                <div class="ex-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 21l7-14 4 8 3-5 4 11H3z" />
+                  </svg></div>
                 <h4 class="ex-title">Asistente de llenado</h4>
               </div>
-              <p class="ex-desc">Si has borrado los datos o acabas de instalar la app, añade los parques y bonos oficiales en un solo clic.</p>
+              <p class="ex-desc">Si has borrado los datos o acabas de instalar la app, añade los parques y bonos
+                oficiales en un solo clic.</p>
               <div class="ex-actions">
                 <button class="btn btn-secondary btn-sm" id="btn-add-all-parks">Añadir parques</button>
                 <button class="btn btn-secondary btn-sm" id="btn-add-all-bonos">Añadir bonos</button>
@@ -1536,7 +1739,8 @@
           <div class="view-header">
             <div>
               <h2>Asistente IA</h2>
-              <p class="desc">Asistente inteligente con doble backend: Ollama (local) o Gemini (nube). Úsalo desde cualquier dispositivo.</p>
+              <p class="desc">Asistente inteligente con doble backend: Ollama (local) o Gemini (nube). Úsalo desde
+                cualquier dispositivo.</p>
             </div>
           </div>
 
@@ -1554,7 +1758,8 @@
                 <span id="ollama-status-text">Comprobando…</span>
               </div>
               <div class="chat-ia-toolbar-right">
-                <span id="ollama-url-label" style="display:none; color:var(--text-muted); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em;"></span>
+                <span id="ollama-url-label"
+                  style="display:none; color:var(--text-muted); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em;"></span>
                 <select class="ollama-model-select" id="ia-provider-select" title="Elegir proveedor de IA">
                   <option value="ollama">🖥️ Ollama (local)</option>
                   <option value="gemini">✨ Gemini (nube)</option>
@@ -1562,16 +1767,20 @@
                 <select class="ollama-model-select" id="ollama-model-select" disabled>
                   <option>—</option>
                 </select>
-                <button type="button" class="btn btn-ghost btn-sm" id="ollama-config-btn" title="Configurar Ollama y/o clave de Gemini">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                <button type="button" class="btn btn-ghost btn-sm" id="ollama-config-btn"
+                  title="Configurar Ollama y/o clave de Gemini">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" style="width:15px;height:15px;">
+                    <circle cx="12" cy="12" r="3" />
+                    <path
+                      d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
                   </svg>
                 </button>
                 <button type="button" class="btn btn-ghost btn-sm" id="chat-ia-clear-btn" title="Limpiar conversación">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" style="width:15px;height:15px;">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                   </svg>
                 </button>
               </div>
@@ -1581,15 +1790,15 @@
               <div class="chat-ia-mensajes" id="chat-ia-mensajes">
                 <div class="empty-state">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M12 2a8.5 8.5 0 0 0-8.5 8.5c0 3.03 1.6 5.7 4 7.2V21l3.3-1.8a8.6 8.6 0 0 0 1.2.1 8.5 8.5 0 0 0 0-17z"/>
-                    <path d="M8 10h.01M12 10h.01M16 10h.01"/>
+                    <path
+                      d="M12 2a8.5 8.5 0 0 0-8.5 8.5c0 3.03 1.6 5.7 4 7.2V21l3.3-1.8a8.6 8.6 0 0 0 1.2.1 8.5 8.5 0 0 0 0-17z" />
+                    <path d="M8 10h.01M12 10h.01M16 10h.01" />
                   </svg>
                   <span>Escribe lo que necesites. Puedo ayudarte con cualquier pregunta.</span>
                 </div>
               </div>
               <form id="chat-ia-form" class="chat-ia-form">
-                <input type="text" id="chat-ia-input" placeholder="Escribe tu mensaje…"
-                  autocomplete="off">
+                <input type="text" id="chat-ia-input" placeholder="Escribe tu mensaje…" autocomplete="off">
                 <button type="submit" class="btn btn-primary">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
@@ -1637,13 +1846,15 @@
   <div id="copilot-fab" title="Abrir Microsoft Copilot" onclick="abrirCopilot()">
     <div class="copilot-fab-pulse"></div>
     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none">
-      <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" fill="url(#copilot-grad)"/>
-      <path d="M8 13.5c0-1.38 1.12-2.5 2.5-2.5h3c1.38 0 2.5 1.12 2.5 2.5S14.88 16 13.5 16h-3C9.12 16 8 14.88 8 13.5z" fill="white" opacity="0.9"/>
-      <path d="M9.5 8.5c0-.83.67-1.5 1.5-1.5h2c.83 0 1.5.67 1.5 1.5S13.83 10 13 10h-2c-.83 0-1.5-.67-1.5-1.5z" fill="white" opacity="0.7"/>
+      <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" fill="url(#copilot-grad)" />
+      <path d="M8 13.5c0-1.38 1.12-2.5 2.5-2.5h3c1.38 0 2.5 1.12 2.5 2.5S14.88 16 13.5 16h-3C9.12 16 8 14.88 8 13.5z"
+        fill="white" opacity="0.9" />
+      <path d="M9.5 8.5c0-.83.67-1.5 1.5-1.5h2c.83 0 1.5.67 1.5 1.5S13.83 10 13 10h-2c-.83 0-1.5-.67-1.5-1.5z"
+        fill="white" opacity="0.7" />
       <defs>
         <linearGradient id="copilot-grad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#0078d4"/>
-          <stop offset="100%" stop-color="#50e6ff"/>
+          <stop offset="0%" stop-color="#0078d4" />
+          <stop offset="100%" stop-color="#50e6ff" />
         </linearGradient>
       </defs>
     </svg>
@@ -1663,7 +1874,8 @@
       cursor: pointer;
       user-select: none;
     }
-    #copilot-fab > svg {
+
+    #copilot-fab>svg {
       width: 52px;
       height: 52px;
       border-radius: 50%;
@@ -1671,16 +1883,20 @@
       transition: transform 0.2s ease, box-shadow 0.2s ease;
       background: #0a1628;
     }
-    #copilot-fab:hover > svg {
+
+    #copilot-fab:hover>svg {
       transform: scale(1.1);
       box-shadow: 0 6px 28px rgba(0, 120, 212, 0.7), 0 0 0 5px rgba(0, 120, 212, 0.2);
     }
-    #copilot-fab:active > svg {
+
+    #copilot-fab:active>svg {
       transform: scale(0.95);
     }
+
     .copilot-fab-pulse {
       position: absolute;
-      top: 0; left: 0;
+      top: 0;
+      left: 0;
       width: 52px;
       height: 52px;
       border-radius: 50%;
@@ -1688,22 +1904,36 @@
       animation: copilot-pulse 2.5s ease-out infinite;
       pointer-events: none;
     }
+
     @keyframes copilot-pulse {
-      0%   { transform: scale(1);   opacity: 0.6; }
-      70%  { transform: scale(1.6); opacity: 0; }
-      100% { transform: scale(1.6); opacity: 0; }
+      0% {
+        transform: scale(1);
+        opacity: 0.6;
+      }
+
+      70% {
+        transform: scale(1.6);
+        opacity: 0;
+      }
+
+      100% {
+        transform: scale(1.6);
+        opacity: 0;
+      }
     }
+
     .copilot-fab-label {
       font-size: 10px;
       font-weight: 700;
       color: #50e6ff;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      text-shadow: 0 1px 6px rgba(0,120,212,0.8);
+      text-shadow: 0 1px 6px rgba(0, 120, 212, 0.8);
       opacity: 0;
       transform: translateY(4px);
       transition: opacity 0.2s, transform 0.2s;
     }
+
     #copilot-fab:hover .copilot-fab-label {
       opacity: 1;
       transform: translateY(0);
@@ -1714,7 +1944,7 @@
 
 
   <script src="js/supabase-client.js"></script>
-  <script src="js/utils.js"></script>
+  <script src="js/utils.js?v=2"></script>
   <script src="js/auth.js"></script>
   <script src="js/parques.js"></script>
   <script src="js/ventas.js"></script>
@@ -1722,7 +1952,7 @@
   <script src="js/contactos.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/estadisticas.js"></script>
-  <script src="js/exportar.js"></script>
+  <script src="js/exportar.js?v=2"></script>
   <script src="js/backup-auto.js"></script>
   <script src="js/notas.js"></script>
   <script src="js/llamadas.js"></script>

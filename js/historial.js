@@ -14,6 +14,7 @@ const HIST_STATE = {
   bonoId: '',
   desde: '',
   hasta: '',
+  selectedVentas: new Set(),
 };
 
 function getBonoNombre(bonoId) {
@@ -88,6 +89,63 @@ function initHistorialView() {
 
   document.getElementById('hist-prev').addEventListener('click', () => { if (HIST_STATE.page > 1) { HIST_STATE.page--; renderHistorial(); } });
   document.getElementById('hist-next').addEventListener('click', () => { HIST_STATE.page++; renderHistorial(); });
+
+  document.getElementById('hist-select-all').addEventListener('change', (e) => {
+    const isChecked = e.target.checked;
+    document.querySelectorAll('.hist-row-cb').forEach(cb => {
+      cb.checked = isChecked;
+      if (isChecked) HIST_STATE.selectedVentas.add(cb.dataset.id);
+      else HIST_STATE.selectedVentas.delete(cb.dataset.id);
+    });
+    updateHistBatchUI();
+  });
+
+  document.getElementById('hist-batch-delete').addEventListener('click', () => {
+    if (HIST_STATE.selectedVentas.size === 0) return;
+    confirmDialog({
+      title: 'Eliminar ventas seleccionadas',
+      message: `¿Estás seguro de que quieres eliminar ${HIST_STATE.selectedVentas.size} ventas de forma permanente? No se eliminarán los apuntes de contacto asociados, solo el registro de venta.`,
+      confirmLabel: 'Eliminar seleccionadas',
+      danger: true,
+      onConfirm: async () => {
+        try {
+          // Delete one by one since we don't have a bulkDelete in supabase-client
+          const arr = Array.from(HIST_STATE.selectedVentas);
+          for (const id of arr) {
+            await DB.deleteVenta(id);
+          }
+          HIST_STATE.selectedVentas.clear();
+          STATE.ventas = await DB.getVentas();
+          refreshAllViewsAfterDataChange();
+          toast(`Se han eliminado ${arr.length} ventas`, 'success');
+        } catch (err) {
+          toast('Error al eliminar ventas: ' + err.message, 'error');
+        }
+      }
+    });
+  });
+}
+
+function updateHistBatchUI() {
+  const btn = document.getElementById('hist-batch-delete');
+  const count = document.getElementById('hist-batch-count');
+  const allCb = document.getElementById('hist-select-all');
+  const size = HIST_STATE.selectedVentas.size;
+  
+  if (size > 0) {
+    btn.style.display = 'inline-flex';
+    count.textContent = size;
+  } else {
+    btn.style.display = 'none';
+  }
+  
+  // Check if all checkboxes in current view are selected
+  const cbs = Array.from(document.querySelectorAll('.hist-row-cb'));
+  if (cbs.length > 0 && cbs.every(cb => cb.checked)) {
+    allCb.checked = true;
+  } else {
+    allCb.checked = false;
+  }
 }
 
 function fillParqueFiltro() {
@@ -188,8 +246,10 @@ function renderHistorial() {
       const via = v.via || 'llamada';
       const detalle = tipo === 'entrada' ? v.parqueNombreCache : v.bonoNombreCache;
       const loc = v.localizador || '—';
+      const checked = HIST_STATE.selectedVentas.has(v.id) ? 'checked' : '';
       return `
         <tr>
+          <td style="text-align:center;"><input type="checkbox" class="hist-row-cb" data-id="${v.id}" ${checked}></td>
           <td>${fmtDateTime(v.fecha)}</td>
           <td><span class="badge ${tipo === 'entrada' ? 'badge-primary' : 'badge-success'}">${tipo === 'entrada' ? 'Entrada' : 'Bono'}</span></td>
           <td><span class="badge ${viaClasses[via] || 'badge-via-llamada'}">${viaLabels[via] || '📞 Llamada'}</span></td>
@@ -218,6 +278,16 @@ function renderHistorial() {
 
   tbody.querySelectorAll('[data-edit-venta]').forEach((btn) => btn.addEventListener('click', () => openEditVenta(btn.dataset.editVenta)));
   tbody.querySelectorAll('[data-delete-venta]').forEach((btn) => btn.addEventListener('click', () => deleteVentaFlow(btn.dataset.deleteVenta)));
+  
+  tbody.querySelectorAll('.hist-row-cb').forEach((cb) => {
+    cb.addEventListener('change', (e) => {
+      if (e.target.checked) HIST_STATE.selectedVentas.add(e.target.dataset.id);
+      else HIST_STATE.selectedVentas.delete(e.target.dataset.id);
+      updateHistBatchUI();
+    });
+  });
+  
+  updateHistBatchUI();
 }
 
 function openEditVenta(id) {

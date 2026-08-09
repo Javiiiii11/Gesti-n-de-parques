@@ -33,7 +33,7 @@ function renderParquesTable() {
       <tr>
         <td><b>${escapeHtml(p.nombre)}</b></td>
         <td><span class="badge ${p.activo ? 'on' : 'off'}">${p.activo ? 'Activo' : 'Inactivo'}</span></td>
-        <td class="amount">${fmtNum(totalVentas)}</td>
+        <td style="text-align:center; font-weight:600;">${fmtNum(totalVentas)}</td>
         <td>
           <div class="row-actions" style="justify-content:flex-end;">
             <button class="icon-btn-sm" title="Editar" data-edit-parque="${p.id}">
@@ -57,14 +57,16 @@ function renderBonosTable() {
   const tbody = document.getElementById('bonos-tbody');
   if (!tbody) return;
   if (!STATE.tipos_bono.length) {
-    tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state">Todavía no tienes bonos. Crea el primero con "Nuevo bono".</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state">Todavía no tienes bonos. Crea el primero con "Nuevo bono".</div></td></tr>`;
     return;
   }
   tbody.innerHTML = STATE.tipos_bono.map((b) => {
+    const totalVentas = STATE.ventas.filter((v) => v.bono_id === b.id).length;
     return `
       <tr>
         <td><b>${escapeHtml(b.nombre)}</b></td>
         <td><span class="badge ${b.activo ? 'on' : 'off'}">${b.activo ? 'Activo' : 'Inactivo'}</span></td>
+        <td style="text-align:center; font-weight:600;">${fmtNum(totalVentas)}</td>
         <td>
           <div class="row-actions" style="justify-content:flex-end;">
             <button class="icon-btn-sm" title="Editar" data-edit-bono="${b.id}">

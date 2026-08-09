@@ -6,7 +6,8 @@ let CONTACTOS_STATE = {
   search: '',
   tipo: '',
   via: '',
-  estado: ''
+  estado: '',
+  selectedContactos: new Set()
 };
 
 function wireContactosView() {
@@ -38,11 +39,64 @@ function wireContactosView() {
     CONTACTOS_STATE.via = '';
     CONTACTOS_STATE.estado = '';
     document.getElementById('contactos-search').value = '';
-    document.getElementById('contactos-filtro-tipo').value = '';
-    document.getElementById('contactos-filtro-via').value = '';
     document.getElementById('contactos-filtro-estado').value = '';
     renderContactos();
   });
+
+  document.getElementById('contactos-select-all').addEventListener('change', (e) => {
+    const isChecked = e.target.checked;
+    document.querySelectorAll('.contactos-row-cb').forEach(cb => {
+      cb.checked = isChecked;
+      if (isChecked) CONTACTOS_STATE.selectedContactos.add(cb.dataset.id);
+      else CONTACTOS_STATE.selectedContactos.delete(cb.dataset.id);
+    });
+    updateContactosBatchUI();
+  });
+
+  document.getElementById('contactos-batch-delete').addEventListener('click', () => {
+    if (CONTACTOS_STATE.selectedContactos.size === 0) return;
+    confirmDialog({
+      title: 'Eliminar apuntes seleccionados',
+      message: `¿Estás seguro de que quieres eliminar ${CONTACTOS_STATE.selectedContactos.size} apuntes de forma permanente?`,
+      confirmLabel: 'Eliminar seleccionados',
+      danger: true,
+      onConfirm: async () => {
+        try {
+          const arr = Array.from(CONTACTOS_STATE.selectedContactos);
+          for (const id of arr) {
+            await DB.deleteContacto(id);
+          }
+          CONTACTOS_STATE.selectedContactos.clear();
+          STATE.contactos = await DB.getContactos();
+          refreshAllViewsAfterDataChange();
+          toast(`Se han eliminado ${arr.length} apuntes`, 'success');
+        } catch (err) {
+          toast('Error al eliminar apuntes: ' + err.message, 'error');
+        }
+      }
+    });
+  });
+}
+
+function updateContactosBatchUI() {
+  const btn = document.getElementById('contactos-batch-delete');
+  const count = document.getElementById('contactos-batch-count');
+  const allCb = document.getElementById('contactos-select-all');
+  const size = CONTACTOS_STATE.selectedContactos.size;
+  
+  if (size > 0) {
+    btn.style.display = 'inline-flex';
+    count.textContent = size;
+  } else {
+    btn.style.display = 'none';
+  }
+  
+  const cbs = Array.from(document.querySelectorAll('.contactos-row-cb'));
+  if (cbs.length > 0 && cbs.every(cb => cb.checked)) {
+    allCb.checked = true;
+  } else {
+    allCb.checked = false;
+  }
 }
 
 /* ============================================================================
@@ -249,9 +303,11 @@ function renderContactos() {
 
     const infoSubtext = [c.correo, c.telefono].filter(Boolean).map(escapeHtml).join(' · ');
     const subtextHtml = infoSubtext || '&nbsp;';
+    const checked = CONTACTOS_STATE.selectedContactos.has(c.id) ? 'checked' : '';
 
     return `
       <tr>
+        <td style="text-align:center;"><input type="checkbox" class="contactos-row-cb" data-id="${c.id}" ${checked}></td>
         <td style="white-space:nowrap; color:var(--text-secondary)">${fmtDateShort(c.created_at)}</td>
         <td>
           <div style="font-weight:600; color:var(--text-primary);">${escapeHtml(c.nombre_apellidos)}</div>
@@ -288,6 +344,16 @@ function renderContactos() {
     btn.addEventListener('click', () => deleteContactoFlow(btn.dataset.deleteContacto)));
   tbody.querySelectorAll('[data-pay-contacto]').forEach((btn) =>
     btn.addEventListener('click', () => payContactoFlow(btn.dataset.payContacto)));
+
+  tbody.querySelectorAll('.contactos-row-cb').forEach((cb) => {
+    cb.addEventListener('change', (e) => {
+      if (e.target.checked) CONTACTOS_STATE.selectedContactos.add(e.target.dataset.id);
+      else CONTACTOS_STATE.selectedContactos.delete(e.target.dataset.id);
+      updateContactosBatchUI();
+    });
+  });
+  
+  updateContactosBatchUI();
 }
 
 let NUEVO_APUNTE_DRAFT = null;
