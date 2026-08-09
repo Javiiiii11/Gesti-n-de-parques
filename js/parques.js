@@ -120,7 +120,7 @@ function openParqueForm(id = null) {
       <div class="form-grid">
         <div class="form-field full">
           <label for="pf-nombre">Nombre</label>
-          <input type="text" id="pf-nombre" value="${parque ? escapeHtml(parque.nombre) : ''}" placeholder="Ej. PortAventura" required>
+          <input type="text" id="pf-nombre" value="${parque ? escapeHtml(parque.nombre) : ''}" placeholder="Ej. Parque nuevo" required>
         </div>
         <div class="form-field full">
           <label class="toggle-switch">
@@ -198,7 +198,7 @@ function openBonoForm(id = null) {
       <div class="form-grid">
         <div class="form-field full">
           <label for="bf-nombre">Nombre</label>
-          <input type="text" id="bf-nombre" value="${bono ? escapeHtml(bono.nombre) : ''}" placeholder="Ej. Bono Familiar" required>
+          <input type="text" id="bf-nombre" value="${bono ? escapeHtml(bono.nombre) : ''}" placeholder="Ej. Bono Nuevo" required>
         </div>
         <div class="form-field full">
           <label class="toggle-switch">
