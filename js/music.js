@@ -19,10 +19,10 @@ const TRACKS = [
     bpm: 116,
     duracionCompases: 48,
     chordProgression: [
-      [261.63, 329.63, 392.00, 523.25],   // Cmaj
-      [220.00, 261.63, 329.63, 440.00],   // Am
-      [174.61, 220.00, 261.63, 349.23],   // Fmaj
-      [196.00, 246.94, 293.66, 392.00],   // Gmaj
+      [261.63, 329.63, 392.00, 523.25],
+      [220.00, 261.63, 329.63, 440.00],
+      [174.61, 220.00, 261.63, 349.23],
+      [196.00, 246.94, 293.66, 392.00],
     ],
     bateria: 'fourOnTheFloor',
     estilo: { synth: 'pluck', bass: 'acido', arpegio: true, pads: false }
@@ -34,10 +34,10 @@ const TRACKS = [
     bpm: 124,
     duracionCompases: 52,
     chordProgression: [
-      [293.66, 349.23, 440.00, 587.33],   // Dmin9
-      [261.63, 329.63, 392.00, 523.25],   // Cmaj7
-      [220.00, 277.18, 329.63, 440.00],   // Am7
-      [174.61, 220.00, 261.63, 349.23],   // Fmaj7
+      [293.66, 349.23, 440.00, 587.33],
+      [261.63, 329.63, 392.00, 523.25],
+      [220.00, 277.18, 329.63, 440.00],
+      [174.61, 220.00, 261.63, 349.23],
     ],
     bateria: 'house',
     estilo: { synth: 'pads', bass: 'sub', arpegio: false, pads: true }
@@ -49,10 +49,10 @@ const TRACKS = [
     bpm: 138,
     duracionCompases: 44,
     chordProgression: [
-      [261.63, 329.63, 392.00, 523.25],   // Cmaj
-      [293.66, 349.23, 440.00, 587.33],   // Dmin
-      [349.23, 440.00, 523.25, 698.46],   // Fmaj
-      [329.63, 392.00, 493.88, 659.25],   // Em
+      [261.63, 329.63, 392.00, 523.25],
+      [293.66, 349.23, 440.00, 587.33],
+      [349.23, 440.00, 523.25, 698.46],
+      [329.63, 392.00, 493.88, 659.25],
     ],
     bateria: 'edm',
     estilo: { synth: 'supersaw', bass: 'heavy', arpegio: true, pads: true }
@@ -64,10 +64,10 @@ const TRACKS = [
     bpm: 120,
     duracionCompases: 50,
     chordProgression: [
-      [261.63, 329.63, 392.00, 493.88],   // Cmaj7
-      [349.23, 440.00, 523.25, 659.25],   // Fmaj7
-      [196.00, 246.94, 293.66, 392.00],   // G7
-      [293.66, 349.23, 440.00, 523.25],   // Dm7
+      [261.63, 329.63, 392.00, 493.88],
+      [349.23, 440.00, 523.25, 659.25],
+      [196.00, 246.94, 293.66, 392.00],
+      [293.66, 349.23, 440.00, 523.25],
     ],
     bateria: 'disco',
     estilo: { synth: 'chordStab', bass: 'walking', arpegio: false, pads: false }
@@ -79,10 +79,10 @@ const TRACKS = [
     bpm: 106,
     duracionCompases: 56,
     chordProgression: [
-      [261.63, 329.63, 392.00, 466.16],   // C7
-      [196.00, 246.94, 293.66, 369.99],   // G7
-      [220.00, 277.18, 329.63, 415.30],   // A7
-      [174.61, 220.00, 261.63, 329.63],   // Fmaj7
+      [261.63, 329.63, 392.00, 466.16],
+      [196.00, 246.94, 293.66, 369.99],
+      [220.00, 277.18, 329.63, 415.30],
+      [174.61, 220.00, 261.63, 329.63],
     ],
     bateria: 'funk',
     estilo: { synth: 'clavi', bass: 'slap', arpegio: false, pads: false }
@@ -94,14 +94,104 @@ const TRACKS = [
     bpm: 98,
     duracionCompases: 50,
     chordProgression: [
-      [261.63, 329.63, 392.00, 523.25],   // Cmaj
-      [196.00, 246.94, 293.66, 392.00],   // Gmaj
-      [220.00, 261.63, 329.63, 440.00],   // Am
-      [174.61, 220.00, 261.63, 349.23],   // Fmaj
+      [261.63, 329.63, 392.00, 523.25],
+      [196.00, 246.94, 293.66, 392.00],
+      [220.00, 261.63, 329.63, 440.00],
+      [174.61, 220.00, 261.63, 349.23],
     ],
     bateria: 'reggaeton',
     estilo: { synth: 'pluck', bass: 'sub', arpegio: true, pads: true }
   },
+  {
+    id: 'dancepop',
+    nombre: 'Neon Weekend',
+    genero: 'Dance Pop',
+    bpm: 128,
+    duracionCompases: 52,
+    chordProgression: [
+      [392.00, 493.88, 587.33, 783.99],
+      [329.63, 415.30, 493.88, 659.25],
+      [261.63, 329.63, 392.00, 523.25],
+      [293.66, 369.99, 440.00, 587.33],
+    ],
+    bateria: 'house',
+    estilo: { synth: 'supersaw', bass: 'sub', arpegio: true, pads: true }
+  },
+  {
+    id: 'electrofunk',
+    nombre: 'Laser Arcade',
+    genero: 'Electro Funk',
+    bpm: 114,
+    duracionCompases: 54,
+    chordProgression: [
+      [220.00, 277.18, 329.63, 415.30],
+      [246.94, 311.13, 369.99, 466.16],
+      [261.63, 329.63, 392.00, 493.88],
+      [196.00, 246.94, 293.66, 369.99],
+    ],
+    bateria: 'funk',
+    estilo: { synth: 'clavi', bass: 'slap', arpegio: true, pads: false }
+  },
+  {
+    id: 'clublatin',
+    nombre: 'Sunset Club',
+    genero: 'Latin Club',
+    bpm: 102,
+    duracionCompases: 50,
+    chordProgression: [
+      [220.00, 261.63, 329.63, 440.00],
+      [174.61, 220.00, 261.63, 349.23],
+      [261.63, 329.63, 392.00, 523.25],
+      [196.00, 246.94, 293.66, 392.00],
+    ],
+    bateria: 'reggaeton',
+    estilo: { synth: 'pluck', bass: 'heavy', arpegio: true, pads: true }
+  },
+  {
+    id: 'retrowave',
+    nombre: 'Night Runner',
+    genero: 'Retrowave',
+    bpm: 112,
+    duracionCompases: 58,
+    chordProgression: [
+      [329.63, 392.00, 493.88, 659.25],
+      [293.66, 349.23, 440.00, 587.33],
+      [261.63, 329.63, 392.00, 523.25],
+      [246.94, 311.13, 369.99, 493.88],
+    ],
+    bateria: 'fourOnTheFloor',
+    estilo: { synth: 'supersaw', bass: 'acido', arpegio: true, pads: true }
+  },
+  {
+    id: 'futurebounce',
+    nombre: 'Skyline Bounce',
+    genero: 'Future Bounce',
+    bpm: 126,
+    duracionCompases: 46,
+    chordProgression: [
+      [261.63, 329.63, 392.00, 523.25],
+      [220.00, 277.18, 329.63, 440.00],
+      [293.66, 349.23, 440.00, 587.33],
+      [196.00, 246.94, 293.66, 392.00],
+    ],
+    bateria: 'edm',
+    estilo: { synth: 'supersaw', bass: 'heavy', arpegio: true, pads: false }
+  },
+  {
+    id: 'indiedance',
+    nombre: 'Mirror Ball',
+    genero: 'Indie Dance',
+    bpm: 118,
+    duracionCompases: 52,
+    chordProgression: [
+      [174.61, 220.00, 261.63, 349.23],
+      [220.00, 261.63, 329.63, 440.00],
+      [261.63, 329.63, 392.00, 523.25],
+      [196.00, 246.94, 293.66, 392.00],
+    ],
+    bateria: 'disco',
+    estilo: { synth: 'chordStab', bass: 'walking', arpegio: true, pads: true }
+  }
 ];
 
 /* =========================================================
