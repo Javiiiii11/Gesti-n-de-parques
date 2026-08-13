@@ -85,7 +85,12 @@ function setUserChip(user) {
   const name = user.name || (user.email ? user.email.split('@')[0] : 'Usuario');
   document.getElementById('user-name').textContent = name;
   document.getElementById('user-role').textContent = LOCAL_MODE ? 'Modo local' : (user.email || '');
-  document.getElementById('user-avatar').textContent = name.slice(0, 1).toUpperCase();
+  document.getElementById('user-avatar').innerHTML = `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="8" r="4"></circle>
+      <path d="M6.5 19a5.5 5.5 0 0 1 11 0v.5h-11z"></path>
+    </svg>
+  `;
 }
 
 // bootApp puede recibir más de una invocación durante el arranque de sesión
@@ -102,10 +107,6 @@ async function bootApp(user) {
   document.getElementById('auth-screen').style.display = 'none';
 
   try {
-    if (!DB || typeof DB.getTiposBono !== 'function') {
-      throw new Error('DB.getTiposBono is not a function. (DB=' + String(typeof DB) + ')');
-    }
-
     STATE.parques = await DB.getParques();
     STATE.tipos_bono = await DB.getTiposBono();
     STATE.contactos = await DB.getContactos();

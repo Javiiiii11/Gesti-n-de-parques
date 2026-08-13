@@ -46,14 +46,18 @@ function toast(message, type = 'info', timeout = 3400) {
 /* ---------------------------------- MODAL ------------------------------------ */
 const modalBackdrop = () => document.getElementById('modal-backdrop');
 
-function openModal({ title, bodyHtml, footHtml = '', width = null }) {
+function openModal({ title, bodyHtml, footHtml = '', width = null, sizeClass = null }) {
   document.getElementById('modal-title').textContent = title;
   document.getElementById('modal-body').innerHTML = bodyHtml;
   document.getElementById('modal-foot').innerHTML = footHtml;
   const modalEl = document.getElementById('modal');
   if (modalEl) {
-    if (width) modalEl.style.maxWidth = `min(${width}, 95vw)`;
-    else modalEl.style.maxWidth = '95vw';
+    modalEl.className = 'modal' + (sizeClass ? ' ' + sizeClass : '');
+    if (width) {
+      modalEl.style.maxWidth = `min(${width}, 95vw)`;
+    } else {
+      modalEl.style.maxWidth = '';
+    }
   }
   modalBackdrop().classList.add('active');
 }

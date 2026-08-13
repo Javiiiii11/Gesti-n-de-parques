@@ -133,6 +133,41 @@ function daysInMonth(year, monthIndexZeroBased) {
   return new Date(year, monthIndexZeroBased + 1, 0).getDate();
 }
 
+function isWeekend(date) {
+  const day = date.getDay();
+  return day === 0 || day === 6;
+}
+
+function countWorkdaysInMonth(year, monthIndexZeroBased) {
+  const totalDays = daysInMonth(year, monthIndexZeroBased);
+  let count = 0;
+  for (let day = 1; day <= totalDays; day++) {
+    const date = new Date(year, monthIndexZeroBased, day);
+    if (!isWeekend(date)) count++;
+  }
+  return count;
+}
+
+function countWorkdaysElapsed(year, monthIndexZeroBased, currentDay) {
+  let count = 0;
+  for (let day = 1; day <= currentDay; day++) {
+    const date = new Date(year, monthIndexZeroBased, day);
+    if (!isWeekend(date)) count++;
+  }
+  return count;
+}
+
+function countWorkdaysRemaining(year, monthIndexZeroBased, currentDay) {
+  const totalDays = daysInMonth(year, monthIndexZeroBased);
+  let count = 0;
+  // Incluye el día de hoy si es laborable (aún puedes trabajar hoy)
+  for (let day = currentDay; day <= totalDays; day++) {
+    const date = new Date(year, monthIndexZeroBased, day);
+    if (!isWeekend(date)) count++;
+  }
+  return count;
+}
+
 function daysBetweenInclusive(from, to) {
   const start = new Date(from);
   const end = new Date(to);
@@ -163,6 +198,21 @@ function getFilteredVentas(filters) {
   });
 }
 
+function getDashboardReferenceDate(filters) {
+  if (filters.period === 'day' && isValidDateValue(filters.value)) {
+    const [year, month, day] = filters.value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  if (filters.period === 'month' && isValidMonthValue(filters.value)) {
+    const [year, month] = filters.value.split('-').map(Number);
+    return new Date(year, month - 1, 1);
+  }
+  if (filters.period === 'year' && /^\d{4}$/.test(String(filters.year || ''))) {
+    return new Date(Number(filters.year), 0, 1);
+  }
+  return new Date();
+}
+
 function renderDashboard() {
   if (!document.getElementById('dashboard-stats')) return;
 
@@ -173,9 +223,9 @@ function renderDashboard() {
   syncDashboardFilterControls(filters);
 
   const now = new Date();
+  const referenceDate = getDashboardReferenceDate(filters);
   const filtradas = getFilteredVentas(filters);
   const goal = getMonthlyGoal();
-  const workdays = getWorkdaysPerMonth();
 
   const sum = (arr, key) => arr.reduce((acc, venta) => acc + Number(venta[key] || 0), 0);
   
@@ -200,9 +250,9 @@ function renderDashboard() {
   // Calculate average per sale in filtered data
   const averagePerSale = filteredCount ? filteredTotal / filteredCount : 0;
   
-  // Get today's sales (always from all data, not filtered)
-  const hoy = toDateInputValue(now);
-  const ventasHoy = STATE.ventas.filter((venta) => isSameLocalDay(venta.fecha, hoy));
+  // Ventas del día de referencia dentro del periodo seleccionado
+  const referenceDay = toDateInputValue(referenceDate);
+  const ventasHoy = STATE.ventas.filter((venta) => isSameLocalDay(venta.fecha, referenceDay));
   const totalHoy = sum(ventasHoy, 'importe_total');
   const countHoy = ventasHoy.length;
 
@@ -214,26 +264,45 @@ function renderDashboard() {
 
   const filteredSummary = buildDashboardFilterSummary(filters, filtradas.length);
   
-  // Still use current month for goal
-  const mesActual = STATE.ventas.filter((venta) => isMismoMes(venta.fecha, now));
-  const currentMonthSales = sum(mesActual, 'importe_total');
+  // Meta y métricas calculadas sobre el mes del periodo seleccionado
+  const mesReferencia = STATE.ventas.filter((venta) => isMismoMes(venta.fecha, referenceDate));
+  const currentMonthSales = sum(mesReferencia, 'importe_total');
   const goalRemaining = Math.max(0, goal - currentMonthSales);
   const goalProgress = goal > 0 ? Math.min(100, (currentMonthSales / goal) * 100) : 0;
-  const monthDays = daysInMonth(now.getFullYear(), now.getMonth());
-  const daysLeft = Math.max(0, monthDays - now.getDate());
-  const monthElapsed = Math.max(1, now.getDate());
-  const expectedDailyGoal = goal / workdays;
-  const currentPace = currentMonthSales / monthElapsed;
-  const missingPerWorkingDay = workdays ? goalRemaining / Math.max(1, workdays - Math.min(workdays, monthElapsed)) : goalRemaining;
-  const workdaysElapsed = Math.max(1, Math.round(workdays * (now.getDate() / monthDays)));
-  const workdaysRemaining = Math.max(1, workdays - workdaysElapsed);
-  const dailyGoalRemaining = goalRemaining / workdaysRemaining;
 
-  // Get this week's sales (from Monday)
-  const inicioSemana = new Date(now);
-  inicioSemana.setDate(now.getDate() - (now.getDay() || 7) + 1); // Lunes
+  const referenceYear = referenceDate.getFullYear();
+  const referenceMonth = referenceDate.getMonth();
+  const isCurrentReferenceMonth = referenceYear === now.getFullYear() && referenceMonth === now.getMonth();
+  const referenceDayNumber = isCurrentReferenceMonth ? now.getDate() : daysInMonth(referenceYear, referenceMonth);
+
+  // Días laborables reales del mes de referencia (excluye fines de semana)
+  const actualMonthWorkdays = countWorkdaysInMonth(referenceYear, referenceMonth);
+  const workdaysElapsed = countWorkdaysElapsed(referenceYear, referenceMonth, referenceDayNumber);
+  const workdaysRemaining = isCurrentReferenceMonth
+    ? countWorkdaysRemaining(referenceYear, referenceMonth, referenceDayNumber)
+    : 0;
+
+  // Meta base: objetivo / días laborables reales del mes
+  const expectedDailyGoal = goal / actualMonthWorkdays;
+  // Ritmo actual / media diaria del mes seleccionado
+  const currentPace = workdaysElapsed > 0 ? currentMonthSales / workdaysElapsed : 0;
+  const averageDailyMonthSales = currentPace;
+  // Cálculo dinámico: lo que falta repartido entre los días pendientes
+  const missingPerWorkingDay = workdaysRemaining > 0 ? goalRemaining / workdaysRemaining : goalRemaining;
+  const dailyGoalRemaining = missingPerWorkingDay;
+  const workdaysLeft = workdaysRemaining;
+  const workdaysTotal = actualMonthWorkdays;
+
+  // Ventas de la semana de la fecha de referencia
+  const inicioSemana = new Date(referenceDate);
+  inicioSemana.setDate(referenceDate.getDate() - (referenceDate.getDay() || 7) + 1);
   inicioSemana.setHours(0, 0, 0, 0);
-  const ventasSemana = STATE.ventas.filter((venta) => new Date(venta.fecha) >= inicioSemana);
+  const finSemana = new Date(inicioSemana);
+  finSemana.setDate(inicioSemana.getDate() + 7);
+  const ventasSemana = STATE.ventas.filter((venta) => {
+    const fechaVenta = new Date(venta.fecha);
+    return fechaVenta >= inicioSemana && fechaVenta < finSemana;
+  });
   const totalSemana = sum(ventasSemana, 'importe_total');
   const countSemana = ventasSemana.length;
 
@@ -241,11 +310,11 @@ function renderDashboard() {
 
   const stats = [
     { label: 'Total en filtro', value: fmtEUR(filteredTotal), sub: `${fmtNum(filteredCount)} entradas`, icon: 'M12 8v8M8 12h8' },
-    { label: 'Meta restante por día', value: goal > 0 ? fmtEUR(dailyGoalRemaining) : '—', sub: goal > 0 ? `Te quedan ${fmtNum(workdaysRemaining)} días laborables de los ${fmtNum(workdays)} configurados` : 'Configura un objetivo mensual', icon: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12z M12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4z' },
     { label: 'Parque más vendido', value: topParkName, sub: topParkEntry ? `${fmtNum(topParkEntries)} entradas · ${fmtEUR(topParkRevenue)}` : 'Sin ventas en el filtro', icon: 'M3 21l7-14 4 8 3-5 4 11H3z' },
-    { label: 'Media por día', value: fmtEUR(dailyAverageFiltered), sub: firstFilteredSale ? `Desde ${fmtDateShort(firstFilteredSale.fecha)}` : 'Sin datos aún', icon: 'M4 19h16M6 16V9M12 16V5M18 16v-4' },
-    { label: 'Ventas totales del día', value: fmtEUR(totalHoy), sub: countHoy ? `${fmtNum(countHoy)} entradas hoy` : 'Sin ventas hoy', icon: 'M3 3v18h18' },
-    { label: 'Ventas de la semana', value: fmtEUR(totalSemana), sub: countSemana ? `${fmtNum(countSemana)} entradas esta semana` : 'Sin ventas esta semana', icon: 'M16 2v4M8 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M12 14v4M10 16h4' },
+    { label: 'Media diaria del mes', value: fmtEUR(averageDailyMonthSales), sub: workdaysElapsed ? `${fmtNum(workdaysElapsed)} días laborables calculados` : 'Sin días laborables en el periodo', icon: 'M3 13h4l3 7 4-14 3 7h4' },
+    { label: 'Cuota / día restante', value: goal > 0 ? fmtEUR(dailyGoalRemaining) : '—', sub: goal > 0 ? (isCurrentReferenceMonth ? `Te quedan ${fmtNum(workdaysRemaining)} días laborables de ${fmtNum(actualMonthWorkdays)} este mes` : `Mes cerrado · ${fmtNum(actualMonthWorkdays)} días laborables`) : 'Configura un objetivo mensual', icon: 'M4 19h16M6 16V9M12 16V5M18 16v-4' },
+    { label: 'Ventas totales del día', value: fmtEUR(totalHoy), sub: countHoy ? `${fmtNum(countHoy)} entradas en la fecha seleccionada` : 'Sin ventas en la fecha seleccionada', icon: 'M3 3v18h18' },
+    { label: 'Ventas de la semana', value: fmtEUR(totalSemana), sub: countSemana ? `${fmtNum(countSemana)} entradas` : 'Sin ventas esta semana', icon: 'M16 2v4M8 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M12 14v4M10 16h4' },
   ];
 
   document.getElementById('dashboard-stats').innerHTML = stats.map((stat) => `
@@ -262,11 +331,13 @@ function renderDashboard() {
     goal,
     goalRemaining,
     goalProgress,
-    workdays,
-    daysLeft,
     expectedDailyGoal,
     currentPace,
     missingPerWorkingDay,
+    workdaysTotal,
+    workdaysLeft,
+    totalSemana,
+    countSemana,
   });
   renderRankingParques(filtradas);
 }
@@ -410,11 +481,13 @@ function renderGoalWidget({
   goal,
   goalRemaining,
   goalProgress,
-  workdays,
-  daysLeft,
   expectedDailyGoal,
   currentPace,
   missingPerWorkingDay,
+  workdaysTotal,
+  workdaysLeft,
+  totalSemana,
+  countSemana,
 }) {
   const percentage = goal ? Math.min(100, goalProgress) : 0;
 
@@ -434,6 +507,15 @@ function renderGoalWidget({
     return;
   }
 
+  // Estado visual según si la cuota diaria sube o baja respecto a la meta original
+  const quotaState = missingPerWorkingDay > expectedDailyGoal && expectedDailyGoal > 0 ? 'up' : (missingPerWorkingDay < expectedDailyGoal && expectedDailyGoal > 0 ? 'down' : 'on');
+  const quotaStateColor = quotaState === 'up' ? '#F5A623' : quotaState === 'down' ? '#00E676' : 'var(--accent)';
+const quotaStateLabel =
+    quotaState === 'up'
+        ? '🚀 Has vendido menos de lo previsto, ¡sube la cuota!'
+        : quotaState === 'down'
+            ? '🔥 ¡Vas por delante! Sigue así 💪🏻'
+            : '👍🏻 Vas al ritmo esperado';
   document.getElementById('goal-widget').innerHTML = `
     <div class="goal-summary">
       <div class="goal-summary-row">
@@ -452,12 +534,28 @@ function renderGoalWidget({
         <div class="goal-progress-fill" style="width:${percentage}%"></div>
       </div>
       <div class="goal-progress-meta">${percentage.toFixed(1)}% completado</div>
-      <div class="goal-metrics-grid">
-        <div class="goal-metric"><span>Días de trabajo</span><b>${fmtNum(workdays)}</b></div>
-        <div class="goal-metric"><span>Días que faltan</span><b>${fmtNum(daysLeft)}</b></div>
-        <div class="goal-metric"><span>Meta por día</span><b>${fmtEUR(expectedDailyGoal)}</b></div>
-        <div class="goal-metric"><span>Ritmo actual</span><b>${fmtEUR(currentPace)}</b></div>
-        <div class="goal-metric full"><span>Si repartes lo que falta entre los días laborables configurados</span><b>${fmtEUR(missingPerWorkingDay)}</b></div>
+
+      <div class="goal-mini-grid">
+        <div class="goal-mini-card goal-mini-card-primary">
+          <span>Cuota / día restante</span>
+          <b>${fmtEUR(missingPerWorkingDay)}</b>
+        </div>
+        <div class="goal-mini-card">
+          <span>Días que faltan</span>
+          <b>${fmtNum(workdaysLeft)} de ${fmtNum(workdaysTotal)}</b>
+        </div>
+        <div class="goal-mini-card">
+          <span>Meta original / día</span>
+          <b class="goal-mini-warn">${fmtEUR(expectedDailyGoal)}</b>
+        </div>
+        <div class="goal-mini-card">
+          <span>Ritmo actual</span>
+          <b class="goal-mini-info">${fmtEUR(currentPace)}</b>
+        </div>
+      </div>
+
+      <div class="goal-status-note" style="background:${quotaStateColor}14; color:${quotaStateColor}; border-color:${quotaStateColor}33;">
+        ${quotaStateLabel}
       </div>
     </div>
   `;
@@ -650,6 +748,21 @@ function renderRankingParques(ventas) {
 function openProfileSettings() {
   const goal = getMonthlyGoal();
   const workdays = getWorkdaysPerMonth();
+  const now = new Date();
+  const realWorkdays = countWorkdaysInMonth(now.getFullYear(), now.getMonth());
+  const realElapsed = countWorkdaysElapsed(now.getFullYear(), now.getMonth(), now.getDate());
+  const realPending = countWorkdaysRemaining(now.getFullYear(), now.getMonth(), now.getDate());
+  const currentMonthName = MONTH_NAMES[now.getMonth()];
+
+  // Ventas del mes actual
+  const mesActual = STATE.ventas.filter((venta) => isMismoMes(venta.fecha, now));
+  const currentMonthSales = mesActual.reduce((acc, venta) => acc + Number(venta.importe_total || 0), 0);
+  const goalRemaining = Math.max(0, goal - currentMonthSales);
+  // Cuota diaria dinámica: lo que falta repartido entre los días pendientes (incluyendo hoy)
+  const dailyQuota = realPending > 0 ? goalRemaining / realPending : goalRemaining;
+  const originalDailyGoal = goal > 0 ? goal / realWorkdays : 0;
+  const pace = realElapsed > 0 ? currentMonthSales / realElapsed : 0;
+
   openModal({
     title: 'Mi perfil y objetivos',
     width: '480px',
@@ -665,7 +778,57 @@ function openProfileSettings() {
             <p style="margin: 0; font-size: 12.5px; color: var(--text-secondary); line-height: 1.45;">Estos valores se guardan localmente en tu navegador y controlan los cálculos de ritmo de ventas de tu panel principal.</p>
           </div>
         </div>
-        
+
+        <!-- Resumen de días laborables reales del mes (sin fines de semana) -->
+        <div style="background: rgba(0,198,255,0.04); border-radius: var(--radius-m); border: 1px solid rgba(0,198,255,0.15); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;stroke:#00C6FF;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Días laborables de ${currentMonthName} (reales, sin fines de semana)
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
+            <div style="background: var(--bg-body); border-radius: var(--radius-s); border: 1px solid var(--border); padding: 10px 6px;">
+              <div style="font-size: 18px; font-weight: 800; color: var(--text-primary);">${fmtNum(realWorkdays)}</div>
+              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">Total del mes</div>
+            </div>
+            <div style="background: var(--bg-body); border-radius: var(--radius-s); border: 1px solid var(--border); padding: 10px 6px;">
+              <div style="font-size: 18px; font-weight: 800; color: #F5A623;">${fmtNum(realElapsed)}</div>
+              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">Transcurridos</div>
+            </div>
+            <div style="background: var(--bg-body); border-radius: var(--radius-s); border: 1px solid var(--border); padding: 10px 6px;">
+              <div style="font-size: 18px; font-weight: 800; color: #00C6FF;">${fmtNum(realPending)}</div>
+              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">Pendientes</div>
+            </div>
+          </div>
+          <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.4;">
+            El panel usa estos días reales (incluyendo hoy) para calcular cuánto necesitas hacer cada día que queda, ajustándose automáticamente según lo que ya hayas vendido.
+          </div>
+        </div>
+
+        <!-- Resumen de cuota diaria dinámica -->
+        <div style="background: rgba(0,230,118,0.05); border-radius: var(--radius-m); border: 1px solid rgba(0,230,118,0.2); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;stroke:#00E676;"><circle cx="12" cy="12" r="10"/><polygon points="12 6 12 12 16 14"/></svg>
+            Tu cuota diaria ajustada automáticamente
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
+            <div style="background: var(--bg-body); border-radius: var(--radius-s); border: 1px solid var(--border); padding: 10px 6px;">
+              <div style="font-size: 18px; font-weight: 800; color: var(--text-primary);">${fmtEUR(dailyQuota)}</div>
+              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">Cuota / día restante</div>
+            </div>
+            <div style="background: var(--bg-body); border-radius: var(--radius-s); border: 1px solid var(--border); padding: 10px 6px;">
+              <div style="font-size: 18px; font-weight: 800; color: #F5A623;">${fmtEUR(originalDailyGoal)}</div>
+              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">Meta original / día</div>
+            </div>
+            <div style="background: var(--bg-body); border-radius: var(--radius-s); border: 1px solid var(--border); padding: 10px 6px;">
+              <div style="font-size: 18px; font-weight: 800; color: #00C6FF;">${fmtEUR(pace)}</div>
+              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">Tu ritmo actual</div>
+            </div>
+          </div>
+          <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.4;">
+            Si hoy has vendido mucho, la cuota de los días restantes baja. Si has vendido poco, sube. Así siempre sabes exactamente lo que necesitas hacer para llegar al objetivo.
+          </div>
+        </div>
+
         <!-- Grid de inputs -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           <div>

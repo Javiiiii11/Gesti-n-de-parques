@@ -224,6 +224,16 @@ function wireQuickParse() {
   
   let parsedData = null;
 
+  // Actualizar el texto del botón de confirmación para que coincida con lo que pide el usuario
+  if (btnConfirm) {
+    const spanText = btnConfirm.querySelector('svg + span') || btnConfirm.lastChild;
+    if (spanText && spanText.nodeType === Node.TEXT_NODE) {
+      spanText.textContent = 'Autocompletar si está bien';
+    } else if (btnConfirm.children.length > 1) {
+      btnConfirm.lastChild.textContent = 'Autocompletar si está bien';
+    }
+  }
+
   function parseLine(text) {
     const trimmed = text.trim();
     if (!trimmed) return null;
@@ -298,50 +308,67 @@ function wireQuickParse() {
     updateTicketPreview();
   }
 
-  btnParse.addEventListener('click', () => {
-    const line = textarea.value.trim();
-    if (!line) { toast('Pega el texto de la tabla primero', 'error'); return; }
-    
-    parsedData = parseLine(line);
-    if (!parsedData) {
-      toast('No se pudo interpretar el formato. Revisa que tenga: localizador, nombre, precio, correo y teléfono', 'error');
-      return;
-    }
-    
-    // Mostrar preview de lo parseado
+  function showPreview(data) {
     if (preview) {
       preview.innerHTML = `
         <div class="qp-card">
           <div class="qp-head">📋 Vista previa de datos detectados</div>
-          <div class="qp-row"><span>Localizador</span><strong>${escapeHtml(parsedData.localizador)}</strong></div>
-          <div class="qp-row"><span>Cliente</span><strong>${escapeHtml(parsedData.nombreCliente)}</strong></div>
-          <div class="qp-row"><span>Importe</span><strong>${typeof fmtEUR === 'function' ? fmtEUR(parsedData.precio) : parsedData.precio.toFixed(2) + ' €'}</strong></div>
-          <div class="qp-row"><span>Correo</span><strong>${escapeHtml(parsedData.correo)}</strong></div>
-          <div class="qp-row"><span>Teléfono</span><strong>${escapeHtml(parsedData.telefono)}</strong></div>
+          <div class="qp-row"><span>Localizador</span><strong>${escapeHtml(data.localizador) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
+          <div class="qp-row"><span>Cliente</span><strong>${escapeHtml(data.nombreCliente) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
+          <div class="qp-row"><span>Importe</span><strong>${typeof fmtEUR === 'function' ? fmtEUR(data.precio) : data.precio.toFixed(2) + ' €'}</strong></div>
+          <div class="qp-row"><span>Correo</span><strong>${escapeHtml(data.correo) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
+          <div class="qp-row"><span>Teléfono</span><strong>${escapeHtml(data.telefono) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
         </div>
       `;
       preview.style.display = 'block';
     }
     if (btnConfirm) btnConfirm.style.display = 'inline-flex';
     if (btnCancel) btnCancel.style.display = 'inline-flex';
-  });
+    if (btnParse) btnParse.style.display = 'none'; // Ocultar el botón de interpretar, ya que es automático
+  }
+
+  function hidePreview() {
+    parsedData = null;
+    if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+    if (btnConfirm) btnConfirm.style.display = 'none';
+    if (btnCancel) btnCancel.style.display = 'none';
+    if (btnParse) btnParse.style.display = 'inline-flex'; // Volver a mostrar si el textarea se vacía
+  }
+
+  // Parseo automático cuando el usuario escribe o pega texto
+  const doAutoParse = () => {
+    const text = textarea.value.trim();
+    if (!text) {
+      hidePreview();
+      return;
+    }
+    
+    parsedData = parseLine(text);
+    if (parsedData) {
+      showPreview(parsedData);
+    } else {
+      // Si hay texto pero no se puede parsear, ocultamos preview, pero no toast para no ser invasivos
+      hidePreview();
+    }
+  };
+
+  textarea.addEventListener('paste', () => setTimeout(doAutoParse, 10));
+  textarea.addEventListener('input', debounce(doAutoParse, 250));
+
+  // Botón manual por si acaso el usuario lo quiere forzar
+  btnParse.addEventListener('click', doAutoParse);
 
   btnConfirm.addEventListener('click', () => {
     if (!parsedData) return;
     fillForm(parsedData);
     // Ocultar preview
-    if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
-    if (btnConfirm) btnConfirm.style.display = 'none';
-    if (btnCancel) btnCancel.style.display = 'none';
+    hidePreview();
     textarea.value = '';
     toast('Datos cargados en el formulario. Revisa y guarda.', 'success');
   });
 
   btnCancel.addEventListener('click', () => {
-    parsedData = null;
-    if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
-    if (btnConfirm) btnConfirm.style.display = 'none';
-    if (btnCancel) btnCancel.style.display = 'none';
+    hidePreview();
     textarea.value = '';
   });
 }

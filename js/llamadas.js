@@ -49,7 +49,18 @@ function renderLlamadas() {
   renderLlamadasList();
 }
 
+function setDefaultLlamadaFecha() {
+  const fechaEl = document.getElementById('ll-fecha');
+  if (!fechaEl) return;
+  const hoy = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  fechaEl.value = `${hoy.getFullYear()}-${pad(hoy.getMonth() + 1)}-${pad(hoy.getDate())}`;
+}
+
 function renderLlamadasForm() {
+  // Default date = today
+  setDefaultLlamadaFecha();
+
   // Fill park and bono selects
   const selParque = document.getElementById('ll-parque');
   const selBono = document.getElementById('ll-bono');
@@ -230,6 +241,8 @@ function resetLlamadaForm() {
   editingCallId = null;
   const form = document.getElementById('llamada-form');
   if (form) form.reset();
+  // Default date = today (restaurar tras reset)
+  setDefaultLlamadaFecha();
   const parqueField = document.getElementById('ll-field-parque');
   const bonoField = document.getElementById('ll-field-bono');
   if (parqueField) parqueField.style.display = '';

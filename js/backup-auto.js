@@ -223,7 +223,7 @@ async function showBackupList() {
     return;
   }
 
-  let html = `<div style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto;">`;
+  let html = `<div style="display:flex;flex-direction:column;gap:8px;">`;
   for (const b of backups) {
     const fecha = new Date(b.fecha).toLocaleString('es-ES');
     const size = new Blob([JSON.stringify(b.data)]).size;
@@ -249,6 +249,8 @@ async function showBackupList() {
 
   openModal({
     title: `Backups guardados (${backups.length})`,
+    width: '520px',
+    sizeClass: 'modal-cuadradito',
     bodyHtml: html,
     footHtml: `<button class="btn btn-ghost" onclick="closeModal()">Cerrar</button>`,
   });
