@@ -9,6 +9,14 @@ let callsNotified10min = new Set();
 let callsNotifiedExact = new Set();
 let editingCallId = null;
 
+function persistCallAlertFlag(callId) {
+  const calls = getCalls();
+  const idx = calls.findIndex(c => c.id === callId);
+  if (idx === -1) return;
+  calls[idx].alert_unread = true;
+  saveCalls(calls);
+}
+
 function getCalls() {
   try {
     return JSON.parse(localStorage.getItem(CALLS_STORAGE_KEY) || '[]');
@@ -188,6 +196,7 @@ function guardarLlamada() {
         notas,
         correo,
         localizador,
+        alert_unread: false,
         // Al editar, reactivamos la llamada (quita completada/cancelada)
         completada: false,
         cancelada: false,
@@ -219,6 +228,7 @@ function guardarLlamada() {
       notas,
       correo,
       localizador,
+      alert_unread: false,
       completada: false,
       cancelada: false,
     };
@@ -527,6 +537,7 @@ function reactivarLlamada(id) {
   // Reactivar: quitar completada/cancelada y limpiar notificaciones previas
   c.completada = false;
   c.cancelada = false;
+  c.alert_unread = false;
   callsNotified10min.delete(c.id);
   callsNotifiedExact.delete(c.id);
 
@@ -560,34 +571,31 @@ function deleteLlamada(id) {
    ============================================================================ */
 function updateCallsNotifBadge() {
   const badge = document.getElementById('calls-sidebar-badge');
-  if (!badge) return;
+  const navItem = document.querySelector('.nav-item[data-view="llamadas"]');
+  if (!badge || !navItem) return;
 
+  const currentView = document.querySelector('.nav-item.active')?.dataset.view || '';
   const calls = getCalls();
   const ahora = new Date();
 
-  // Solo mostrar badge para llamadas que YA deberían haber notificado:
-  // - A menos de 10 minutos (rango de la alarma pre)
-  // - Ya vencidas (pasó su hora)
-  const alarmadas = calls.filter(c => {
-    if (c.completada || c.cancelada) return false;
+  const unreadAlertCalls = calls.filter(c => {
+    if (c.completada || c.cancelada || !c.alert_unread) return false;
     const h = new Date(c.fecha_hora);
-    const diffMs = h - ahora;
-    // Menos de 10 min para que suene (o ya sonó) -> mostrar badge
-    return diffMs < 600000; // menos de 10 min o ya pasó
+    return (ahora - h) < 7200000;
   });
 
-  // Contar las que están sonando ahora (menos de 1 min o recién pasadas)
-  const sonandoAhora = alarmadas.filter(c => {
+  const sonandoAhora = unreadAlertCalls.filter(c => {
     const h = new Date(c.fecha_hora);
     const diffMs = h - ahora;
-    return diffMs < 60000; // menos de 1 minuto o ya pasó
+    return diffMs < 60000;
   });
 
-  const total = alarmadas.length;
+  const total = currentView === 'llamadas' ? 0 : unreadAlertCalls.length;
 
   if (total > 0) {
     badge.textContent = total > 9 ? '9+' : total;
     badge.style.display = 'inline-flex';
+    navItem.classList.add('has-call-alert');
     if (sonandoAhora.length > 0) {
       badge.style.animation = 'nav-badge-pop 0.3s cubic-bezier(.4,0,.2,1), notifPulse 2s infinite ease-in-out';
     } else {
@@ -595,6 +603,8 @@ function updateCallsNotifBadge() {
     }
   } else {
     badge.style.display = 'none';
+    badge.style.animation = 'none';
+    navItem.classList.remove('has-call-alert');
   }
 }
 
@@ -605,6 +615,19 @@ function startAlarmChecker() {
   if (callsAlarmInterval) clearInterval(callsAlarmInterval);
   callsAlarmInterval = setInterval(checkAlarms, 15000); // every 15 seconds
   checkAlarms(); // immediate check
+}
+
+function markCallsAlertAsRead() {
+  const calls = getCalls();
+  let changed = false;
+  calls.forEach(c => {
+    if (c.alert_unread) {
+      c.alert_unread = false;
+      changed = true;
+    }
+  });
+  if (changed) saveCalls(calls);
+  updateCallsNotifBadge();
 }
 
 function checkAlarms() {
@@ -620,6 +643,7 @@ function checkAlarms() {
     // Alarm 10 minutes before
     if (diffMin <= 10 && diffMin > 0 && !callsNotified10min.has(c.id)) {
       callsNotified10min.add(c.id);
+      persistCallAlertFlag(c.id);
       showAlarmNotification(c, 'pre');
       playAlarmSound();
     }
@@ -627,6 +651,7 @@ function checkAlarms() {
     // Exact alarm
     if (diffMs <= 0 && diffMs > -60000 && !callsNotifiedExact.has(c.id)) {
       callsNotifiedExact.add(c.id);
+      persistCallAlertFlag(c.id);
       showAlarmNotification(c, 'exact');
       playAlarmSound();
       // Refresh list to show urgent state
@@ -640,6 +665,7 @@ function checkAlarms() {
     if ((ahora - hora) > 7200000) {
       callsNotified10min.delete(c.id);
       callsNotifiedExact.delete(c.id);
+      if (c.alert_unread) c.alert_unread = false;
     }
   });
 

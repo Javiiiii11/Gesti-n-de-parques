@@ -29,7 +29,10 @@ function switchView(viewId) {
   if (viewId === 'venta-rapida') updateTicketPreview();
   if (viewId === 'estadisticas') renderEstadisticas();
   if (viewId === 'contactos') renderContactos();
-  if (viewId === 'llamadas') initLlamadasView();
+  if (viewId === 'llamadas') {
+    initLlamadasView();
+    if (typeof markCallsAlertAsRead === 'function') markCallsAlertAsRead();
+  }
   if (viewId === 'horarios') initHorarios();
   if (viewId === 'notas-rapidas') {
     const txt = document.getElementById('notas-rapidas-textarea');

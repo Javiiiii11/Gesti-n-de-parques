@@ -353,6 +353,7 @@ label:has(input[type="radio"]:checked) {
   font-size: 13.5px;
   cursor: pointer;
   transition: var(--transition);
+  position: relative;
   border: 1px solid transparent;
   white-space: nowrap;
 }
@@ -610,6 +611,31 @@ label:has(input[type="radio"]:checked) {
 }
 
 /* ============ NOTIFICATION BADGE ============ */
+.calls-nav-badge {
+  margin-left: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 800;
+  background: #ff5a6b;
+  color: white;
+  box-shadow: 0 0 0 2px rgba(255, 90, 107, 0.18);
+}
+
+.nav-item.has-call-alert {
+  background: rgba(255, 90, 107, 0.08);
+  color: var(--text-primary);
+}
+
+.nav-item.has-call-alert svg {
+  color: #ff7b88;
+}
+
 .notif-badge {
   position: absolute;
   top: -4px;
