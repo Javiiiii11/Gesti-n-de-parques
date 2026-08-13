@@ -992,6 +992,14 @@
                     <label for="ll-cliente">👤 Cliente</label>
                     <input type="text" id="ll-cliente" placeholder="Nombre del cliente" required>
                   </div>
+                  <div class="form-field">
+                    <label for="ll-prioridad">⭐ Tipo de llamada</label>
+                    <select id="ll-prioridad">
+                      <option value="normal">Normal</option>
+                      <option value="Buena venta">Buena venta</option>
+                      <option value="grupo">Grupo</option>
+                    </select>
+                  </div>
                   <div class="form-field full">
                     <label for="ll-notas">📝 Notas</label>
                     <textarea id="ll-notas" rows="5" placeholder="Apuntes para la llamada..."></textarea>
@@ -1743,76 +1751,46 @@
         <section class="view" id="view-chat-ia">
           <div class="view-header">
             <div>
-              <h2>Asistente IA</h2>
-              <p class="desc">Asistente inteligente con doble backend: Ollama (local) o Gemini (nube). Úsalo desde
-                cualquier dispositivo.</p>
+              <h2>Asistente de correos</h2>
+              <p class="desc">Redacta respuestas rápidas usando tus propios apuntes, sin conectarte a ninguna IA externa y compatible con GitHub Pages.</p>
             </div>
           </div>
 
           <div class="chat-ia-tabs">
-            <button class="chat-ia-tab active" data-tab="asistente">🤖 Asistente</button>
-            <button class="chat-ia-tab" data-tab="frases">✉️ Frases para email</button>
+            <button class="chat-ia-tab active" data-tab="asistente">✉️ Redactor</button>
+            <button class="chat-ia-tab" data-tab="frases">🧩 Frases útiles</button>
           </div>
 
-          <!-- ---- PANEL: ASISTENTE ---- -->
           <div class="chat-ia-panel active" id="chat-ia-panel-asistente">
-            <!-- Toolbar: estado + modelo + config + limpiar -->
-            <div class="chat-ia-toolbar">
-              <div class="ollama-status disconnected" id="ollama-status">
-                <span class="ollama-dot disconnected" id="ollama-status-dot"></span>
-                <span id="ollama-status-text">Comprobando…</span>
-              </div>
-              <div class="chat-ia-toolbar-right">
-                <span id="ollama-url-label"
-                  style="display:none; color:var(--text-muted); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em;"></span>
-                <select class="ollama-model-select" id="ia-provider-select" title="Elegir proveedor de IA">
-                  <option value="ollama">🖥️ Ollama (local)</option>
-                  <option value="gemini">✨ Gemini (nube)</option>
-                </select>
-                <select class="ollama-model-select" id="ollama-model-select" disabled>
-                  <option>—</option>
-                </select>
-                <button type="button" class="btn btn-ghost btn-sm" id="ollama-config-btn"
-                  title="Configurar Ollama y/o clave de Gemini">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" style="width:15px;height:15px;">
-                    <circle cx="12" cy="12" r="3" />
-                    <path
-                      d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                  </svg>
-                </button>
-                <button type="button" class="btn btn-ghost btn-sm" id="chat-ia-clear-btn" title="Limpiar conversación">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" style="width:15px;height:15px;">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <div class="chat-ia-local-badge">Modo local · Sin APIs externas</div>
 
-            <div class="card chat-ia-card">
-              <div class="chat-ia-mensajes" id="chat-ia-mensajes">
-                <div class="empty-state">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path
-                      d="M12 2a8.5 8.5 0 0 0-8.5 8.5c0 3.03 1.6 5.7 4 7.2V21l3.3-1.8a8.6 8.6 0 0 0 1.2.1 8.5 8.5 0 0 0 0-17z" />
-                    <path d="M8 10h.01M12 10h.01M16 10h.01" />
-                  </svg>
-                  <span>Escribe lo que necesites. Puedo ayudarte con cualquier pregunta.</span>
+            <div class="chat-ia-editor-layout">
+              <div class="card card-pad chat-ia-side-card">
+                <div class="chat-ia-simple-form">
+                  <div class="form-field">
+                    <label for="chat-ia-park">Parque / producto</label>
+                    <select id="chat-ia-park"></select>
+                  </div>
+                  <div class="form-field full">
+                    <label for="chat-ia-input">Pega aquí el correo o la consulta</label>
+                    <textarea id="chat-ia-input" rows="14" placeholder="Pega aquí directamente lo que te ha escrito el cliente..."></textarea>
+                  </div>
+                </div>
+
+                <div class="chat-ia-actions-row">
+                  <button type="button" class="btn btn-ghost btn-sm" id="chat-ia-clear-btn">Limpiar</button>
+                  <button type="submit" form="chat-ia-form" class="btn btn-primary">Generar correo</button>
+                </div>
+
+                <form id="chat-ia-form" class="chat-ia-hidden-form"></form>
+              </div>
+
+              <div class="card chat-ia-card">
+                <div class="chat-ia-mensajes" id="chat-ia-mensajes"></div>
+                <div class="chat-ia-output-actions">
+                  <button type="button" class="btn btn-secondary" id="chat-ia-copy-btn">Copiar correo</button>
                 </div>
               </div>
-              <form id="chat-ia-form" class="chat-ia-form">
-                <input type="text" id="chat-ia-input" placeholder="Escribe tu mensaje…" autocomplete="off">
-                <button type="submit" class="btn btn-primary">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <line x1="22" y1="2" x2="11" y2="13" />
-                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                  </svg>
-                  Enviar
-                </button>
-              </form>
             </div>
           </div>
 

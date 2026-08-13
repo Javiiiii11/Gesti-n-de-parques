@@ -135,6 +135,7 @@ function guardarLlamada() {
     const hora = document.getElementById('ll-hora')?.value;
     const telefono = document.getElementById('ll-telefono')?.value.trim() || '';
     const cliente = document.getElementById('ll-cliente')?.value.trim() || '';
+    const prioridad = document.getElementById('ll-prioridad')?.value || 'normal';
     const notas = document.getElementById('ll-notas')?.value.trim() || '';
     const correo = document.getElementById('ll-correo')?.value.trim() || '';
     const localizador = document.getElementById('ll-localizador')?.value.trim() || '';
@@ -183,6 +184,7 @@ function guardarLlamada() {
         item_nombre: itemNombre,
         telefono,
         cliente,
+        prioridad,
         notas,
         correo,
         localizador,
@@ -213,6 +215,7 @@ function guardarLlamada() {
       item_nombre: itemNombre,
       telefono,
       cliente,
+      prioridad,
       notas,
       correo,
       localizador,
@@ -260,6 +263,12 @@ function resetLlamadaForm() {
   if (cancelBtn) cancelBtn.style.display = 'none';
 }
 
+function getLlamadaPriorityWeight(llamada) {
+  if (llamada.prioridad === 'grupo') return 2;
+  if (llamada.prioridad === 'Buena venta') return 1;
+  return 0;
+}
+
 function renderLlamadasList() {
   const container = document.getElementById('llamadas-list');
   if (!container) return;
@@ -279,8 +288,12 @@ function renderLlamadasList() {
     return (h - ahora) <= -7200000;
   });
 
-  // Sort: pending by time asc, overdue first
-  activas.sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora));
+  // Sort: pending by time asc; when tied, grupo > Buena venta > normal
+  activas.sort((a, b) => {
+    const diff = new Date(a.fecha_hora) - new Date(b.fecha_hora);
+    if (diff !== 0) return diff;
+    return getLlamadaPriorityWeight(b) - getLlamadaPriorityWeight(a);
+  });
   historial.sort((a, b) => new Date(b.fecha_hora) - new Date(a.fecha_hora));
 
   if (!activas.length && !historial.length) {
@@ -350,8 +363,12 @@ function renderLlamadaCard(c) {
   const showActions = estado === 'pendiente' || estado === 'vencida';
   const showReactivate = estado === 'completada' || estado === 'cancelada';
 
+  const prioridad = c.prioridad || 'normal';
+  const prioridadLabel = prioridad === 'grupo' ? 'Grupo' : prioridad === 'Buena venta' ? 'Buena venta' : 'Normal';
+  const prioridadClass = prioridad === 'grupo' ? 'll-priority-group' : prioridad === 'Buena venta' ? 'll-priority-important' : 'll-priority-normal';
+
   return `
-    <div class="ll-card ${estadoClass} ${isUrgent ? 'll-urgent-pulse' : ''}">
+    <div class="ll-card ${estadoClass} ${isUrgent ? 'll-urgent-pulse' : ''} ${prioridadClass}">
       <div class="ll-card-left">
         <div class="ll-time">
           <span class="ll-time-hour">${timeStr}</span>
@@ -366,7 +383,10 @@ function renderLlamadaCard(c) {
             <span class="ll-client-name">${escapeHtml(c.cliente)}</span>
             <span class="ll-client-phone">📞 ${escapeHtml(c.telefono)}</span>
           </div>
-          <span class="ll-badge ${estadoClass}">${estadoText}</span>
+          <div class="ll-card-badges">
+            <span class="ll-badge ${prioridadClass}">${prioridadLabel}</span>
+            <span class="ll-badge ${estadoClass}">${estadoText}</span>
+          </div>
         </div>
         <div class="ll-card-meta">
           ${c.item_nombre ? `<span class="ll-meta-tag">${c.tipo === 'entrada' ? '🎢' : '🎟️'} ${escapeHtml(c.item_nombre)}</span>` : ''}
@@ -471,6 +491,7 @@ function editarLlamada(id) {
   setVal('ll-hora', horaStr);
   setVal('ll-telefono', c.telefono);
   setVal('ll-cliente', c.cliente);
+  setVal('ll-prioridad', c.prioridad || 'normal');
   setVal('ll-notas', c.notas);
   setVal('ll-correo', c.correo);
   setVal('ll-localizador', c.localizador);
