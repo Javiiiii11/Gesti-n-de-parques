@@ -1,84 +1,225 @@
 /* ============================================================================
-   auth.js — acceso por contraseña local con cookie de 1 día
-   La contraseña se compara localmente. Cambia APP_PASSWORD para establecer
-   tu contraseña de acceso.
+   auth.js — autenticación con Supabase por correo/contraseña e invitación
 ============================================================================ */
 
-const APP_PASSWORD = 'javier11'; // ← Cambia esto por tu contraseña
-const COOKIE_NAME = 'parksales_auth';
-const COOKIE_DAYS = 1;
+let inviteModalBound = false;
+let appEnteredFromAuth = false;
 
-/* ---- helpers de cookie ---- */
+const REMEMBERED_EMAIL_KEY = 'parksales_remembered_email';
 
-function setCookie(name, value, days) {
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Strict`;
+function rememberEmail(email) {
+  const clean = String(email || '').trim();
+  if (!clean) return;
+  try { localStorage.setItem(REMEMBERED_EMAIL_KEY, clean); } catch (err) { /* localStorage no disponible */ }
 }
 
-function getCookie(name) {
-  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
-  return match ? decodeURIComponent(match[1]) : null;
+function getRememberedEmail() {
+  try { return localStorage.getItem(REMEMBERED_EMAIL_KEY) || ''; } catch (err) { return ''; }
 }
 
-function deleteCookie(name) {
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+function getAuthElements() {
+  return {
+    form: document.getElementById('auth-form'),
+    email: document.getElementById('auth-email'),
+    password: document.getElementById('auth-password'),
+    errorBox: document.getElementById('auth-error'),
+    submitBtn: document.getElementById('auth-submit-btn'),
+  };
 }
 
-function isCookieValid() {
-  return getCookie(COOKIE_NAME) === 'ok';
+function setAuthLoading(isLoading) {
+  const { submitBtn, email, password } = getAuthElements();
+  if (submitBtn) submitBtn.disabled = isLoading;
+  if (email) email.disabled = isLoading;
+  if (password) password.disabled = isLoading;
 }
 
-/* ---- inicialización ---- */
+function showAuthError(message) {
+  const { errorBox } = getAuthElements();
+  if (errorBox) errorBox.textContent = message || '';
+}
 
-function initAuthScreen() {
-  const form = document.getElementById('auth-form');
-  const errorBox = document.getElementById('auth-error');
-  const submitBtn = document.getElementById('auth-submit-btn');
+function clearAuthError() {
+  showAuthError('');
+}
 
-  form.addEventListener('submit', (e) => {
+function showInvitePasswordModal(email) {
+  document.documentElement.classList.add('ps-invite-flow');
+  const authScreen = document.getElementById('auth-screen');
+  if (authScreen) authScreen.style.display = 'none';
+  const backdrop = document.getElementById('invite-password-backdrop');
+  if (backdrop) backdrop.classList.add('active');
+
+  // El correo se coge automáticamente de la sesión de Supabase (sin
+  // pedirlo al usuario) y se guarda en un campo oculto de tipo "username"
+  // para que el gestor de contraseñas del navegador pueda ofrecer guardar
+  // el correo junto con la contraseña nueva.
+  if (email) {
+    rememberEmail(email);
+    const hiddenUsername = document.querySelector('#invite-password-form input[name="username"]');
+    if (hiddenUsername) hiddenUsername.value = email;
+  }
+}
+
+function hideInvitePasswordModal() {
+  const backdrop = document.getElementById('invite-password-backdrop');
+  if (backdrop) backdrop.classList.remove('active');
+}
+
+function exitInviteFlowUI() {
+  AUTH.clearInviteFlow();
+  document.documentElement.classList.remove('ps-invite-flow');
+  hideInvitePasswordModal();
+}
+
+function wireInvitePasswordModal() {
+  if (inviteModalBound) return;
+  inviteModalBound = true;
+
+  const form = document.getElementById('invite-password-form');
+  const errorBox = document.getElementById('invite-password-error');
+  const submitBtn = document.getElementById('invite-password-submit');
+  const passwordInput = document.getElementById('invite-password');
+  const confirmInput = document.getElementById('invite-password-confirm');
+
+  if (!form || !errorBox || !submitBtn || !passwordInput || !confirmInput) return;
+
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     errorBox.textContent = '';
-    const password = document.getElementById('auth-password').value;
-    const remember = document.getElementById('auth-remember').checked;
 
-    if (password !== APP_PASSWORD) {
-      errorBox.textContent = 'Contraseña incorrecta. Inténtalo de nuevo.';
-      document.getElementById('auth-password').value = '';
-      document.getElementById('auth-password').focus();
+    const password = passwordInput.value.trim();
+    const confirmPassword = confirmInput.value.trim();
+
+    if (password.length < 6) {
+      errorBox.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+      passwordInput.focus();
       return;
     }
 
-    if (remember) {
-      setCookie(COOKIE_NAME, 'ok', COOKIE_DAYS);
+    if (password !== confirmPassword) {
+      errorBox.textContent = 'Las contraseñas no coinciden.';
+      confirmInput.focus();
+      return;
     }
 
-    enterApp();
+    submitBtn.disabled = true;
+    passwordInput.disabled = true;
+    confirmInput.disabled = true;
+
+    try {
+      const user = await AUTH.updatePassword(password);
+      exitInviteFlowUI();
+      toast('Contraseña guardada. Bienvenido/a.', 'success');
+      await enterApp(user);
+    } catch (err) {
+      errorBox.textContent = err?.message || 'No se pudo actualizar la contraseña.';
+    } finally {
+      submitBtn.disabled = false;
+      passwordInput.disabled = false;
+      confirmInput.disabled = false;
+    }
   });
 }
 
-function enterApp() {
-  const user = AUTH.enterGuestMode();
-  bootApp(user);
+function initAuthScreen() {
+  const { form, email, password } = getAuthElements();
+  wireInvitePasswordModal();
+  if (!form || !email || !password) return;
+
+  // Precarga el correo completo recordado de un inicio de sesión anterior,
+  // así el usuario solo tiene que escribir la contraseña la siguiente vez.
+  const remembered = getRememberedEmail();
+  if (remembered && !email.value) {
+    email.value = remembered;
+    password.focus();
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearAuthError();
+    setAuthLoading(true);
+
+    const typedEmail = email.value.trim();
+
+    try {
+      const user = await AUTH.signInWithPassword(typedEmail, password.value);
+      rememberEmail(typedEmail);
+      await enterApp(user);
+    } catch (err) {
+      showAuthError(err?.message || 'No se pudo iniciar sesión.');
+      password.value = '';
+      password.focus();
+    } finally {
+      setAuthLoading(false);
+    }
+  });
+}
+
+async function enterApp(user) {
+  if (appEnteredFromAuth) return;
+  appEnteredFromAuth = true;
+
+  try {
+    const resolvedUser = user || await AUTH.getCurrentUser();
+    if (!resolvedUser) return;
+    rememberEmail(resolvedUser.email);
+    await bootApp(resolvedUser);
+  } finally {
+    appEnteredFromAuth = false;
+  }
 }
 
 async function checkExistingSession() {
-  // 1. Si la cookie de 1 día es válida, entramos directamente
-  if (isCookieValid()) {
-    enterApp();
-    return;
+  // Si el script inline del <head> ya detectó un enlace de invitación/
+  // recuperación, el modal de contraseña ya está visible (vía CSS) antes
+  // de que se ejecute este código. Aquí solo confirmamos con showInvitePasswordModal
+  // (idempotente) y evitamos entrar al dashboard mientras no se cambie la contraseña.
+  if (AUTH.isInviteFlow()) {
+    showInvitePasswordModal();
   }
-  // 2. Sin cookie válida → mostramos el formulario de contraseña
+
+  try {
+    await AUTH.exchangeCodeForSessionIfNeeded();
+    const sessionData = await AUTH.getSessionData();
+    const user = sessionData?.user || null;
+
+    if (user) {
+      if (AUTH.isInviteFlow()) {
+        showInvitePasswordModal(user.email);
+        return;
+      }
+      exitInviteFlowUI();
+      await enterApp(user);
+      return;
+    }
+
+    // No hay sesión: si el enlace de invitación falló o expiró, avisamos
+    // y dejamos ver el login en vez de quedarnos con el modal bloqueado.
+    if (AUTH.isInviteFlow()) {
+      exitInviteFlowUI();
+      showAuthError('El enlace de invitación no es válido o ha caducado. Pide uno nuevo.');
+    }
+    document.getElementById('auth-screen').style.display = 'flex';
+  } catch (err) {
+    exitInviteFlowUI();
+    showAuthError(err?.message || 'No se pudo recuperar la sesión.');
+    document.getElementById('auth-screen').style.display = 'flex';
+  }
 }
 
 function wireLogout() {
-  document.getElementById('logout-btn').addEventListener('click', () => {
+  const logoutBtn = document.getElementById('logout-btn');
+  if (!logoutBtn) return;
+
+  logoutBtn.addEventListener('click', () => {
     confirmDialog({
       title: 'Cerrar sesión',
-      message: '¿Seguro que quieres cerrar sesión? Se borrará la cookie de acceso.',
+      message: '¿Seguro que quieres cerrar sesión?',
       confirmLabel: 'Cerrar sesión',
       onConfirm: async () => {
-        deleteCookie(COOKIE_NAME);
-        await AUTH.signOut().catch(() => { });
+        exitInviteFlowUI();
+        await AUTH.signOut().catch(() => {});
         window.location.reload();
       },
     });
@@ -86,5 +227,18 @@ function wireLogout() {
 }
 
 function wireAuthState() {
-  // No hay escucha de estado OAuth — se maneja todo por contraseña local
+  AUTH.onAuthStateChange(async function (event, session) {
+    if (event === 'SIGNED_OUT') return;
+    if (!session || !session.user) return;
+
+    if (AUTH.isInviteFlow()) {
+      showInvitePasswordModal(session.user?.email);
+      return;
+    }
+
+    const authScreen = document.getElementById('auth-screen');
+    if (authScreen && authScreen.style.display !== 'none') {
+      await enterApp(session.user);
+    }
+  });
 }

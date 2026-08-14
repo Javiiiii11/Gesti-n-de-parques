@@ -65,9 +65,9 @@ const PREDEFINED_BONOS = [
   { nombre: 'Bono Oro + Parking', activo: true },
   { nombre: 'Bono Plata', activo: true },
   { nombre: 'Bono Platino', activo: true },
-  { nombre: 'Bono Verano Estándar', activo: true },
-  { nombre: 'Bono Verano Plus', activo: true },
-  { nombre: 'Bono Verano Plus + Warner Beach', activo: true },
+  { nombre: 'Bono Verano Estándar', activo: false },
+  { nombre: 'Bono Verano Plus', activo: false },
+  { nombre: 'Bono Verano Plus + Warner Beach', activo: false },
   { nombre: 'Bono Verano Ultra', activo: false },
   { nombre: 'Bono Zoollover', activo: true }
 ];

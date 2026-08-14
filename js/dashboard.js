@@ -753,101 +753,118 @@ function openProfileSettings() {
   const realElapsed = countWorkdaysElapsed(now.getFullYear(), now.getMonth(), now.getDate());
   const realPending = countWorkdaysRemaining(now.getFullYear(), now.getMonth(), now.getDate());
   const currentMonthName = MONTH_NAMES[now.getMonth()];
+  const user = STATE.currentUser || {};
+  const userEmail = escapeHtml(user.email || 'Sin correo');
+  const displayName = escapeHtml(getUserDisplayName(user));
 
-  // Ventas del mes actual
   const mesActual = STATE.ventas.filter((venta) => isMismoMes(venta.fecha, now));
   const currentMonthSales = mesActual.reduce((acc, venta) => acc + Number(venta.importe_total || 0), 0);
   const goalRemaining = Math.max(0, goal - currentMonthSales);
-  // Cuota diaria dinámica: lo que falta repartido entre los días pendientes (incluyendo hoy)
   const dailyQuota = realPending > 0 ? goalRemaining / realPending : goalRemaining;
   const originalDailyGoal = goal > 0 ? goal / realWorkdays : 0;
   const pace = realElapsed > 0 ? currentMonthSales / realElapsed : 0;
+  const progressPct = goal > 0 ? Math.min(100, Math.round((currentMonthSales / goal) * 100)) : 0;
+  const progressLabel = goal > 0
+    ? `${fmtEUR(currentMonthSales)} de ${fmtEUR(goal)} · ${progressPct}%`
+    : `${fmtEUR(currentMonthSales)} este mes · sin meta`;
+
+  const bodyHtml = `
+    <div class="profile-panel">
+      <section class="profile-hero">
+        <div class="profile-hero-glow" aria-hidden="true"></div>
+        ${renderUserAvatarHtml(user, { size: 'lg' })}
+        <div class="profile-hero-text">
+          <p class="profile-hero-kicker">Tu cuenta</p>
+          <h4 class="profile-hero-name">${displayName}</h4>
+          <p class="profile-hero-email">${userEmail}</p>
+        </div>
+        <div class="profile-hero-progress">
+          <div class="profile-progress-head">
+            <span>${escapeHtml(currentMonthName)}</span>
+            <strong>${escapeHtml(progressLabel)}</strong>
+          </div>
+          <div class="profile-progress-track" role="progressbar" aria-valuenow="${progressPct}" aria-valuemin="0" aria-valuemax="100">
+            <div class="profile-progress-fill" style="width:${progressPct}%"></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="profile-stats-row">
+        <section class="profile-stat-card profile-stat-card--days">
+          <p class="profile-stat-title">Días · ${escapeHtml(currentMonthName)}</p>
+          <div class="profile-stat-grid">
+            <div class="profile-mini">
+              <strong>${fmtNum(realWorkdays)}</strong>
+              <span>Total</span>
+            </div>
+            <div class="profile-mini profile-mini--accent">
+              <strong>${fmtNum(realElapsed)}</strong>
+              <span>Hechos</span>
+            </div>
+            <div class="profile-mini profile-mini--info">
+              <strong>${fmtNum(realPending)}</strong>
+              <span>Quedan</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="profile-stat-card profile-stat-card--quota">
+          <p class="profile-stat-title">Cuota diaria</p>
+          <div class="profile-stat-grid">
+            <div class="profile-mini">
+              <strong>${fmtEUR(dailyQuota)}</strong>
+              <span>/ día</span>
+            </div>
+            <div class="profile-mini profile-mini--accent">
+              <strong>${fmtEUR(originalDailyGoal)}</strong>
+              <span>Meta</span>
+            </div>
+            <div class="profile-mini profile-mini--info">
+              <strong>${fmtEUR(pace)}</strong>
+              <span>Ritmo</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="profile-forms-row">
+        <section class="profile-section">
+          <span class="profile-section-badge">Objetivos</span>
+          <div class="profile-fields">
+            <label class="profile-field">
+              <span>Meta mensual (€)</span>
+              <input type="number" id="profile-goal" min="0" step="1" value="${goal}">
+            </label>
+            <label class="profile-field">
+              <span>Días / mes</span>
+              <input type="number" id="profile-workdays" min="1" max="31" step="1" value="${workdays}">
+            </label>
+          </div>
+        </section>
+
+        <section class="profile-section profile-section--security">
+          <span class="profile-section-badge profile-section-badge--lock">Seguridad</span>
+          <div class="profile-fields">
+            <label class="profile-field">
+              <span>Nueva contraseña</span>
+              <input type="password" id="profile-password" placeholder="Mín. 6 caracteres" autocomplete="new-password">
+            </label>
+            <label class="profile-field">
+              <span>Confirmar</span>
+              <input type="password" id="profile-password-confirm" placeholder="Repetir" autocomplete="new-password">
+            </label>
+          </div>
+          <div id="profile-password-error" class="profile-password-error"></div>
+        </section>
+      </div>
+    </div>
+  `;
 
   openModal({
     title: 'Mi perfil y objetivos',
-    width: '480px',
-    bodyHtml: `
-      <div style="display: flex; flex-direction: column; gap: 20px;">
-        <!-- Panel superior informativo -->
-        <div style="background: rgba(255,255,255,0.02); border-radius: var(--radius-m); border: 1px solid var(--border); padding: 16px; display: flex; align-items: flex-start; gap: 16px;">
-          <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(245, 166, 35, 0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #F5A623;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:22px;height:22px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          </div>
-          <div style="flex: 1;">
-            <h4 style="margin: 0 0 4px 0; font-size: 14.5px; font-weight: 700; color: var(--text-primary);">Configura tu meta mensual</h4>
-            <p style="margin: 0; font-size: 12.5px; color: var(--text-secondary); line-height: 1.45;">Estos valores se guardan localmente en tu navegador y controlan los cálculos de ritmo de ventas de tu panel principal.</p>
-          </div>
-        </div>
-
-        <!-- Resumen de días laborables reales del mes (sin fines de semana) -->
-        <div style="background: rgba(0,198,255,0.04); border-radius: var(--radius-m); border: 1px solid rgba(0,198,255,0.15); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
-          <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;stroke:#00C6FF;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Días laborables de ${currentMonthName} (reales, sin fines de semana)
-          </div>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
-            <div style="background: var(--bg-body); border-radius: var(--radius-s); border: 1px solid var(--border); padding: 10px 6px;">
-              <div style="font-size: 18px; font-weight: 800; color: var(--text-primary);">${fmtNum(realWorkdays)}</div>
-              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">Total del mes</div>
-            </div>
-            <div style="background: var(--bg-body); border-radius: var(--radius-s); border: 1px solid var(--border); padding: 10px 6px;">
-              <div style="font-size: 18px; font-weight: 800; color: #F5A623;">${fmtNum(realElapsed)}</div>
-              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">Transcurridos</div>
-            </div>
-            <div style="background: var(--bg-body); border-radius: var(--radius-s); border: 1px solid var(--border); padding: 10px 6px;">
-              <div style="font-size: 18px; font-weight: 800; color: #00C6FF;">${fmtNum(realPending)}</div>
-              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">Pendientes</div>
-            </div>
-          </div>
-          <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.4;">
-            El panel usa estos días reales (incluyendo hoy) para calcular cuánto necesitas hacer cada día que queda, ajustándose automáticamente según lo que ya hayas vendido.
-          </div>
-        </div>
-
-        <!-- Resumen de cuota diaria dinámica -->
-        <div style="background: rgba(0,230,118,0.05); border-radius: var(--radius-m); border: 1px solid rgba(0,230,118,0.2); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
-          <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;stroke:#00E676;"><circle cx="12" cy="12" r="10"/><polygon points="12 6 12 12 16 14"/></svg>
-            Tu cuota diaria ajustada automáticamente
-          </div>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
-            <div style="background: var(--bg-body); border-radius: var(--radius-s); border: 1px solid var(--border); padding: 10px 6px;">
-              <div style="font-size: 18px; font-weight: 800; color: var(--text-primary);">${fmtEUR(dailyQuota)}</div>
-              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">Cuota / día restante</div>
-            </div>
-            <div style="background: var(--bg-body); border-radius: var(--radius-s); border: 1px solid var(--border); padding: 10px 6px;">
-              <div style="font-size: 18px; font-weight: 800; color: #F5A623;">${fmtEUR(originalDailyGoal)}</div>
-              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">Meta original / día</div>
-            </div>
-            <div style="background: var(--bg-body); border-radius: var(--radius-s); border: 1px solid var(--border); padding: 10px 6px;">
-              <div style="font-size: 18px; font-weight: 800; color: #00C6FF;">${fmtEUR(pace)}</div>
-              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">Tu ritmo actual</div>
-            </div>
-          </div>
-          <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.4;">
-            Si hoy has vendido mucho, la cuota de los días restantes baja. Si has vendido poco, sube. Así siempre sabes exactamente lo que necesitas hacer para llegar al objetivo.
-          </div>
-        </div>
-
-        <!-- Grid de inputs -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-          <div>
-            <label for="profile-goal" style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;stroke:#F5A623;"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              Meta mensual (€)
-            </label>
-            <input type="number" id="profile-goal" min="0" step="1" value="${goal}" style="width: 100%; padding: 11px 14px; font-size: 14.5px; font-weight: 600; background: var(--bg-body); border: 1px solid var(--border); border-radius: var(--radius-s); color: var(--text-primary); outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--border-hover)'" onblur="this.style.borderColor='var(--border)'">
-          </div>
-          <div>
-            <label for="profile-workdays" style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;stroke:#00C6FF;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              Días laborales / mes
-            </label>
-            <input type="number" id="profile-workdays" min="1" max="31" step="1" value="${workdays}" style="width: 100%; padding: 11px 14px; font-size: 14.5px; font-weight: 600; background: var(--bg-body); border: 1px solid var(--border); border-radius: var(--radius-s); color: var(--text-primary); outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--border-hover)'" onblur="this.style.borderColor='var(--border)'">
-          </div>
-        </div>
-      </div>
-    `,
+    width: '760px',
+    sizeClass: 'profile-modal',
+    bodyHtml,
     footHtml: `
       <button class="btn btn-ghost" id="profile-cancel-btn">Cancelar</button>
       <button class="btn btn-primary" id="profile-save-btn">Guardar perfil</button>
@@ -855,12 +872,39 @@ function openProfileSettings() {
   });
 
   document.getElementById('profile-cancel-btn').addEventListener('click', closeModal);
-  document.getElementById('profile-save-btn').addEventListener('click', () => {
+  document.getElementById('profile-save-btn').addEventListener('click', async () => {
+    const passwordInput = document.getElementById('profile-password');
+    const passwordConfirmInput = document.getElementById('profile-password-confirm');
+    const passwordError = document.getElementById('profile-password-error');
+    const nextPassword = passwordInput.value.trim();
+    const nextPasswordConfirm = passwordConfirmInput.value.trim();
+
+    passwordError.textContent = '';
+
+    if (nextPassword || nextPasswordConfirm) {
+      if (nextPassword.length < 6) {
+        passwordError.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+        passwordInput.focus();
+        return;
+      }
+      if (nextPassword !== nextPasswordConfirm) {
+        passwordError.textContent = 'Las contraseñas no coinciden.';
+        passwordConfirmInput.focus();
+        return;
+      }
+      try {
+        await AUTH.updatePassword(nextPassword);
+      } catch (err) {
+        passwordError.textContent = err?.message || 'No se pudo cambiar la contraseña.';
+        return;
+      }
+    }
+
     setMonthlyGoal(document.getElementById('profile-goal').value);
     setWorkdaysPerMonth(document.getElementById('profile-workdays').value);
     closeModal();
     renderDashboard();
-    toast('Perfil actualizado. Meta y días de trabajo guardados.', 'success');
+    toast(nextPassword ? 'Perfil actualizado y contraseña cambiada.' : 'Perfil actualizado. Meta y días de trabajo guardados.', 'success');
   });
 }
 

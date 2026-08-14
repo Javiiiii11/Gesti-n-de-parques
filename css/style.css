@@ -146,7 +146,7 @@ a {
 
 .auth-card {
   width: 100%;
-  max-width: 380px;
+  max-width: 420px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-l);
@@ -187,6 +187,19 @@ a {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.auth-help {
+  margin-top: 16px;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.auth-error {
+  min-height: 20px;
+  color: var(--danger);
+  font-size: 12.5px;
 }
 
 .auth-remember {
@@ -438,6 +451,7 @@ label:has(input[type="radio"]:checked) {
   font-size: 13px;
   flex-shrink: 0;
   overflow: hidden;
+  padding: 0;
 }
 
 .user-avatar svg {
@@ -445,6 +459,12 @@ label:has(input[type="radio"]:checked) {
   height: 18px;
   display: block;
   fill: currentColor;
+}
+
+.user-avatar .ps-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .user-meta {
@@ -1595,6 +1615,371 @@ label:has(input[type="radio"]:checked) {
   gap: 12px;
 }
 
+/* ---- Avatar (foto de correo / Google, o iniciales) ---- */
+.ps-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(145deg, var(--accent-soft), rgba(96, 165, 250, 0.16));
+  border: 2px solid rgba(245, 166, 35, 0.35);
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.ps-avatar--chip,
+.user-avatar.ps-avatar--chip {
+  width: 32px;
+  height: 32px;
+  border-width: 1.5px;
+  font-size: 11px;
+}
+
+.ps-avatar--md {
+  width: 52px;
+  height: 52px;
+  border-width: 2px;
+  font-size: 16px;
+}
+
+.ps-avatar--lg {
+  width: 72px;
+  height: 72px;
+  border-width: 2.5px;
+  font-size: 22px;
+  box-shadow: 0 8px 28px -10px rgba(245, 166, 35, 0.55);
+}
+
+.ps-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ps-avatar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 1;
+  user-select: none;
+}
+
+.ps-avatar-initials[hidden] {
+  display: none !important;
+}
+
+/* ---- Modal de perfil (amplio, sin scroll) ---- */
+.modal.profile-modal {
+  width: min(760px, 94vw);
+  max-height: none;
+  overflow: hidden;
+}
+
+.modal.profile-modal .modal-body {
+  padding: 18px 24px 10px;
+  overflow: hidden;
+}
+
+.modal.profile-modal .modal-head {
+  padding: 18px 24px 12px;
+}
+
+.modal.profile-modal .modal-head h3 {
+  font-size: 18px;
+}
+
+.modal.profile-modal .modal-foot {
+  padding: 12px 24px 18px;
+}
+
+.profile-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profile-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "avatar text"
+    "progress progress";
+  align-items: center;
+  column-gap: 18px;
+  row-gap: 16px;
+  padding: 20px 22px;
+  border-radius: var(--radius-l);
+  border: 1px solid rgba(245, 166, 35, 0.22);
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(245, 166, 35, 0.16), transparent 55%),
+    radial-gradient(90% 80% at 100% 20%, rgba(96, 165, 250, 0.1), transparent 50%),
+    var(--bg-card);
+  overflow: hidden;
+}
+
+.profile-hero .ps-avatar {
+  grid-area: avatar;
+}
+
+.profile-hero-glow {
+  position: absolute;
+  inset: auto -18% -55% auto;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: rgba(245, 166, 35, 0.12);
+  filter: blur(42px);
+  pointer-events: none;
+}
+
+.profile-hero-text {
+  position: relative;
+  grid-area: text;
+  min-width: 0;
+}
+
+.profile-hero-kicker {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.profile-hero-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  text-transform: capitalize;
+  line-height: 1.2;
+}
+
+.profile-hero-email {
+  margin: 5px 0 0;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  word-break: break-all;
+  line-height: 1.35;
+}
+
+.profile-hero-progress {
+  grid-area: progress;
+  position: relative;
+}
+
+.profile-progress-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 9px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.profile-progress-head strong {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.profile-progress-track {
+  height: 9px;
+  border-radius: 999px;
+  background: var(--border-soft);
+  overflow: hidden;
+}
+
+.profile-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #F5A623, #FFC15A);
+  box-shadow: 0 0 12px rgba(245, 166, 35, 0.45);
+  transition: width 400ms ease;
+  min-width: 0;
+}
+
+.profile-stats-row,
+.profile-forms-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.profile-stat-card {
+  padding: 16px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.profile-stat-card--days {
+  border-color: rgba(96, 165, 250, 0.22);
+  background: linear-gradient(180deg, rgba(96, 165, 250, 0.08), transparent 70%), var(--bg-elevated);
+}
+
+.profile-stat-card--quota {
+  border-color: rgba(52, 211, 153, 0.22);
+  background: linear-gradient(180deg, rgba(52, 211, 153, 0.07), transparent 70%), var(--bg-elevated);
+}
+
+.profile-stat-title {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.profile-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.profile-mini {
+  text-align: center;
+  padding: 12px 6px;
+  border-radius: var(--radius-s);
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--border);
+}
+
+.profile-mini strong {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.15;
+}
+
+.profile-mini span {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.profile-mini--accent strong { color: var(--accent); }
+.profile-mini--info strong { color: #60A5FA; }
+
+.profile-section {
+  padding: 16px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+}
+
+.profile-section--security {
+  border-color: rgba(245, 166, 35, 0.2);
+  background: linear-gradient(180deg, rgba(245, 166, 35, 0.06), transparent 55%), var(--bg-card);
+}
+
+.profile-section-badge {
+  display: inline-flex;
+  margin-bottom: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.profile-section-badge--lock {
+  color: #FBBF24;
+}
+
+.profile-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.profile-field span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.profile-field input {
+  width: 100%;
+  padding: 11px 13px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.profile-field input:focus {
+  border-color: rgba(245, 166, 35, 0.55);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.profile-password-error {
+  min-height: 16px;
+  margin-top: 8px;
+  color: var(--danger);
+  font-size: 12.5px;
+}
+
+@media (max-width: 720px) {
+  .profile-stats-row,
+  .profile-forms-row,
+  .profile-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-progress-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .profile-progress-head strong {
+    text-align: left;
+  }
+
+  .modal.profile-modal .modal-body {
+    overflow-y: auto;
+  }
+}
+
 .dashboard-ranking-row {
   align-items: stretch;
 }
@@ -2408,6 +2793,29 @@ table.data-table {
 
 .modal-backdrop.active {
   display: flex;
+}
+
+#invite-password-backdrop {
+  z-index: 150;
+}
+
+/* Se activa instantáneamente (antes de que cargue el resto de JS) cuando
+   se detecta un enlace de invitación/recuperación de Supabase, para que
+   nunca se vea el login ni el dashboard antes del modal de contraseña. */
+html.ps-invite-flow #auth-screen {
+  display: none !important;
+}
+
+html.ps-invite-flow #invite-password-backdrop {
+  display: flex !important;
+}
+
+#invite-password-backdrop .modal-head {
+  justify-content: flex-start;
+}
+
+.invite-password-modal {
+  max-width: 440px;
 }
 
 .modal {

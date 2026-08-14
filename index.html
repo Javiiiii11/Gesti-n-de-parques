@@ -3,12 +3,29 @@
 
 <head>
   <meta charset="UTF-8">
+  <script>
+    // Detección instantánea de enlace de invitación/recuperación de Supabase.
+    // Se ejecuta antes de pintar nada para evitar que se vea la pantalla de
+    // login o el dashboard un instante antes de mostrar el modal de contraseña.
+    (function () {
+      try {
+        var raw = (window.location.search || '') + ' ' + (window.location.hash || '');
+        var isInviteLink = /type=invite/.test(raw) || /type=recovery/.test(raw);
+        if (isInviteLink) {
+          sessionStorage.setItem('parksales_invite_flow_pending', '1');
+        }
+        if (isInviteLink || sessionStorage.getItem('parksales_invite_flow_pending') === '1') {
+          document.documentElement.classList.add('ps-invite-flow');
+        }
+      } catch (err) { /* sessionStorage puede fallar en modo privado */ }
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ParkSales · Gestión de ventas de entradas</title>
   <meta name="description" content="Registra y analiza tus ventas de entradas a parques de ocio">
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 34 34%22><defs><linearGradient id=%22l%22 x1=%220%22 y1=%220%22 x2=%2234%22 y2=%2234%22><stop offset=%220%%22 stop-color=%22%23FF9A44%22/><stop offset=%22100%%22 stop-color=%22%23FC6076%22/></linearGradient></defs><rect width=%2234%22 height=%2234%22 rx=%2210%22 fill=%22url(%23l)%22/><circle cx=%2217%22 cy=%2217%22 r=%227%22 stroke=%22white%22 stroke-width=%222%22 stroke-dasharray=%223 3%22/><circle cx=%2217%22 cy=%2217%22 r=%223%22 fill=%22white%22/><path d=%22M17 17 L22 27 M17 17 L12 27%22 stroke=%22white%22 stroke-width=%222%22 stroke-linecap=%22round%22/></svg>">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=6">
 
   <!-- Chart.js para gráficos interactivos (con fallback de CDN secundario) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
@@ -46,23 +63,46 @@
         <span>ParkSales</span>
       </div>
       <h1>Acceso</h1>
-      <p class="sub">Introduce la contraseña para continuar</p>
+      <p class="sub">Inicia sesión con tu correo y contraseña. El alta se realiza solo mediante invitación de Supabase.</p>
 
-      <form class="auth-form" id="auth-form">
+      <form class="auth-form" id="auth-form" method="post">
+        <div class="form-field">
+          <label for="auth-email">Correo</label>
+          <input type="email" id="auth-email" name="username" placeholder="tu@correo.com" required autocomplete="username">
+        </div>
         <div class="form-field">
           <label for="auth-password">Contraseña</label>
-          <input type="password" id="auth-password" placeholder="••••••••" required autocomplete="current-password">
-        </div>
-        <div class="auth-remember">
-          <label class="remember-label">
-            <input type="checkbox" id="auth-remember">
-            <span>Recordar en este equipo durante 1 día</span>
-          </label>
+          <input type="password" id="auth-password" name="password" placeholder="••••••••" required autocomplete="current-password">
         </div>
         <div class="auth-error" id="auth-error"></div>
         <button type="submit" class="btn btn-primary" id="auth-submit-btn"
-          style="justify-content:center; margin-top:4px;">Entrar</button>
+          style="justify-content:center; margin-top:4px;">Entrar al dashboard</button>
       </form>
+      <p class="auth-help">Si te han invitado desde Supabase, abre el enlace del correo y define tu contraseña cuando te lo pida la app.</p>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="invite-password-backdrop">
+    <div class="modal invite-password-modal">
+      <div class="modal-head">
+        <h3>Define tu contraseña</h3>
+      </div>
+      <div class="modal-body">
+        <p class="sub">Tu invitación ha sido validada. Antes de entrar, crea tu nueva contraseña.</p>
+        <form class="auth-form" id="invite-password-form" method="post">
+          <input type="email" name="username" autocomplete="username" hidden>
+          <div class="form-field">
+            <label for="invite-password">Nueva contraseña</label>
+            <input type="password" id="invite-password" name="new-password" placeholder="Mínimo 6 caracteres" required autocomplete="new-password">
+          </div>
+          <div class="form-field">
+            <label for="invite-password-confirm">Confirmar contraseña</label>
+            <input type="password" id="invite-password-confirm" name="new-password-confirm" placeholder="Repite la contraseña" required autocomplete="new-password">
+          </div>
+          <div class="auth-error" id="invite-password-error"></div>
+          <button type="submit" class="btn btn-primary" id="invite-password-submit" style="justify-content:center;">Guardar y entrar</button>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -1927,14 +1967,14 @@
   <div id="toast-stack"></div>
 
 
-  <script src="js/supabase-client.js?v=3"></script>
-  <script src="js/utils.js?v=3"></script>
+  <script src="js/supabase-client.js?v=6"></script>
+  <script src="js/utils.js?v=4"></script>
   <script src="js/auth.js?v=3"></script>
   <script src="js/parques.js?v=3"></script>
   <script src="js/ventas.js?v=3"></script>
-  <script src="js/historial.js?v=3"></script>
+  <script src="js/historial.js?v=5"></script>
   <script src="js/contactos.js?v=3"></script>
-  <script src="js/dashboard.js?v=3"></script>
+  <script src="js/dashboard.js?v=6"></script>
   <script src="js/estadisticas.js?v=3"></script>
   <script src="js/exportar.js?v=3"></script>
   <script src="js/backup-auto.js?v=3"></script>
@@ -1945,7 +1985,7 @@
   <script src="js/music.js?v=3"></script>
   <script src="js/calculator.js?v=3"></script>
   <script src="js/chat-ia.js?v=3"></script>
-  <script src="js/app.js?v=3"></script>
+  <script src="js/app.js?v=4"></script>
 </body>
 
 </html>

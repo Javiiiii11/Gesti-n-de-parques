@@ -12,6 +12,73 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+function getUserDisplayName(user) {
+  const meta = user?.user_metadata || {};
+  return (
+    meta.full_name ||
+    meta.name ||
+    meta.user_name ||
+    (user?.email ? user.email.split('@')[0].replace(/[._-]+/g, ' ') : '') ||
+    'Usuario'
+  );
+}
+
+function getUserInitials(user) {
+  const raw = getUserDisplayName(user).trim();
+  const parts = raw.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return raw.slice(0, 2).toUpperCase() || '?';
+}
+
+/** Foto del proveedor (Google) si el usuario entró con OAuth */
+function getProviderAvatarUrl(user) {
+  const meta = user?.user_metadata || {};
+  return meta.avatar_url || meta.picture || meta.avatar || null;
+}
+
+/**
+ * Foto asociada al correo (Gravatar / proveedores públicos vía Unavatar).
+ * Sin subida manual: si no hay foto, el UI cae a iniciales.
+ */
+function getEmailAvatarUrl(email) {
+  if (!email) return null;
+  return `https://unavatar.io/${encodeURIComponent(String(email).trim().toLowerCase())}?fallback=false`;
+}
+
+function getUserAvatarCandidates(user) {
+  return [getProviderAvatarUrl(user), getEmailAvatarUrl(user?.email)].filter(Boolean);
+}
+
+function renderUserAvatarHtml(user, { size = '' } = {}) {
+  const initials = escapeHtml(getUserInitials(user));
+  const candidates = getUserAvatarCandidates(user);
+  const primary = candidates[0] || '';
+  const rest = escapeHtml(JSON.stringify(candidates.slice(1)));
+  const sizeClass = size ? ` ps-avatar--${size}` : '';
+
+  return `
+    <div class="ps-avatar${sizeClass}" title="${escapeHtml(getUserDisplayName(user))}">
+      ${primary ? `<img class="ps-avatar-img" src="${escapeHtml(primary)}" alt="" decoding="async" referrerpolicy="no-referrer" data-fallbacks="${rest}" onerror="window.__psAvatarFallback && window.__psAvatarFallback(this)">` : ''}
+      <span class="ps-avatar-initials"${primary ? ' hidden' : ''}>${initials}</span>
+    </div>
+  `;
+}
+
+window.__psAvatarFallback = function psAvatarFallback(img) {
+  if (!img) return;
+  let next = [];
+  try { next = JSON.parse(img.getAttribute('data-fallbacks') || '[]'); } catch (err) { next = []; }
+  if (next.length) {
+    img.setAttribute('data-fallbacks', JSON.stringify(next.slice(1)));
+    img.src = next[0];
+    return;
+  }
+  const wrap = img.parentElement;
+  img.remove();
+  const initials = wrap?.querySelector('.ps-avatar-initials');
+  if (initials) initials.hidden = false;
+};
+
 function debounce(fn, wait = 250) {
   let t;
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };

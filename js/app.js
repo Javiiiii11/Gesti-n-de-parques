@@ -85,15 +85,25 @@ function wireGlobalSearch() {
 }
 
 function setUserChip(user) {
-  const name = user.name || (user.email ? user.email.split('@')[0] : 'Usuario');
+  const name = getUserDisplayName(user);
   document.getElementById('user-name').textContent = name;
   document.getElementById('user-role').textContent = LOCAL_MODE ? 'Modo local' : (user.email || '');
-  document.getElementById('user-avatar').innerHTML = `
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <circle cx="12" cy="8" r="4"></circle>
-      <path d="M6.5 19a5.5 5.5 0 0 1 11 0v.5h-11z"></path>
-    </svg>
-  `;
+
+  const avatarEl = document.getElementById('user-avatar');
+  if (!avatarEl) return;
+
+  avatarEl.classList.add('ps-avatar', 'ps-avatar--chip');
+  const candidates = getUserAvatarCandidates(user);
+  const initials = escapeHtml(getUserInitials(user));
+
+  if (candidates.length) {
+    avatarEl.innerHTML = `
+      <img class="ps-avatar-img" src="${escapeHtml(candidates[0])}" alt="" decoding="async" referrerpolicy="no-referrer" data-fallbacks="${escapeHtml(JSON.stringify(candidates.slice(1)))}" onerror="window.__psAvatarFallback && window.__psAvatarFallback(this)">
+      <span class="ps-avatar-initials" hidden>${initials}</span>
+    `;
+  } else {
+    avatarEl.innerHTML = `<span class="ps-avatar-initials">${initials}</span>`;
+  }
 }
 
 // bootApp puede recibir más de una invocación durante el arranque de sesión

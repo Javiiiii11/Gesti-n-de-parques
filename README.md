@@ -56,9 +56,10 @@ para que puedas probar todo el flujo antes de conectar Supabase.
 1. Ve a **Authentication → Providers**.
 2. **Email**: actívalo si no lo está (activado por defecto).
 3. **Google** (opcional): actívalo y añade tu `Client ID` / `Client Secret`
-   de Google Cloud Console. En **Authentication → URL Configuration**, añade
-   la URL de tu GitHub Pages (p. ej. `https://tuusuario.github.io/parksales/`)
-   como *Redirect URL*.
+   de Google Cloud Console. En **Authentication → URL Configuration**:
+   - **Site URL**: `https://javiiiii11.github.io/Gesti-n-de-parques/`
+   - **Redirect URLs**: añade esa misma URL (y quita `http://localhost:...`
+     si no quieres que las invitaciones vayan ahí).
 
 ### 3.4 Conectar la app
 Edita `js/supabase-client.js` y sustituye:
