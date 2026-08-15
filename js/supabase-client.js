@@ -28,6 +28,7 @@ const AUTH_PROVIDER_HINTS = {
 };
 
 const INVITE_FLOW_STORAGE_KEY = 'parksales_invite_flow_pending';
+const INVITE_COMPLETED_STORAGE_KEY = 'parksales_invite_password_completed';
 
 const AUTH_LINK_TYPES = new Set(['invite', 'recovery', 'email', 'signup', 'magiclink']);
 
@@ -648,6 +649,13 @@ const AUTH = {
       LOCAL_MODE = false;
       return { user: sessionUser, pendingInvite: false, error: null };
     } catch (err) {
+      const existing = await this.getSessionData().catch(() => null);
+      const existingUser = existing?.user || null;
+      if (existingUser && mustDefer) {
+        this.clearAuthRedirectParams(params.url);
+        LOCAL_MODE = false;
+        return { user: existingUser, pendingInvite: false, error: null };
+      }
       this.clearAuthRedirectParams(params.url);
       return { user: null, pendingInvite: mustDefer, error: normalizeAuthError(err) };
     }
@@ -662,8 +670,20 @@ const AUTH = {
   /** Activación manual de invitación (botón Continuar) */
   async activateInviteFromUrl() {
     const result = await this.consumeAuthRedirect({ interactive: true });
-    if (result.error) throw result.error;
+    if (result.error) {
+      const existing = await this.getSessionData().catch(() => null);
+      if (existing?.user) {
+        sessionStorage.setItem(INVITE_FLOW_STORAGE_KEY, '1');
+        return existing.user;
+      }
+      throw result.error;
+    }
     if (!result.user) {
+      const existing = await this.getSessionData().catch(() => null);
+      if (existing?.user) {
+        sessionStorage.setItem(INVITE_FLOW_STORAGE_KEY, '1');
+        return existing.user;
+      }
       throw new Error('No se pudo activar la invitación. El enlace puede haber caducado o haberse usado ya. Pide una invitación nueva o usa “Me invitaron y aún no tengo contraseña”.');
     }
     sessionStorage.setItem(INVITE_FLOW_STORAGE_KEY, '1');
@@ -686,6 +706,29 @@ const AUTH = {
   isInviteFlow() {
     const params = this.parseAuthRedirectParams();
     return params.isInviteOrRecovery || sessionStorage.getItem(INVITE_FLOW_STORAGE_KEY) === '1';
+  },
+
+  markInvitePasswordComplete(email) {
+    const clean = String(email || '').trim().toLowerCase();
+    if (!clean) return;
+    try {
+      const raw = localStorage.getItem(INVITE_COMPLETED_STORAGE_KEY);
+      const completed = raw ? JSON.parse(raw) : {};
+      completed[clean] = true;
+      localStorage.setItem(INVITE_COMPLETED_STORAGE_KEY, JSON.stringify(completed));
+    } catch (err) { /* localStorage no disponible */ }
+  },
+
+  hasInvitePasswordComplete(email) {
+    const clean = String(email || '').trim().toLowerCase();
+    if (!clean) return false;
+    try {
+      const raw = localStorage.getItem(INVITE_COMPLETED_STORAGE_KEY);
+      const completed = raw ? JSON.parse(raw) : {};
+      return completed[clean] === true;
+    } catch (err) {
+      return false;
+    }
   },
 
   hasPendingInviteRedirect() {

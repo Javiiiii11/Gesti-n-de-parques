@@ -150,6 +150,7 @@ function wireInvitePasswordModal() {
         await AUTH.activateInviteFromUrl();
       }
       const user = await AUTH.updatePassword(password);
+      if (AUTH.markInvitePasswordComplete) AUTH.markInvitePasswordComplete(user?.email);
       exitInviteFlowUI();
       toast('Contraseña guardada. Bienvenido/a.', 'success');
       await enterApp(user);
@@ -260,6 +261,11 @@ async function checkExistingSession() {
 
     if (user) {
       if (AUTH.isInviteFlow()) {
+        if (AUTH.hasInvitePasswordComplete && AUTH.hasInvitePasswordComplete(user.email)) {
+          exitInviteFlowUI();
+          await enterApp(user);
+          return;
+        }
         showInvitePasswordModal(user.email, { step: 'password' });
         return;
       }
@@ -304,6 +310,11 @@ function wireAuthState() {
     if (!session || !session.user) return;
 
     if (AUTH.isInviteFlow()) {
+      if (AUTH.hasInvitePasswordComplete && AUTH.hasInvitePasswordComplete(session.user?.email)) {
+        exitInviteFlowUI();
+        await enterApp(session.user);
+        return;
+      }
       showInvitePasswordModal(session.user?.email, { step: 'password' });
       return;
     }
