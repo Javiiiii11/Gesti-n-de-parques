@@ -79,7 +79,7 @@ create table if not exists public.contactos (
   
   -- Campos para entradas
   telefono text,
-  parque_id uuid references public.parques(id),
+  parque_id uuid references public.parques(id) on delete cascade,
   cantidad_entradas integer,
   extras text,
   localizador text,
@@ -99,6 +99,12 @@ create table if not exists public.contactos (
 alter table public.contactos add column if not exists via text;
 alter table public.contactos add column if not exists localizador text;
 alter table public.contactos add column if not exists localizador_bono text;
+
+-- Permitir borrar un parque aunque tenga apuntes: se eliminan en cascada
+alter table public.contactos drop constraint if exists contactos_parque_id_fkey;
+alter table public.contactos
+  add constraint contactos_parque_id_fkey
+  foreign key (parque_id) references public.parques(id) on delete cascade;
 
 comment on table public.ventas is 'Registro individual de ventas de entradas y bonos';
 

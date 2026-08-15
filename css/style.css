@@ -1690,7 +1690,7 @@ label:has(input[type="radio"]:checked) {
 
 /* ---- Modal de perfil (amplio, sin scroll) ---- */
 .modal.profile-modal {
-  width: min(920px, 96vw);
+  width: min(1080px, 96vw);
   max-height: none;
   overflow: hidden;
 }
@@ -1825,88 +1825,43 @@ label:has(input[type="radio"]:checked) {
   min-width: 0;
 }
 
-.profile-stats-row,
 .profile-forms-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.1fr 1fr;
   gap: 16px;
+  align-items: stretch;
 }
-
-.profile-stat-card {
-  padding: 16px;
-  border-radius: var(--radius-m);
-  border: 1px solid var(--border);
-  background: var(--bg-elevated);
-}
-
-.profile-stat-card--days {
-  border-color: rgba(96, 165, 250, 0.22);
-  background: linear-gradient(180deg, rgba(96, 165, 250, 0.08), transparent 70%), var(--bg-elevated);
-}
-
-.profile-stat-card--quota {
-  border-color: rgba(52, 211, 153, 0.22);
-  background: linear-gradient(180deg, rgba(52, 211, 153, 0.07), transparent 70%), var(--bg-elevated);
-}
-
-.profile-stat-title {
-  margin: 0 0 12px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.profile-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.profile-mini {
-  text-align: center;
-  padding: 12px 6px;
-  border-radius: var(--radius-s);
-  background: rgba(0, 0, 0, 0.18);
-  border: 1px solid var(--border);
-}
-
-.profile-mini strong {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.15;
-}
-
-.profile-mini span {
-  display: block;
-  margin-top: 5px;
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.profile-mini--accent strong { color: var(--accent); }
-.profile-mini--info strong { color: #60A5FA; }
 
 .profile-section {
-  padding: 18px;
+  padding: 20px 22px;
   border-radius: var(--radius-m);
   border: 1px solid var(--border);
   background: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-section--goal {
+  border-color: rgba(245, 166, 35, 0.18);
+  background:
+    radial-gradient(110% 90% at 0% 0%, rgba(245, 166, 35, 0.1), transparent 55%),
+    var(--bg-card);
 }
 
 .profile-section--security {
-  border-color: rgba(245, 166, 35, 0.2);
-  background: linear-gradient(180deg, rgba(245, 166, 35, 0.06), transparent 55%), var(--bg-card);
+  border-color: rgba(96, 165, 250, 0.22);
+  background:
+    radial-gradient(110% 90% at 100% 0%, rgba(96, 165, 250, 0.1), transparent 55%),
+    var(--bg-card);
 }
 
 .profile-section-badge {
   display: inline-flex;
-  margin-bottom: 12px;
-  padding: 4px 10px;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  margin-bottom: 10px;
+  padding: 5px 12px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
@@ -1916,14 +1871,33 @@ label:has(input[type="radio"]:checked) {
   background: var(--accent-soft);
 }
 
+.profile-section-badge svg {
+  width: 14px;
+  height: 14px;
+}
+
 .profile-section-badge--lock {
-  color: #FBBF24;
+  color: #60A5FA;
+  background: var(--info-soft);
+}
+
+.profile-section-desc {
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
 }
 
 .profile-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+.profile-fields--goal {
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 14px;
 }
 
 .profile-field {
@@ -1960,9 +1934,133 @@ label:has(input[type="radio"]:checked) {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
+/* Input con icono o prefijo dentro */
+.profile-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.profile-input-wrap input {
+  padding-left: 38px;
+}
+
+.profile-input-icon,
+.profile-input-prefix {
+  position: absolute;
+  left: 12px;
+  width: 15px;
+  height: 15px;
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.profile-input-prefix {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--accent);
+}
+
+/* Tarjeta mini de progreso del objetivo actual */
+.profile-goal-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 150px;
+  padding: 10px 14px;
+  border-radius: var(--radius-s);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  text-align: right;
+}
+
+.profile-goal-preview span {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.profile-goal-preview strong {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.2;
+}
+
+.profile-goal-preview small {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+/* Barra de progreso del objetivo */
+.profile-goal-bar {
+  margin-top: 16px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.profile-goal-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #F5A623, #FFC15A);
+  box-shadow: 0 0 10px rgba(245, 166, 35, 0.45);
+  transition: width 400ms ease;
+}
+
+.profile-goal-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+/* Grid de contraseñas (2 columnas, más amplio) */
+.profile-security-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.profile-security-grid .profile-field input {
+  padding-left: 38px;
+}
+
+/* Nota de ayuda de contraseña */
+.profile-password-help {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-s);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.profile-password-help svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--info);
+}
+
 .profile-password-error {
   min-height: 16px;
-  margin-top: 8px;
+  margin-top: 10px;
   color: var(--danger);
   font-size: 12.5px;
 }
@@ -1970,7 +2068,16 @@ label:has(input[type="radio"]:checked) {
 .profile-password-btn {
   width: 100%;
   justify-content: center;
-  margin-top: 10px;
+  margin-top: 14px;
+  background: rgba(96, 165, 250, 0.12);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  color: #60A5FA;
+}
+
+.profile-password-btn:hover {
+  background: rgba(96, 165, 250, 0.2);
+  border-color: rgba(96, 165, 250, 0.45);
+  color: #93C5FD;
 }
 
 .profile-autofill-username {
@@ -2010,9 +2117,21 @@ label:has(input[type="radio"]:checked) {
     padding: 20px;
   }
 
-  .profile-stats-row,
   .profile-forms-row,
   .profile-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-fields--goal {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-goal-preview {
+    text-align: left;
+    min-width: 0;
+  }
+
+  .profile-security-grid {
     grid-template-columns: 1fr;
   }
 
@@ -2094,22 +2213,6 @@ label:has(input[type="radio"]:checked) {
 
   .profile-progress-head strong {
     text-align: center;
-  }
-
-  .profile-stat-card {
-    padding: 14px;
-  }
-
-  .profile-stat-grid {
-    gap: 8px;
-  }
-
-  .profile-mini {
-    padding: 10px 4px;
-  }
-
-  .profile-mini strong {
-    font-size: 13.5px;
   }
 
   .profile-section {

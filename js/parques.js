@@ -166,14 +166,22 @@ function deleteParqueFlow(id) {
     toast('No puedes eliminar un parque con ventas registradas. Desactívalo en su lugar.', 'error', 4500);
     return;
   }
+  const apuntes = (STATE.contactos || []).filter((c) => c.parque_id === id).length;
+  const message = apuntes
+    ? `Este parque tiene ${apuntes} apunte${apuntes === 1 ? '' : 's'} asociado${apuntes === 1 ? '' : 's'}. Se eliminarán junto con el parque. Esta acción no se puede deshacer. ¿Quieres continuar?`
+    : 'Esta acción no se puede deshacer. ¿Quieres continuar?';
   confirmDialog({
     title: 'Eliminar parque',
-    message: 'Esta acción no se puede deshacer. ¿Quieres continuar?',
+    message,
     onConfirm: async () => {
       try {
         await DB.deleteParque(id);
         toast('Parque eliminado', 'success');
+        STATE.contactos = await DB.getContactos();
         await loadParques();
+        if (typeof refreshAllViewsAfterDataChange === 'function') {
+          refreshAllViewsAfterDataChange();
+        }
       } catch (err) {
         toast('Error al eliminar: ' + err.message, 'error');
       }

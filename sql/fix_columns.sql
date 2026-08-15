@@ -16,6 +16,12 @@ alter table public.contactos add column if not exists via text;
 alter table public.contactos add column if not exists localizador text;
 alter table public.contactos add column if not exists localizador_bono text;
 
+-- Borrar un parque no debe fallar si tiene apuntes asociados
+alter table public.contactos drop constraint if exists contactos_parque_id_fkey;
+alter table public.contactos
+  add constraint contactos_parque_id_fkey
+  foreign key (parque_id) references public.parques(id) on delete cascade;
+
 -- Ampliar el check de estado_pago por si falta "Apunte rápido"
 do $$
 begin

@@ -28,7 +28,7 @@ const PREDEFINED_PARKS_HORARIOS = [
     scheduleUrl: 'https://costa-dorada.aquopolis.es/precios-y-horarios/horarios-de-apertura'
   },
   {
-    name: 'Aquopolis CULL',
+    name: 'Aquopolis CUL',
     icon: '🏊',
     color: '#00BFFF',
     banner: 'img/parks/aquopolis-cull.jpg',

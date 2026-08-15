@@ -14,6 +14,11 @@ alter table public.contactos add column if not exists via text;
 alter table public.contactos add column if not exists localizador text;
 alter table public.contactos add column if not exists localizador_bono text;
 
+alter table public.contactos drop constraint if exists contactos_parque_id_fkey;
+alter table public.contactos
+  add constraint contactos_parque_id_fkey
+  foreign key (parque_id) references public.parques(id) on delete cascade;
+
 do $$
 begin
   alter table public.contactos drop constraint if exists contactos_estado_pago_check;

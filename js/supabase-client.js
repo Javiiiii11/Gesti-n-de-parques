@@ -279,10 +279,17 @@ const DB = {
 
   async deleteParque(id) {
     if (LOCAL_MODE) {
-      const list = readLocal(LOCAL_KEYS.parques).filter(p => p.id !== id);
-      writeLocal(LOCAL_KEYS.parques, list);
+      writeLocal(LOCAL_KEYS.parques, readLocal(LOCAL_KEYS.parques).filter(p => p.id !== id));
+      writeLocal(LOCAL_KEYS.contactos, readLocal(LOCAL_KEYS.contactos).filter(c => c.parque_id !== id));
       return true;
     }
+    // contactos.parque_id referencia parques; hay que borrar los apuntes primero.
+    const { error: contactosError } = await supabaseClient
+      .from('contactos')
+      .delete()
+      .eq('parque_id', id);
+    if (contactosError) throw normalizeDbError(contactosError, 'contactos');
+
     const { error } = await supabaseClient.from('parques').delete().eq('id', id);
     if (error) throw normalizeDbError(error, 'parques');
     return true;

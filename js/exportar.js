@@ -46,7 +46,7 @@ const PREDEFINED_PARKS = [
   'Atlantis',
   'Aquopolis CAR',
   'Aquopolis CDA',
-  'Aquopolis CULL',
+  'Aquopolis CUL',
   'Aquopolis TOR',
   'Aquopolis VIL',
   'Faunia',
@@ -450,7 +450,7 @@ async function handleImportCSVFiles(fileList) {
               'aquopolis villanueva de la cañada': 'Aquopolis VIL',
               'aquopolis cartaya': 'Aquopolis CAR',
               'aquopolis costa dorada': 'Aquopolis CDA',
-              'aquopolis cullera': 'Aquopolis CULL',
+              'aquopolis cullera': 'Aquopolis CUL',
               'aquopolis torrevieja': 'Aquopolis TOR',
               'zoo de madrid': 'ZOO'
             };

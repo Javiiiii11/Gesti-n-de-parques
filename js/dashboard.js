@@ -8,7 +8,6 @@ let chartObjetivo = null;
 let dashboardControlsWired = false;
 
 const MONTHLY_GOAL_KEY = 'parksales_objetivo_mensual';
-const WORKDAYS_KEY = 'parksales_dias_trabajo_mes';
 const DASHBOARD_FILTERS_KEY = 'parksales_dashboard_filters';
 
 const MONTH_NAMES = [
@@ -34,14 +33,6 @@ function getMonthlyGoal() {
 
 function setMonthlyGoal(value) {
   localStorage.setItem(MONTHLY_GOAL_KEY, String(Math.max(0, Number(value) || 0)));
-}
-
-function getWorkdaysPerMonth() {
-  return Math.max(1, Number(localStorage.getItem(WORKDAYS_KEY)) || 22);
-}
-
-function setWorkdaysPerMonth(value) {
-  localStorage.setItem(WORKDAYS_KEY, String(Math.max(1, Number(value) || 1)));
 }
 
 function getDefaultDashboardFilters() {
@@ -747,11 +738,7 @@ function renderRankingParques(ventas) {
 
 function openProfileSettings() {
   const goal = getMonthlyGoal();
-  const workdays = getWorkdaysPerMonth();
   const now = new Date();
-  const realWorkdays = countWorkdaysInMonth(now.getFullYear(), now.getMonth());
-  const realElapsed = countWorkdaysElapsed(now.getFullYear(), now.getMonth(), now.getDate());
-  const realPending = countWorkdaysRemaining(now.getFullYear(), now.getMonth(), now.getDate());
   const currentMonthName = MONTH_NAMES[now.getMonth()];
   const user = STATE.currentUser || {};
   const rawUserEmail = user.email || '';
@@ -760,10 +747,6 @@ function openProfileSettings() {
 
   const mesActual = STATE.ventas.filter((venta) => isMismoMes(venta.fecha, now));
   const currentMonthSales = mesActual.reduce((acc, venta) => acc + Number(venta.importe_total || 0), 0);
-  const goalRemaining = Math.max(0, goal - currentMonthSales);
-  const dailyQuota = realPending > 0 ? goalRemaining / realPending : goalRemaining;
-  const originalDailyGoal = goal > 0 ? goal / realWorkdays : 0;
-  const pace = realElapsed > 0 ? currentMonthSales / realElapsed : 0;
   const progressPct = goal > 0 ? Math.min(100, Math.round((currentMonthSales / goal) * 100)) : 0;
   const progressLabel = goal > 0
     ? `${fmtEUR(currentMonthSales)} de ${fmtEUR(goal)} · ${progressPct}%`
@@ -790,82 +773,80 @@ function openProfileSettings() {
         </div>
       </section>
 
-      <div class="profile-stats-row">
-        <section class="profile-stat-card profile-stat-card--days">
-          <p class="profile-stat-title">Días · ${escapeHtml(currentMonthName)}</p>
-          <div class="profile-stat-grid">
-            <div class="profile-mini">
-              <strong>${fmtNum(realWorkdays)}</strong>
-              <span>Total</span>
-            </div>
-            <div class="profile-mini profile-mini--accent">
-              <strong>${fmtNum(realElapsed)}</strong>
-              <span>Hechos</span>
-            </div>
-            <div class="profile-mini profile-mini--info">
-              <strong>${fmtNum(realPending)}</strong>
-              <span>Quedan</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="profile-stat-card profile-stat-card--quota">
-          <p class="profile-stat-title">Cuota diaria</p>
-          <div class="profile-stat-grid">
-            <div class="profile-mini">
-              <strong>${fmtEUR(dailyQuota)}</strong>
-              <span>/ día</span>
-            </div>
-            <div class="profile-mini profile-mini--accent">
-              <strong>${fmtEUR(originalDailyGoal)}</strong>
-              <span>Meta</span>
-            </div>
-            <div class="profile-mini profile-mini--info">
-              <strong>${fmtEUR(pace)}</strong>
-              <span>Ritmo</span>
-            </div>
-          </div>
-        </section>
-      </div>
-
       <div class="profile-forms-row">
-        <section class="profile-section">
-          <span class="profile-section-badge">Objetivos</span>
-          <div class="profile-fields">
-            <label class="profile-field">
+        <section class="profile-section profile-section--goal">
+          <span class="profile-section-badge profile-section-badge--goal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            Objetivo mensual
+          </span>
+          <p class="profile-section-desc">Define cuánto quieres vender cada mes. El dashboard calculará tu progreso automáticamente.</p>
+          <div class="profile-fields profile-fields--goal">
+            <label class="profile-field profile-field--goal-input">
               <span>Meta mensual (€)</span>
-              <input type="number" id="profile-goal" min="0" step="1" value="${goal}">
+              <div class="profile-input-wrap">
+                <span class="profile-input-prefix">€</span>
+                <input type="number" id="profile-goal" min="0" step="100" value="${goal}" placeholder="Ej. 20000">
+              </div>
             </label>
-            <label class="profile-field">
-              <span>Días / mes</span>
-              <input type="number" id="profile-workdays" min="1" max="31" step="1" value="${workdays}">
-            </label>
+            <div class="profile-goal-preview">
+              <span>Este mes llevas</span>
+              <strong>${fmtEUR(currentMonthSales)}</strong>
+              <small>${goal ? `${progressPct}% de tu meta` : 'Configura una meta para ver tu avance'}</small>
+            </div>
           </div>
+          ${goal ? `
+            <div class="profile-goal-bar">
+              <div class="profile-goal-bar-fill" style="width:${progressPct}%"></div>
+            </div>
+            <div class="profile-goal-bar-labels">
+              <span>${fmtEUR(currentMonthSales)}</span>
+              <span>${fmtEUR(goal)}</span>
+            </div>
+          ` : ''}
         </section>
 
         <section class="profile-section profile-section--security">
-          <span class="profile-section-badge profile-section-badge--lock">Seguridad</span>
+          <span class="profile-section-badge profile-section-badge--lock">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Seguridad
+          </span>
+          <p class="profile-section-desc">Mantén tu cuenta protegida. Usa una contraseña segura que no compartas con nadie.</p>
           <input class="profile-autofill-username" type="email" name="username" autocomplete="username" value="${escapeHtml(rawUserEmail)}" readonly tabindex="-1" aria-hidden="true">
-          <div class="profile-fields">
-            <label class="profile-field">
-              <span>Nueva contraseña</span>
-              <input type="password" id="profile-password" name="new-password" placeholder="Mín. 6 caracteres" autocomplete="new-password">
-            </label>
-            <label class="profile-field">
-              <span>Confirmar</span>
-              <input type="password" id="profile-password-confirm" name="new-password-confirm" placeholder="Repetir" autocomplete="new-password">
-            </label>
+          <div class="profile-fields profile-fields--security">
+            <div class="profile-security-grid">
+              <label class="profile-field">
+                <span>Nueva contraseña</span>
+                <div class="profile-input-wrap">
+                  <svg class="profile-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <input type="password" id="profile-password" name="new-password" placeholder="Mín. 6 caracteres" autocomplete="new-password">
+                </div>
+              </label>
+              <label class="profile-field">
+                <span>Confirmar contraseña</span>
+                <div class="profile-input-wrap">
+                  <svg class="profile-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <input type="password" id="profile-password-confirm" name="new-password-confirm" placeholder="Repite la contraseña" autocomplete="new-password">
+                </div>
+              </label>
+            </div>
           </div>
           <div id="profile-password-error" class="profile-password-error"></div>
-          <button class="btn btn-secondary profile-password-btn" id="profile-password-btn" type="button">Cambiar contrase�a</button>
+          <div class="profile-password-help">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            <span>La contraseña debe tener mínimo 6 caracteres. Te pediremos la actual al cambiar desde la app normalmente.</span>
+          </div>
+          <button class="btn btn-secondary profile-password-btn" id="profile-password-btn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Cambiar contraseña
+          </button>
         </section>
       </div>
     </div>
   `;
 
   openModal({
-    title: 'Mi perfil y objetivos',
-    width: '920px',
+    title: 'Mi perfil y ajustes',
+    width: '1080px',
     sizeClass: 'profile-modal',
     bodyHtml,
     footHtml: `
@@ -903,6 +884,7 @@ function openProfileSettings() {
       if (AUTH.markInvitePasswordComplete) AUTH.markInvitePasswordComplete(updatedUser?.email || rawUserEmail);
       passwordInput.value = '';
       passwordConfirmInput.value = '';
+      passwordError.textContent = '';
       toast('Contraseña cambiada.', 'success');
     } catch (err) {
       passwordError.textContent = err?.message || 'No se pudo cambiar la contraseña.';
@@ -913,10 +895,9 @@ function openProfileSettings() {
 
   document.getElementById('profile-save-btn').addEventListener('click', () => {
     setMonthlyGoal(document.getElementById('profile-goal').value);
-    setWorkdaysPerMonth(document.getElementById('profile-workdays').value);
     closeModal();
     renderDashboard();
-    toast('Perfil actualizado. Meta y días de trabajo guardados.', 'success');
+    toast('Perfil actualizado. Meta mensual guardada.', 'success');
   });
 }
 
