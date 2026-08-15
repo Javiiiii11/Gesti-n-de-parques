@@ -10,7 +10,7 @@
     (function () {
       try {
         var raw = (window.location.search || '') + ' ' + (window.location.hash || '');
-        var isInviteLink = /type=invite/.test(raw) || /type=recovery/.test(raw);
+        var isInviteLink = /type=invite/.test(raw) || /type=recovery/.test(raw) || /token_hash=|[?&#]token=|confirmation_url=/.test(raw);
         if (isInviteLink) {
           sessionStorage.setItem('parksales_invite_flow_pending', '1');
         }
@@ -1983,7 +1983,7 @@
   <div id="toast-stack"></div>
 
 
-  <script src="js/supabase-client.js?v=7"></script>
+  <script src="js/supabase-client.js?v=8"></script>
   <script src="js/utils.js?v=4"></script>
   <script src="js/auth.js?v=4"></script>
   <script src="js/parques.js?v=3"></script>

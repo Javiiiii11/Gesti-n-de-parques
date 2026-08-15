@@ -29,6 +29,8 @@ const AUTH_PROVIDER_HINTS = {
 
 const INVITE_FLOW_STORAGE_KEY = 'parksales_invite_flow_pending';
 
+const AUTH_LINK_TYPES = new Set(['invite', 'recovery', 'email', 'signup', 'magiclink']);
+
 function normalizePublicUrl(url) {
   const raw = String(url || '').trim();
   if (!raw) return '';
@@ -548,19 +550,42 @@ const AUTH = {
   parseAuthRedirectParams() {
     const url = new URL(window.location.href);
     const hashParams = new URLSearchParams(String(url.hash || '').replace(/^#/, ''));
-    const type = url.searchParams.get('type') || hashParams.get('type') || '';
+    const nestedConfirmationUrl = url.searchParams.get('confirmation_url') || hashParams.get('confirmation_url') || '';
+    let nestedParams = null;
+
+    if (nestedConfirmationUrl) {
+      try {
+        const nestedUrl = new URL(nestedConfirmationUrl);
+        nestedParams = nestedUrl.searchParams;
+      } catch (err) {
+        nestedParams = new URLSearchParams(nestedConfirmationUrl.replace(/^[?#]/, ''));
+      }
+    }
+
+    const type = url.searchParams.get('type') || hashParams.get('type') || nestedParams?.get('type') || '';
     const code = url.searchParams.get('code') || hashParams.get('code') || '';
     const access_token = hashParams.get('access_token') || '';
     const refresh_token = hashParams.get('refresh_token') || '';
+    const token_hash =
+      url.searchParams.get('token_hash') ||
+      hashParams.get('token_hash') ||
+      nestedParams?.get('token_hash') ||
+      nestedParams?.get('token') ||
+      url.searchParams.get('token') ||
+      hashParams.get('token') ||
+      '';
     const isInviteOrRecovery = type === 'invite' || type === 'recovery';
     const fromMailClient = /safelinks\.protection\.outlook|outlook\.office|office365/i.test(document.referrer || '');
-    return { url, hashParams, type, code, access_token, refresh_token, isInviteOrRecovery, fromMailClient };
+    return { url, hashParams, type, code, access_token, refresh_token, token_hash, isInviteOrRecovery, fromMailClient };
   },
 
   clearAuthRedirectParams(url) {
     const clean = new URL(url.href);
     clean.searchParams.delete('code');
     clean.searchParams.delete('type');
+    clean.searchParams.delete('token');
+    clean.searchParams.delete('token_hash');
+    clean.searchParams.delete('confirmation_url');
     clean.hash = '';
     window.history.replaceState({}, document.title, clean.pathname + clean.search);
   },
@@ -579,13 +604,13 @@ const AUTH = {
 
     const params = this.parseAuthRedirectParams();
     // Si Outlook abre el enlace (o hay type=invite/recovery), no canjear hasta un clic.
-    const mustDefer = params.isInviteOrRecovery || (params.fromMailClient && Boolean(params.code || params.access_token));
+    const mustDefer = params.isInviteOrRecovery || Boolean(params.token_hash) || (params.fromMailClient && Boolean(params.code || params.access_token));
 
-    if (params.isInviteOrRecovery || (params.fromMailClient && params.code)) {
+    if (params.isInviteOrRecovery || params.token_hash || (params.fromMailClient && params.code)) {
       sessionStorage.setItem(INVITE_FLOW_STORAGE_KEY, '1');
     }
 
-    const hasRedirectPayload = Boolean(params.code || params.access_token);
+    const hasRedirectPayload = Boolean(params.code || params.access_token || params.token_hash);
     if (!hasRedirectPayload) {
       const user = await this.getSession();
       return { user, pendingInvite: false, error: null };
@@ -598,7 +623,15 @@ const AUTH = {
     try {
       let sessionUser = null;
 
-      if (params.code) {
+      if (params.token_hash) {
+        const verifyType = AUTH_LINK_TYPES.has(params.type) ? params.type : 'invite';
+        const { data, error } = await supabaseClient.auth.verifyOtp({
+          token_hash: params.token_hash,
+          type: verifyType,
+        });
+        if (error) throw error;
+        sessionUser = data.session?.user || data.user || null;
+      } else if (params.code) {
         const { data, error } = await supabaseClient.auth.exchangeCodeForSession(params.code);
         if (error) throw error;
         sessionUser = data.session?.user || null;
@@ -657,8 +690,9 @@ const AUTH = {
 
   hasPendingInviteRedirect() {
     const params = this.parseAuthRedirectParams();
-    return Boolean(params.code || params.access_token) && (
+    return Boolean(params.code || params.access_token || params.token_hash) && (
       params.isInviteOrRecovery ||
+      params.token_hash ||
       params.fromMailClient ||
       sessionStorage.getItem(INVITE_FLOW_STORAGE_KEY) === '1'
     );
