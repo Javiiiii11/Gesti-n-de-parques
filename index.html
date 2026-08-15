@@ -78,30 +78,46 @@
         <button type="submit" class="btn btn-primary" id="auth-submit-btn"
           style="justify-content:center; margin-top:4px;">Entrar al dashboard</button>
       </form>
-      <p class="auth-help">Si te han invitado desde Supabase, abre el enlace del correo y define tu contraseña cuando te lo pida la app.</p>
+      <button type="button" class="btn btn-ghost" id="auth-set-password-btn"
+        style="justify-content:center; width:100%; margin-top:10px;">
+        Me invitaron y aún no tengo contraseña
+      </button>
+      <p class="auth-help">Si te han invitado, abre el enlace del correo y pulsa <strong>Continuar con la invitación</strong> (importante en Outlook). Si el enlace falló, usa el botón de arriba con tu correo.</p>
     </div>
   </div>
 
   <div class="modal-backdrop" id="invite-password-backdrop">
     <div class="modal invite-password-modal">
       <div class="modal-head">
-        <h3>Define tu contraseña</h3>
+        <h3 id="invite-modal-title">Activa tu invitación</h3>
       </div>
       <div class="modal-body">
-        <p class="sub">Tu invitación ha sido validada. Antes de entrar, crea tu nueva contraseña.</p>
-        <form class="auth-form" id="invite-password-form" method="post">
-          <input type="email" name="username" autocomplete="username" hidden>
-          <div class="form-field">
-            <label for="invite-password">Nueva contraseña</label>
-            <input type="password" id="invite-password" name="new-password" placeholder="Mínimo 6 caracteres" required autocomplete="new-password">
-          </div>
-          <div class="form-field">
-            <label for="invite-password-confirm">Confirmar contraseña</label>
-            <input type="password" id="invite-password-confirm" name="new-password-confirm" placeholder="Repite la contraseña" required autocomplete="new-password">
-          </div>
-          <div class="auth-error" id="invite-password-error"></div>
-          <button type="submit" class="btn btn-primary" id="invite-password-submit" style="justify-content:center;">Guardar y entrar</button>
-        </form>
+        <!-- Paso 1: clic humano (evita que Outlook gaste el código al previsualizar el enlace) -->
+        <div id="invite-step-activate">
+          <p class="sub">Abre este paso en el navegador y pulsa el botón para validar tu invitación. Así evitamos que Outlook u otros clientes de correo invaliden el enlace al previsualizarlo.</p>
+          <div class="auth-error" id="invite-activate-error"></div>
+          <button type="button" class="btn btn-primary" id="invite-activate-btn" style="justify-content:center; width:100%; margin-top:8px;">
+            Continuar con la invitación
+          </button>
+        </div>
+
+        <!-- Paso 2: crear contraseña (tras validar el código) -->
+        <div id="invite-step-password" style="display:none;">
+          <p class="sub">Invitación validada. Crea tu contraseña para entrar.</p>
+          <form class="auth-form" id="invite-password-form" method="post">
+            <input type="email" name="username" autocomplete="username" hidden>
+            <div class="form-field">
+              <label for="invite-password">Nueva contraseña</label>
+              <input type="password" id="invite-password" name="new-password" placeholder="Mínimo 6 caracteres" required autocomplete="new-password">
+            </div>
+            <div class="form-field">
+              <label for="invite-password-confirm">Confirmar contraseña</label>
+              <input type="password" id="invite-password-confirm" name="new-password-confirm" placeholder="Repite la contraseña" required autocomplete="new-password">
+            </div>
+            <div class="auth-error" id="invite-password-error"></div>
+            <button type="submit" class="btn btn-primary" id="invite-password-submit" style="justify-content:center;">Guardar y entrar</button>
+          </form>
+        </div>
       </div>
     </div>
   </div>
@@ -1967,9 +1983,9 @@
   <div id="toast-stack"></div>
 
 
-  <script src="js/supabase-client.js?v=6"></script>
+  <script src="js/supabase-client.js?v=7"></script>
   <script src="js/utils.js?v=4"></script>
-  <script src="js/auth.js?v=3"></script>
+  <script src="js/auth.js?v=4"></script>
   <script src="js/parques.js?v=3"></script>
   <script src="js/ventas.js?v=3"></script>
   <script src="js/historial.js?v=5"></script>

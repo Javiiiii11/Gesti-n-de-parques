@@ -57,7 +57,10 @@ if (SUPABASE_CONFIGURED) {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true,
+      // Importante: no canjear el ?code= automáticamente al cargar.
+      // Outlook / Safe Links previsualizan el enlace y invalidarían el código.
+      // Lo canjeamos a mano tras un clic del usuario (invitaciones) o en OAuth.
+      detectSessionInUrl: false,
     },
   });
   window.PARKSALES_SUPABASE_CLIENT = supabaseClient;
@@ -541,28 +544,124 @@ const AUTH = {
     return data.user || null;
   },
 
-  async exchangeCodeForSessionIfNeeded() {
-    if (LOCAL_MODE) return this.getSession();
+  /** Analiza la URL actual buscando code / tokens de auth */
+  parseAuthRedirectParams() {
     const url = new URL(window.location.href);
-    const code = url.searchParams.get('code');
-    const type = url.searchParams.get('type');
-    if (!code) return this.getSession();
-    if (type === 'invite' || type === 'recovery') {
+    const hashParams = new URLSearchParams(String(url.hash || '').replace(/^#/, ''));
+    const type = url.searchParams.get('type') || hashParams.get('type') || '';
+    const code = url.searchParams.get('code') || hashParams.get('code') || '';
+    const access_token = hashParams.get('access_token') || '';
+    const refresh_token = hashParams.get('refresh_token') || '';
+    const isInviteOrRecovery = type === 'invite' || type === 'recovery';
+    const fromMailClient = /safelinks\.protection\.outlook|outlook\.office|office365/i.test(document.referrer || '');
+    return { url, hashParams, type, code, access_token, refresh_token, isInviteOrRecovery, fromMailClient };
+  },
+
+  clearAuthRedirectParams(url) {
+    const clean = new URL(url.href);
+    clean.searchParams.delete('code');
+    clean.searchParams.delete('type');
+    clean.hash = '';
+    window.history.replaceState({}, document.title, clean.pathname + clean.search);
+  },
+
+  /**
+   * Canjea el enlace de auth.
+   * - Invitación/recuperación: solo si interactive=true (clic humano; evita Outlook).
+   * - OAuth (Google) u otros: se canjea automáticamente.
+   * Devuelve { user, pendingInvite, error }.
+   */
+  async consumeAuthRedirect({ interactive = false } = {}) {
+    if (LOCAL_MODE) {
+      const user = await this.getSession();
+      return { user, pendingInvite: false, error: null };
+    }
+
+    const params = this.parseAuthRedirectParams();
+    // Si Outlook abre el enlace (o hay type=invite/recovery), no canjear hasta un clic.
+    const mustDefer = params.isInviteOrRecovery || (params.fromMailClient && Boolean(params.code || params.access_token));
+
+    if (params.isInviteOrRecovery || (params.fromMailClient && params.code)) {
       sessionStorage.setItem(INVITE_FLOW_STORAGE_KEY, '1');
     }
-    const { data, error } = await supabaseClient.auth.exchangeCodeForSession(code);
+
+    const hasRedirectPayload = Boolean(params.code || params.access_token);
+    if (!hasRedirectPayload) {
+      const user = await this.getSession();
+      return { user, pendingInvite: false, error: null };
+    }
+
+    if (mustDefer && !interactive) {
+      return { user: null, pendingInvite: true, error: null };
+    }
+
+    try {
+      let sessionUser = null;
+
+      if (params.code) {
+        const { data, error } = await supabaseClient.auth.exchangeCodeForSession(params.code);
+        if (error) throw error;
+        sessionUser = data.session?.user || null;
+      } else if (params.access_token) {
+        const { data, error } = await supabaseClient.auth.setSession({
+          access_token: params.access_token,
+          refresh_token: params.refresh_token || '',
+        });
+        if (error) throw error;
+        sessionUser = data.session?.user || null;
+      }
+
+      this.clearAuthRedirectParams(params.url);
+      LOCAL_MODE = false;
+      return { user: sessionUser, pendingInvite: false, error: null };
+    } catch (err) {
+      this.clearAuthRedirectParams(params.url);
+      return { user: null, pendingInvite: mustDefer, error: normalizeAuthError(err) };
+    }
+  },
+
+  async exchangeCodeForSessionIfNeeded() {
+    const result = await this.consumeAuthRedirect({ interactive: false });
+    if (result.error && !result.pendingInvite) throw result.error;
+    return result.user;
+  },
+
+  /** Activación manual de invitación (botón Continuar) */
+  async activateInviteFromUrl() {
+    const result = await this.consumeAuthRedirect({ interactive: true });
+    if (result.error) throw result.error;
+    if (!result.user) {
+      throw new Error('No se pudo activar la invitación. El enlace puede haber caducado o haberse usado ya. Pide una invitación nueva o usa “Me invitaron y aún no tengo contraseña”.');
+    }
+    sessionStorage.setItem(INVITE_FLOW_STORAGE_KEY, '1');
+    return result.user;
+  },
+
+  async sendPasswordSetupEmail(email) {
+    if (LOCAL_MODE) {
+      throw new Error('Esta opción solo funciona con Supabase configurado.');
+    }
+    const clean = String(email || '').trim();
+    if (!clean) throw new Error('Escribe tu correo arriba para enviarte el enlace.');
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(clean, {
+      redirectTo: getAuthRedirectUrl(),
+    });
     if (error) throw normalizeAuthError(error);
-    url.searchParams.delete('code');
-    url.searchParams.delete('type');
-    window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
-    LOCAL_MODE = false;
-    return data.session?.user || null;
+    return true;
   },
 
   isInviteFlow() {
-    const url = new URL(window.location.href);
-    const type = url.searchParams.get('type');
-    return type === 'invite' || type === 'recovery' || sessionStorage.getItem(INVITE_FLOW_STORAGE_KEY) === '1';
+    const params = this.parseAuthRedirectParams();
+    return params.isInviteOrRecovery || sessionStorage.getItem(INVITE_FLOW_STORAGE_KEY) === '1';
+  },
+
+  hasPendingInviteRedirect() {
+    const params = this.parseAuthRedirectParams();
+    return Boolean(params.code || params.access_token) && (
+      params.isInviteOrRecovery ||
+      params.fromMailClient ||
+      sessionStorage.getItem(INVITE_FLOW_STORAGE_KEY) === '1'
+    );
   },
 
   clearInviteFlow() {
