@@ -1,5 +1,5 @@
 ﻿/* ============================================================================
-   dashboard.js â€” vista "Dashboard"
+   dashboard.js — vista "Dashboard"
 ============================================================================ */
 
 let chartPeriodo = null;
@@ -160,7 +160,7 @@ function countWorkdaysElapsed(year, monthIndexZeroBased, currentDay) {
 function countWorkdaysRemaining(year, monthIndexZeroBased, currentDay) {
   const totalDays = daysInMonth(year, monthIndexZeroBased);
   let count = 0;
-  // Incluye el dÃ­a de hoy si es laborable (aÃºn puedes trabajar hoy)
+  // Incluye el día de hoy si es laborable (aún puedes trabajar hoy)
   for (let day = currentDay; day <= totalDays; day++) {
     const date = new Date(year, monthIndexZeroBased, day);
     if (!isWeekend(date)) count++;
@@ -243,14 +243,14 @@ function renderDashboard() {
   });
   
   const topParkEntry = Object.entries(filteredSalesByPark).sort((a, b) => b[1].ventas - a[1].ventas)[0];
-  const topParkName = topParkEntry ? topParkEntry[0] : 'â€”';
+  const topParkName = topParkEntry ? topParkEntry[0] : '—';
   const topParkEntries = topParkEntry ? topParkEntry[1].ventas : 0;
   const topParkRevenue = topParkEntry ? topParkEntry[1].total : 0;
   
   // Calculate average per sale in filtered data
   const averagePerSale = filteredCount ? filteredTotal / filteredCount : 0;
   
-  // Ventas del dÃ­a de referencia dentro del periodo seleccionado
+  // Ventas del día de referencia dentro del periodo seleccionado
   const referenceDay = toDateInputValue(referenceDate);
   const ventasHoy = STATE.ventas.filter((venta) => isSameLocalDay(venta.fecha, referenceDay));
   const totalHoy = sum(ventasHoy, 'importe_total');
@@ -264,7 +264,7 @@ function renderDashboard() {
 
   const filteredSummary = buildDashboardFilterSummary(filters, filtradas.length);
   
-  // Meta y mÃ©tricas calculadas sobre el mes del periodo seleccionado
+  // Meta y métricas calculadas sobre el mes del periodo seleccionado
   const mesReferencia = STATE.ventas.filter((venta) => isMismoMes(venta.fecha, referenceDate));
   const currentMonthSales = sum(mesReferencia, 'importe_total');
   const goalRemaining = Math.max(0, goal - currentMonthSales);
@@ -275,19 +275,19 @@ function renderDashboard() {
   const isCurrentReferenceMonth = referenceYear === now.getFullYear() && referenceMonth === now.getMonth();
   const referenceDayNumber = isCurrentReferenceMonth ? now.getDate() : daysInMonth(referenceYear, referenceMonth);
 
-  // DÃ­as laborables reales del mes de referencia (excluye fines de semana)
+  // Días laborables reales del mes de referencia (excluye fines de semana)
   const actualMonthWorkdays = countWorkdaysInMonth(referenceYear, referenceMonth);
   const workdaysElapsed = countWorkdaysElapsed(referenceYear, referenceMonth, referenceDayNumber);
   const workdaysRemaining = isCurrentReferenceMonth
     ? countWorkdaysRemaining(referenceYear, referenceMonth, referenceDayNumber)
     : 0;
 
-  // Meta base: objetivo / dÃ­as laborables reales del mes
+  // Meta base: objetivo / días laborables reales del mes
   const expectedDailyGoal = goal / actualMonthWorkdays;
   // Ritmo actual / media diaria del mes seleccionado
   const currentPace = workdaysElapsed > 0 ? currentMonthSales / workdaysElapsed : 0;
   const averageDailyMonthSales = currentPace;
-  // CÃ¡lculo dinÃ¡mico: lo que falta repartido entre los dÃ­as pendientes
+  // Cálculo dinámico: lo que falta repartido entre los días pendientes
   const missingPerWorkingDay = workdaysRemaining > 0 ? goalRemaining / workdaysRemaining : goalRemaining;
   const dailyGoalRemaining = missingPerWorkingDay;
   const workdaysLeft = workdaysRemaining;
@@ -310,10 +310,10 @@ function renderDashboard() {
 
   const stats = [
     { label: 'Total en filtro', value: fmtEUR(filteredTotal), sub: `${fmtNum(filteredCount)} entradas`, icon: 'M12 8v8M8 12h8' },
-    { label: 'Parque mÃ¡s vendido', value: topParkName, sub: topParkEntry ? `${fmtNum(topParkEntries)} entradas Â· ${fmtEUR(topParkRevenue)}` : 'Sin ventas en el filtro', icon: 'M3 21l7-14 4 8 3-5 4 11H3z' },
-    { label: 'Media diaria del mes', value: fmtEUR(averageDailyMonthSales), sub: workdaysElapsed ? `${fmtNum(workdaysElapsed)} dÃ­as laborables calculados` : 'Sin dÃ­as laborables en el periodo', icon: 'M3 13h4l3 7 4-14 3 7h4' },
-    { label: 'Cuota / dÃ­a restante', value: goal > 0 ? fmtEUR(dailyGoalRemaining) : 'â€”', sub: goal > 0 ? (isCurrentReferenceMonth ? `Te quedan ${fmtNum(workdaysRemaining)} dÃ­as laborables de ${fmtNum(actualMonthWorkdays)} este mes` : `Mes cerrado Â· ${fmtNum(actualMonthWorkdays)} dÃ­as laborables`) : 'Configura un objetivo mensual', icon: 'M4 19h16M6 16V9M12 16V5M18 16v-4' },
-    { label: 'Ventas totales del dÃ­a', value: fmtEUR(totalHoy), sub: countHoy ? `${fmtNum(countHoy)} entradas en la fecha seleccionada` : 'Sin ventas en la fecha seleccionada', icon: 'M3 3v18h18' },
+    { label: 'Parque más vendido', value: topParkName, sub: topParkEntry ? `${fmtNum(topParkEntries)} entradas · ${fmtEUR(topParkRevenue)}` : 'Sin ventas en el filtro', icon: 'M3 21l7-14 4 8 3-5 4 11H3z' },
+    { label: 'Media diaria del mes', value: fmtEUR(averageDailyMonthSales), sub: workdaysElapsed ? `${fmtNum(workdaysElapsed)} días laborables calculados` : 'Sin días laborables en el periodo', icon: 'M3 13h4l3 7 4-14 3 7h4' },
+    { label: 'Cuota / día restante', value: goal > 0 ? fmtEUR(dailyGoalRemaining) : '—', sub: goal > 0 ? (isCurrentReferenceMonth ? `Te quedan ${fmtNum(workdaysRemaining)} días laborables de ${fmtNum(actualMonthWorkdays)} este mes` : `Mes cerrado · ${fmtNum(actualMonthWorkdays)} días laborables`) : 'Configura un objetivo mensual', icon: 'M4 19h16M6 16V9M12 16V5M18 16v-4' },
+    { label: 'Ventas totales del día', value: fmtEUR(totalHoy), sub: countHoy ? `${fmtNum(countHoy)} entradas en la fecha seleccionada` : 'Sin ventas en la fecha seleccionada', icon: 'M3 3v18h18' },
     { label: 'Ventas de la semana', value: fmtEUR(totalSemana), sub: countSemana ? `${fmtNum(countSemana)} entradas` : 'Sin ventas esta semana', icon: 'M16 2v4M8 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M12 14v4M10 16h4' },
   ];
 
@@ -343,9 +343,9 @@ function renderDashboard() {
 }
 
 function buildDashboardFilterSummary(filters, totalFiltered) {
-  const periodLabel = filters.period === 'day' ? `DÃ­a ${filters.value}` : filters.period === 'month' ? `Mes ${filters.value}` : filters.period === 'year' ? `AÃ±o ${filters.year}` : 'Todo el histÃ³rico';
+  const periodLabel = filters.period === 'day' ? `Día ${filters.value}` : filters.period === 'month' ? `Mes ${filters.value}` : filters.period === 'year' ? `Año ${filters.year}` : 'Todo el histórico';
   const parkLabel = filters.parqueId === 'all' ? 'Todos los parques' : parqueNombre(filters.parqueId);
-  return `${periodLabel} Â· ${parkLabel} Â· ${fmtNum(totalFiltered)} ventas en el filtro`;
+  return `${periodLabel} · ${parkLabel} · ${fmtNum(totalFiltered)} ventas en el filtro`;
 }
 
 function ensureDashboardControlsWired() {
@@ -408,14 +408,14 @@ function syncDashboardFilterControls(filters) {
       valueInput.removeAttribute('min');
       valueInput.removeAttribute('max');
       valueInput.removeAttribute('step');
-      valueLabel.textContent = 'DÃ­a';
+      valueLabel.textContent = 'Día';
     } else if (period === 'year') {
       valueInput.type = 'number';
       valueInput.value = filters.year;
       valueInput.min = '2000';
       valueInput.max = '2100';
       valueInput.step = '1';
-      valueLabel.textContent = 'AÃ±o';
+      valueLabel.textContent = 'Año';
     } else if (period === 'all') {
       valueInput.type = 'month';
       valueInput.value = toMonthInputValue();
@@ -500,22 +500,22 @@ function renderGoalWidget({
         </div>
         <div style="color:var(--text-muted); font-size:12.5px; margin-top:10px; text-align:center; padding:8px 0;">
           Sin objetivo configurado.<br>
-          <span style="color:var(--accent); cursor:pointer; font-weight:600;" onclick="openProfileSettings()">Configura tu meta mensual â†’</span>
+          <span style="color:var(--accent); cursor:pointer; font-weight:600;" onclick="openProfileSettings()">Configura tu meta mensual →</span>
         </div>
       </div>
     `;
     return;
   }
 
-  // Estado visual segÃºn si la cuota diaria sube o baja respecto a la meta original
+  // Estado visual según si la cuota diaria sube o baja respecto a la meta original
   const quotaState = missingPerWorkingDay > expectedDailyGoal && expectedDailyGoal > 0 ? 'up' : (missingPerWorkingDay < expectedDailyGoal && expectedDailyGoal > 0 ? 'down' : 'on');
   const quotaStateColor = quotaState === 'up' ? '#F5A623' : quotaState === 'down' ? '#00E676' : 'var(--accent)';
 const quotaStateLabel =
     quotaState === 'up'
-        ? 'ðŸš€ Has vendido menos de lo previsto, Â¡sube la cuota!'
+        ? '🚀 Has vendido menos de lo previsto, ¡sube la cuota!'
         : quotaState === 'down'
-            ? 'ðŸ”¥ Â¡Vas por delante! Sigue asÃ­ ðŸ’ªðŸ»'
-            : 'ðŸ‘ðŸ» Vas al ritmo esperado';
+            ? '🔥 ¡Vas por delante! Sigue así 💪🏻'
+            : '👍🏻 Vas al ritmo esperado';
   document.getElementById('goal-widget').innerHTML = `
     <div class="goal-summary">
       <div class="goal-summary-row">
@@ -537,15 +537,15 @@ const quotaStateLabel =
 
       <div class="goal-mini-grid">
         <div class="goal-mini-card goal-mini-card-primary">
-          <span>Cuota / dÃ­a restante</span>
+          <span>Cuota / día restante</span>
           <b>${fmtEUR(missingPerWorkingDay)}</b>
         </div>
         <div class="goal-mini-card">
-          <span>DÃ­as que faltan</span>
+          <span>Días que faltan</span>
           <b>${fmtNum(workdaysLeft)} de ${fmtNum(workdaysTotal)}</b>
         </div>
         <div class="goal-mini-card">
-          <span>Meta original / dÃ­a</span>
+          <span>Meta original / día</span>
           <b class="goal-mini-warn">${fmtEUR(expectedDailyGoal)}</b>
         </div>
         <div class="goal-mini-card">
@@ -595,7 +595,7 @@ function renderPeriodChart(ventas, filters) {
       const date = new Date(venta.fecha);
       return date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === dayIndex + 1;
     }).reduce((acc, venta) => acc + Number(venta.importe_total || 0), 0));
-    tooltipLabel = 'Ingresos dÃ­a';
+    tooltipLabel = 'Ingresos día';
   } else {
     const now = new Date();
     const months = [];
@@ -727,7 +727,7 @@ function renderRankingParques(ventas) {
 
   const container = document.getElementById('ranking-parques');
   if (!rows.length) {
-    container.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">AÃºn no hay ventas en este filtro.</p>';
+    container.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">Aún no hay ventas en este filtro.</p>';
     return;
   }
 
@@ -766,8 +766,8 @@ function openProfileSettings() {
   const pace = realElapsed > 0 ? currentMonthSales / realElapsed : 0;
   const progressPct = goal > 0 ? Math.min(100, Math.round((currentMonthSales / goal) * 100)) : 0;
   const progressLabel = goal > 0
-    ? `${fmtEUR(currentMonthSales)} de ${fmtEUR(goal)} Â· ${progressPct}%`
-    : `${fmtEUR(currentMonthSales)} este mes Â· sin meta`;
+    ? `${fmtEUR(currentMonthSales)} de ${fmtEUR(goal)} · ${progressPct}%`
+    : `${fmtEUR(currentMonthSales)} este mes · sin meta`;
 
   const bodyHtml = `
     <div class="profile-panel">
@@ -792,7 +792,7 @@ function openProfileSettings() {
 
       <div class="profile-stats-row">
         <section class="profile-stat-card profile-stat-card--days">
-          <p class="profile-stat-title">DÃ­as Â· ${escapeHtml(currentMonthName)}</p>
+          <p class="profile-stat-title">Días · ${escapeHtml(currentMonthName)}</p>
           <div class="profile-stat-grid">
             <div class="profile-mini">
               <strong>${fmtNum(realWorkdays)}</strong>
@@ -814,7 +814,7 @@ function openProfileSettings() {
           <div class="profile-stat-grid">
             <div class="profile-mini">
               <strong>${fmtEUR(dailyQuota)}</strong>
-              <span>/ dÃ­a</span>
+              <span>/ día</span>
             </div>
             <div class="profile-mini profile-mini--accent">
               <strong>${fmtEUR(originalDailyGoal)}</strong>
@@ -833,11 +833,11 @@ function openProfileSettings() {
           <span class="profile-section-badge">Objetivos</span>
           <div class="profile-fields">
             <label class="profile-field">
-              <span>Meta mensual (â‚¬)</span>
+              <span>Meta mensual (€)</span>
               <input type="number" id="profile-goal" min="0" step="1" value="${goal}">
             </label>
             <label class="profile-field">
-              <span>DÃ­as / mes</span>
+              <span>Días / mes</span>
               <input type="number" id="profile-workdays" min="1" max="31" step="1" value="${workdays}">
             </label>
           </div>
@@ -848,8 +848,8 @@ function openProfileSettings() {
           <input class="profile-autofill-username" type="email" name="username" autocomplete="username" value="${escapeHtml(rawUserEmail)}" readonly tabindex="-1" aria-hidden="true">
           <div class="profile-fields">
             <label class="profile-field">
-              <span>Nueva contraseÃ±a</span>
-              <input type="password" id="profile-password" name="new-password" placeholder="MÃ­n. 6 caracteres" autocomplete="new-password">
+              <span>Nueva contraseña</span>
+              <input type="password" id="profile-password" name="new-password" placeholder="Mín. 6 caracteres" autocomplete="new-password">
             </label>
             <label class="profile-field">
               <span>Confirmar</span>
@@ -857,7 +857,7 @@ function openProfileSettings() {
             </label>
           </div>
           <div id="profile-password-error" class="profile-password-error"></div>
-          <button class="btn btn-secondary profile-password-btn" id="profile-password-btn" type="button">Cambiar contraseña</button>
+          <button class="btn btn-secondary profile-password-btn" id="profile-password-btn" type="button">Cambiar contrase�a</button>
         </section>
       </div>
     </div>
@@ -887,12 +887,12 @@ function openProfileSettings() {
     passwordError.textContent = '';
 
     if (nextPassword.length < 6) {
-      passwordError.textContent = 'La contraseÃ±a debe tener al menos 6 caracteres.';
+      passwordError.textContent = 'La contraseña debe tener al menos 6 caracteres.';
       passwordInput.focus();
       return;
     }
     if (nextPassword !== nextPasswordConfirm) {
-      passwordError.textContent = 'Las contraseÃ±as no coinciden.';
+      passwordError.textContent = 'Las contraseñas no coinciden.';
       passwordConfirmInput.focus();
       return;
     }
@@ -903,9 +903,9 @@ function openProfileSettings() {
       if (AUTH.markInvitePasswordComplete) AUTH.markInvitePasswordComplete(updatedUser?.email || rawUserEmail);
       passwordInput.value = '';
       passwordConfirmInput.value = '';
-      toast('ContraseÃ±a cambiada.', 'success');
+      toast('Contraseña cambiada.', 'success');
     } catch (err) {
-      passwordError.textContent = err?.message || 'No se pudo cambiar la contraseÃ±a.';
+      passwordError.textContent = err?.message || 'No se pudo cambiar la contraseña.';
     } finally {
       changePasswordBtn.disabled = false;
     }
@@ -916,7 +916,7 @@ function openProfileSettings() {
     setWorkdaysPerMonth(document.getElementById('profile-workdays').value);
     closeModal();
     renderDashboard();
-    toast('Perfil actualizado. Meta y dÃ­as de trabajo guardados.', 'success');
+    toast('Perfil actualizado. Meta y días de trabajo guardados.', 'success');
   });
 }
 

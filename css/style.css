@@ -1984,6 +1984,24 @@ label:has(input[type="radio"]:checked) {
 }
 
 @media (max-width: 720px) {
+  .modal.profile-modal {
+    max-height: 88vh;
+    overflow: hidden;
+  }
+
+  .modal.profile-modal .modal-body {
+    padding: 18px 20px 12px;
+    overflow-y: auto;
+  }
+
+  .modal.profile-modal .modal-head {
+    padding: 18px 20px 14px;
+  }
+
+  .modal.profile-modal .modal-foot {
+    padding: 14px 20px 18px;
+  }
+
   .profile-hero {
     grid-template-columns: auto 1fr;
     grid-template-areas:
@@ -2007,9 +2025,99 @@ label:has(input[type="radio"]:checked) {
   .profile-progress-head strong {
     text-align: left;
   }
+}
+
+@media (max-width: 480px) {
+  .modal-backdrop {
+    padding: 10px;
+  }
+
+  .modal.profile-modal {
+    max-height: 92vh;
+  }
 
   .modal.profile-modal .modal-body {
-    overflow-y: auto;
+    padding: 14px 14px 10px;
+  }
+
+  .modal.profile-modal .modal-head {
+    padding: 14px 14px 12px;
+  }
+
+  .modal.profile-modal .modal-head h3 {
+    font-size: 17px;
+  }
+
+  .modal.profile-modal .modal-foot {
+    padding: 12px 14px 16px;
+    flex-wrap: wrap;
+  }
+
+  .modal.profile-modal .modal-foot .btn {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .profile-hero {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "avatar"
+      "text"
+      "progress";
+    justify-items: center;
+    text-align: center;
+    padding: 18px 16px;
+    gap: 12px;
+  }
+
+  .profile-hero-text {
+    text-align: center;
+  }
+
+  .profile-hero-name {
+    font-size: 21px;
+  }
+
+  .profile-hero-email {
+    font-size: 12.5px;
+  }
+
+  .profile-hero-progress {
+    width: 100%;
+  }
+
+  .profile-progress-head {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .profile-progress-head strong {
+    text-align: center;
+  }
+
+  .profile-stat-card {
+    padding: 14px;
+  }
+
+  .profile-stat-grid {
+    gap: 8px;
+  }
+
+  .profile-mini {
+    padding: 10px 4px;
+  }
+
+  .profile-mini strong {
+    font-size: 13.5px;
+  }
+
+  .profile-section {
+    padding: 14px;
+  }
+
+  .profile-panel {
+    gap: 14px;
   }
 }
 
