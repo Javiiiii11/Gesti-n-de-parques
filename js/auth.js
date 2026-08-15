@@ -191,7 +191,7 @@ function initAuthScreen() {
       const looksLikeNoPassword = /invalid login credentials|invalid_credentials/i.test(msg);
       showAuthError(
         looksLikeNoPassword
-          ? 'Correo o contraseña incorrectos. Si te invitaron y aún no creaste contraseña, pulsa “Me invitaron y aún no tengo contraseña”.'
+          ? 'Correo o contraseña incorrectos. Si te invitaron y aún no creaste contraseña, abre el enlace de invitación del correo.'
           : msg
       );
       password.value = '';
@@ -201,29 +201,6 @@ function initAuthScreen() {
     }
   });
 
-  const setPasswordBtn = document.getElementById('auth-set-password-btn');
-  if (setPasswordBtn) {
-    setPasswordBtn.addEventListener('click', async () => {
-      clearAuthError();
-      const typedEmail = email.value.trim();
-      if (!typedEmail) {
-        showAuthError('Escribe tu correo arriba y pulsa de nuevo el botón.');
-        email.focus();
-        return;
-      }
-      setPasswordBtn.disabled = true;
-      try {
-        await AUTH.sendPasswordSetupEmail(typedEmail);
-        rememberEmail(typedEmail);
-        showAuthError('');
-        toast('Te hemos enviado un correo para crear tu contraseña. Ábrelo en el navegador (no solo la vista previa de Outlook).', 'success', 7000);
-      } catch (err) {
-        showAuthError(err?.message || 'No se pudo enviar el correo.');
-      } finally {
-        setPasswordBtn.disabled = false;
-      }
-    });
-  }
 }
 
 async function enterApp(user) {
@@ -276,7 +253,7 @@ async function checkExistingSession() {
 
     if (AUTH.isInviteFlow() && !AUTH.hasPendingInviteRedirect()) {
       exitInviteFlowUI();
-      showAuthError('El enlace de invitación no es válido o ha caducado. Usa “Me invitaron y aún no tengo contraseña” o pide una invitación nueva.');
+      showAuthError('El enlace de invitación no es válido o ha caducado. Pide una invitación nueva.');
     }
     document.getElementById('auth-screen').style.display = 'flex';
   } catch (err) {

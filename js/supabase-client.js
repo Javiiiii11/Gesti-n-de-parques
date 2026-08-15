@@ -684,23 +684,10 @@ const AUTH = {
         sessionStorage.setItem(INVITE_FLOW_STORAGE_KEY, '1');
         return existing.user;
       }
-      throw new Error('No se pudo activar la invitación. El enlace puede haber caducado o haberse usado ya. Pide una invitación nueva o usa “Me invitaron y aún no tengo contraseña”.');
+      throw new Error('No se pudo activar la invitación. El enlace puede haber caducado o haberse usado ya. Pide una invitación nueva.');
     }
     sessionStorage.setItem(INVITE_FLOW_STORAGE_KEY, '1');
     return result.user;
-  },
-
-  async sendPasswordSetupEmail(email) {
-    if (LOCAL_MODE) {
-      throw new Error('Esta opción solo funciona con Supabase configurado.');
-    }
-    const clean = String(email || '').trim();
-    if (!clean) throw new Error('Escribe tu correo arriba para enviarte el enlace.');
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(clean, {
-      redirectTo: getAuthRedirectUrl(),
-    });
-    if (error) throw normalizeAuthError(error);
-    return true;
   },
 
   isInviteFlow() {

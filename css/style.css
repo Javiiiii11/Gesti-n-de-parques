@@ -473,8 +473,8 @@ label:has(input[type="radio"]:checked) {
 }
 
 .user-meta .name {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -483,7 +483,8 @@ label:has(input[type="radio"]:checked) {
 }
 
 .user-meta .role {
-  font-size: 10.5px;
+  margin-top: 2px;
+  font-size: 12px;
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -501,21 +502,23 @@ label:has(input[type="radio"]:checked) {
 .topbar-user {
   position: relative;
   flex-shrink: 0;
-  margin: 0 -4px 0 10px;
+  margin: 0 0 0 12px;
 }
 
 .topbar-user-btn {
-  background: transparent;
-  border: 1px solid transparent;
+  min-width: 218px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   color: inherit;
-  padding: 5px 10px 5px 5px;
-  border-radius: 999px;
+  padding: 8px 12px 8px 8px;
+  border-radius: var(--radius-m);
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 11px;
   cursor: pointer;
   transition: var(--transition);
   font: inherit;
+  box-shadow: 0 8px 24px -18px rgba(0, 0, 0, 0.45);
 }
 
 .topbar-user-btn:hover {
@@ -533,6 +536,13 @@ label:has(input[type="radio"]:checked) {
 
 .topbar-user.open .topbar-user-btn .chev {
   transform: rotate(180deg);
+}
+
+.topbar-user-btn .ps-avatar--chip,
+.topbar-user-btn .user-avatar.ps-avatar--chip {
+  width: 38px;
+  height: 38px;
+  font-size: 12px;
 }
 
 .topbar-user-menu {
@@ -1680,45 +1690,44 @@ label:has(input[type="radio"]:checked) {
 
 /* ---- Modal de perfil (amplio, sin scroll) ---- */
 .modal.profile-modal {
-  width: min(760px, 94vw);
+  width: min(920px, 96vw);
   max-height: none;
   overflow: hidden;
 }
 
 .modal.profile-modal .modal-body {
-  padding: 18px 24px 10px;
+  padding: 22px 28px 12px;
   overflow: hidden;
 }
 
 .modal.profile-modal .modal-head {
-  padding: 18px 24px 12px;
+  padding: 22px 28px 14px;
 }
 
 .modal.profile-modal .modal-head h3 {
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .modal.profile-modal .modal-foot {
-  padding: 12px 24px 18px;
+  padding: 14px 28px 22px;
 }
 
 .profile-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .profile-hero {
   position: relative;
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) minmax(260px, 0.8fr);
   grid-template-areas:
-    "avatar text"
-    "progress progress";
+    "avatar text progress";
   align-items: center;
   column-gap: 18px;
   row-gap: 16px;
-  padding: 20px 22px;
+  padding: 24px 26px;
   border-radius: var(--radius-l);
   border: 1px solid rgba(245, 166, 35, 0.22);
   background:
@@ -1761,9 +1770,9 @@ label:has(input[type="radio"]:checked) {
 .profile-hero-name {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: var(--text-primary);
   text-transform: capitalize;
   line-height: 1.2;
@@ -1820,7 +1829,7 @@ label:has(input[type="radio"]:checked) {
 .profile-forms-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: 16px;
 }
 
 .profile-stat-card {
@@ -1883,7 +1892,7 @@ label:has(input[type="radio"]:checked) {
 .profile-mini--info strong { color: #60A5FA; }
 
 .profile-section {
-  padding: 16px;
+  padding: 18px;
   border-radius: var(--radius-m);
   border: 1px solid var(--border);
   background: var(--bg-card);
@@ -1958,7 +1967,31 @@ label:has(input[type="radio"]:checked) {
   font-size: 12.5px;
 }
 
+.profile-password-btn {
+  width: 100%;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.profile-autofill-username {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  border: 0;
+  padding: 0;
+}
+
 @media (max-width: 720px) {
+  .profile-hero {
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "avatar text"
+      "progress progress";
+    padding: 20px;
+  }
+
   .profile-stats-row,
   .profile-forms-row,
   .profile-fields {
@@ -3136,6 +3169,11 @@ html.ps-invite-flow #invite-password-backdrop {
 
   .topbar-user-btn .user-meta {
     display: none;
+  }
+
+  .topbar-user-btn {
+    min-width: 0;
+    padding-right: 9px;
   }
 
   .topbar-user-menu {
