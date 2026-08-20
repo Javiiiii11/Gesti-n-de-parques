@@ -87,7 +87,7 @@ function wireGlobalSearch() {
 function setUserChip(user) {
   const name = getUserDisplayName(user);
   document.getElementById('user-name').textContent = name;
-  document.getElementById('user-role').textContent = LOCAL_MODE ? 'Modo local' : (user.email || '');
+  document.getElementById('user-role').textContent = user.email || '';
 
   const avatarEl = document.getElementById('user-avatar');
   if (!avatarEl) return;

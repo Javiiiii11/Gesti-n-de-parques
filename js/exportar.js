@@ -57,7 +57,7 @@ const PREDEFINED_PARKS = [
   'Teleférico Benalmádena',
   'Parque Warner',
   'Warner Beach',
-  'ZOO'
+  'ZOO',
 ];
 
 const PREDEFINED_BONOS = [

@@ -198,7 +198,7 @@
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg>
-          Horarios, Webs y Promos
+          Horarios y archivos
         </div>
 
         <div class="nav-separator"><span>ASISTENTE</span></div>
@@ -485,7 +485,7 @@
             <div class="card card-pad quick-parse-card">
               <div class="qp-header">
                 <h3>⚡ Pegado rápido</h3>
-                <p class="desc">Pega una línea de la tabla, revisa los datos y dale a "Autocompletar si está bien"</p>
+                <p class="desc">Pega una línea de la tabla de Vector, revisa los datos y dale a "Autocompletar si está bien"</p>
               </div>
               <div class="qp-body">
                 <textarea id="venta-quick-parse" class="qp-textarea"
@@ -793,7 +793,7 @@
             }
           </style>
 
-          <div class="parques-view-grid">
+          <div class="parques-view-grid" style="margin-bottom: 100px;">
             <!-- Tabla de Parques -->
             <div class="parques-panel accent-cyan">
               <div class="parques-panel-header">
@@ -805,8 +805,8 @@
                     </svg>
                   </div>
                   <div>
-                    <h3 class="parques-panel-title">Parques de Ocio</h3>
-                    <p class="parques-panel-sub">Catálogo de recintos y volumen de ventas</p>
+                    <h3 class="parques-panel-title">Parques</h3>
+                    <p class="parques-panel-sub">Controla los parques segun esten activos o desabilitados.</p>
                   </div>
                 </div>
                 <button class="btn btn-primary btn-sm" id="btn-nuevo-parque">
@@ -844,8 +844,8 @@
                     </svg>
                   </div>
                   <div>
-                    <h3 class="parques-panel-title">Tipos de Bonos</h3>
-                    <p class="parques-panel-sub">Pases de temporada y pases especiales</p>
+                    <h3 class="parques-panel-title">Bonos</h3>
+                    <p class="parques-panel-sub">Controla los bonos segun esten activos o desabilitados.</p>
                   </div>
                 </div>
                 <button class="btn btn-primary btn-sm" id="btn-nuevo-bono">
@@ -1472,12 +1472,13 @@
               </div>
               <p class="stat-desc">Ranking de los días con mayor volumen de ventas registrado.</p>
               <div class="ranking-list" id="ranking-dias"
-                style="margin-top: 10px; max-height: 220px; overflow-y: auto; padding-right: 8px;"></div>
+                style="margin-top: 10px; max-height: 250px; overflow-y: auto; padding-right: 8px;">
+              </div>
             </div>
           </div>
 
           <!-- Comparativa -->
-          <div class="stat-panel accent-cyan" style="margin-top: 24px;">
+          <div class="stat-panel accent-cyan" style="margin-top: 24px; margin-bottom: 100px;">
             <div class="stat-header">
               <div class="stat-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -1996,6 +1997,8 @@
   <script src="js/pomodoro.js?v=3"></script>
   <script src="js/music.js?v=3"></script>
   <script src="js/calculator.js?v=3"></script>
+  <script src="js/conocimiento/chat-ia-knowledge.js"></script>
+  <script src="js/conocimiento/chat-ia-halloween.js"></script>
   <script src="js/chat-ia.js?v=3"></script>
   <script src="js/app.js?v=4"></script>
 </body>

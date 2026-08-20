@@ -69,7 +69,17 @@ if (SUPABASE_CONFIGURED) {
   window.PARKSALES_SUPABASE_CLIENT = supabaseClient;
 }
 
-// Si Supabase está configurado usamos backend real; si no, fallback local.
+// ============================================================================
+// MODO DE ALMACENAMIENTO DE DATOS
+// ----------------------------------------------------------------------------
+// Los datos de la app (ventas, contactos, parques, bonos, etc.) se guardan
+// SIEMPRE en localStorage del navegador. Supabase se usa únicamente para la
+// autenticación (usuarios y contraseñas).
+// ============================================================================
+const DATA_STORAGE_MODE = 'local'; // 'local' | 'supabase'
+
+// LOCAL_MODE controla solo la autenticación: si Supabase está configurado,
+// el login usa Supabase; si no, usa un usuario local de prueba.
 let LOCAL_MODE = !SUPABASE_CONFIGURED;
 
 const LOCAL_KEYS = { 
@@ -238,256 +248,138 @@ function normalizeAuthError(error) {
 ============================================================================ */
 const DB = {
 
-  isLocal() { return LOCAL_MODE; },
+  isLocal() { return true; },
 
   // ---------------------------------------------------------------- PARQUES
   async getParques() {
-    if (LOCAL_MODE) {
-      localSeedIfEmpty();
-      return readLocal(LOCAL_KEYS.parques).sort((a, b) => a.nombre.localeCompare(b.nombre));
-    }
-    const { data, error } = await supabaseClient.from('parques').select('*').order('nombre');
-    if (error) throw normalizeDbError(error, 'parques');
-    return data;
+    localSeedIfEmpty();
+    return readLocal(LOCAL_KEYS.parques).sort((a, b) => a.nombre.localeCompare(b.nombre));
   },
 
   async addParque(parque) {
-    if (LOCAL_MODE) {
-      const list = readLocal(LOCAL_KEYS.parques);
-      const nuevo = { id: uid(), created_at: new Date().toISOString(), ...sanitizeParque(parque) };
-      list.push(nuevo);
-      writeLocal(LOCAL_KEYS.parques, list);
-      return nuevo;
-    }
-    const { data, error } = await supabaseClient.from('parques').insert(sanitizeParque(parque)).select().single();
-    if (error) throw normalizeDbError(error, 'parques');
-    return data;
+    const list = readLocal(LOCAL_KEYS.parques);
+    const nuevo = { id: uid(), created_at: new Date().toISOString(), ...sanitizeParque(parque) };
+    list.push(nuevo);
+    writeLocal(LOCAL_KEYS.parques, list);
+    return nuevo;
   },
 
   async updateParque(id, changes) {
-    if (LOCAL_MODE) {
-      const list = readLocal(LOCAL_KEYS.parques);
-      const idx = list.findIndex(p => p.id === id);
-      if (idx > -1) list[idx] = { ...list[idx], ...sanitizeParque(changes) };
-      writeLocal(LOCAL_KEYS.parques, list);
-      return list[idx];
-    }
-    const { data, error } = await supabaseClient.from('parques').update(sanitizeParque(changes)).eq('id', id).select().single();
-    if (error) throw normalizeDbError(error, 'parques');
-    return data;
+    const list = readLocal(LOCAL_KEYS.parques);
+    const idx = list.findIndex(p => p.id === id);
+    if (idx > -1) list[idx] = { ...list[idx], ...sanitizeParque(changes) };
+    writeLocal(LOCAL_KEYS.parques, list);
+    return list[idx];
   },
 
   async deleteParque(id) {
-    if (LOCAL_MODE) {
-      writeLocal(LOCAL_KEYS.parques, readLocal(LOCAL_KEYS.parques).filter(p => p.id !== id));
-      writeLocal(LOCAL_KEYS.contactos, readLocal(LOCAL_KEYS.contactos).filter(c => c.parque_id !== id));
-      return true;
-    }
-    // contactos.parque_id referencia parques; hay que borrar los apuntes primero.
-    const { error: contactosError } = await supabaseClient
-      .from('contactos')
-      .delete()
-      .eq('parque_id', id);
-    if (contactosError) throw normalizeDbError(contactosError, 'contactos');
-
-    const { error } = await supabaseClient.from('parques').delete().eq('id', id);
-    if (error) throw normalizeDbError(error, 'parques');
+    writeLocal(LOCAL_KEYS.parques, readLocal(LOCAL_KEYS.parques).filter(p => p.id !== id));
+    writeLocal(LOCAL_KEYS.contactos, readLocal(LOCAL_KEYS.contactos).filter(c => c.parque_id !== id));
     return true;
   },
 
   // ---------------------------------------------------------------- TIPOS DE BONO
   async getTiposBono() {
-    if (LOCAL_MODE) {
-      localSeedIfEmpty();
-      return readLocal(LOCAL_KEYS.tipos_bono).sort((a, b) => a.nombre.localeCompare(b.nombre));
-    }
-    const { data, error } = await supabaseClient.from('tipos_bono').select('*').order('nombre');
-    if (error) throw normalizeDbError(error, 'tipos_bono');
-    return data;
+    localSeedIfEmpty();
+    return readLocal(LOCAL_KEYS.tipos_bono).sort((a, b) => a.nombre.localeCompare(b.nombre));
   },
 
   async addTipoBono(bono) {
-    if (LOCAL_MODE) {
-      const list = readLocal(LOCAL_KEYS.tipos_bono);
-      const nuevo = { id: uid(), created_at: new Date().toISOString(), ...sanitizeParque(bono) };
-      list.push(nuevo);
-      writeLocal(LOCAL_KEYS.tipos_bono, list);
-      return nuevo;
-    }
-    const { data, error } = await supabaseClient.from('tipos_bono').insert(sanitizeParque(bono)).select().single();
-    if (error) throw normalizeDbError(error, 'tipos_bono');
-    return data;
+    const list = readLocal(LOCAL_KEYS.tipos_bono);
+    const nuevo = { id: uid(), created_at: new Date().toISOString(), ...sanitizeParque(bono) };
+    list.push(nuevo);
+    writeLocal(LOCAL_KEYS.tipos_bono, list);
+    return nuevo;
   },
 
   async updateTipoBono(id, changes) {
-    if (LOCAL_MODE) {
-      const list = readLocal(LOCAL_KEYS.tipos_bono);
-      const idx = list.findIndex(p => p.id === id);
-      if (idx > -1) list[idx] = { ...list[idx], ...sanitizeParque(changes) };
-      writeLocal(LOCAL_KEYS.tipos_bono, list);
-      return list[idx];
-    }
-    const { data, error } = await supabaseClient.from('tipos_bono').update(sanitizeParque(changes)).eq('id', id).select().single();
-    if (error) throw normalizeDbError(error, 'tipos_bono');
-    return data;
+    const list = readLocal(LOCAL_KEYS.tipos_bono);
+    const idx = list.findIndex(p => p.id === id);
+    if (idx > -1) list[idx] = { ...list[idx], ...sanitizeParque(changes) };
+    writeLocal(LOCAL_KEYS.tipos_bono, list);
+    return list[idx];
   },
 
   async deleteTipoBono(id) {
-    if (LOCAL_MODE) {
-      const list = readLocal(LOCAL_KEYS.tipos_bono).filter(p => p.id !== id);
-      writeLocal(LOCAL_KEYS.tipos_bono, list);
-      return true;
-    }
-    const { error } = await supabaseClient.from('tipos_bono').delete().eq('id', id);
-    if (error) throw normalizeDbError(error, 'tipos_bono');
+    const list = readLocal(LOCAL_KEYS.tipos_bono).filter(p => p.id !== id);
+    writeLocal(LOCAL_KEYS.tipos_bono, list);
     return true;
   },
 
   // ---------------------------------------------------------------- CONTACTOS
   async getContactos() {
-    if (LOCAL_MODE) {
-      localSeedIfEmpty();
-      return readLocal(LOCAL_KEYS.contactos).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    }
-    const { data, error } = await supabaseClient.from('contactos').select('*').order('created_at', { ascending: false });
-    if (error) throw normalizeDbError(error, 'contactos');
-    return data;
+    localSeedIfEmpty();
+    return readLocal(LOCAL_KEYS.contactos).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   },
 
   async addContacto(contacto) {
-    if (LOCAL_MODE) {
-      const list = readLocal(LOCAL_KEYS.contactos);
-      const nuevo = { id: uid(), created_at: new Date().toISOString(), ...normalizeContacto(contacto) };
-      list.push(nuevo);
-      writeLocal(LOCAL_KEYS.contactos, list);
-      return nuevo;
-    }
-    const { data, error } = await withMissingColumnRetry(
-      (payload) => supabaseClient.from('contactos').insert(payload).select().single(),
-      normalizeContacto(contacto),
-      'contactos'
-    );
-    if (error) throw normalizeDbError(error, 'contactos');
-    return data;
+    const list = readLocal(LOCAL_KEYS.contactos);
+    const nuevo = { id: uid(), created_at: new Date().toISOString(), ...normalizeContacto(contacto) };
+    list.push(nuevo);
+    writeLocal(LOCAL_KEYS.contactos, list);
+    return nuevo;
   },
 
   async updateContacto(id, changes) {
-    if (LOCAL_MODE) {
-      const list = readLocal(LOCAL_KEYS.contactos);
-      const idx = list.findIndex(c => c.id === id);
-      if (idx > -1) list[idx] = { ...list[idx], ...normalizeContacto(changes, { partial: true }) };
-      writeLocal(LOCAL_KEYS.contactos, list);
-      return list[idx];
-    }
-    const { data, error } = await withMissingColumnRetry(
-      (payload) => supabaseClient.from('contactos').update(payload).eq('id', id).select().single(),
-      normalizeContacto(changes, { partial: true }),
-      'contactos'
-    );
-    if (error) throw normalizeDbError(error, 'contactos');
-    return data;
+    const list = readLocal(LOCAL_KEYS.contactos);
+    const idx = list.findIndex(c => c.id === id);
+    if (idx > -1) list[idx] = { ...list[idx], ...normalizeContacto(changes, { partial: true }) };
+    writeLocal(LOCAL_KEYS.contactos, list);
+    return list[idx];
   },
 
   async deleteContacto(id) {
-    if (LOCAL_MODE) {
-      const list = readLocal(LOCAL_KEYS.contactos).filter(c => c.id !== id);
-      writeLocal(LOCAL_KEYS.contactos, list);
-      return true;
-    }
-    const { error } = await supabaseClient.from('contactos').delete().eq('id', id);
-    if (error) throw normalizeDbError(error, 'contactos');
+    const list = readLocal(LOCAL_KEYS.contactos).filter(c => c.id !== id);
+    writeLocal(LOCAL_KEYS.contactos, list);
     return true;
   },
 
   // ----------------------------------------------------------------- VENTAS
   async getVentas() {
-    if (LOCAL_MODE) {
-      localSeedIfEmpty();
-      return readLocal(LOCAL_KEYS.ventas).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-    }
-    const { data, error } = await supabaseClient.from('ventas').select('*').order('fecha', { ascending: false });
-    if (error) throw normalizeDbError(error, 'ventas');
-    return data;
+    localSeedIfEmpty();
+    return readLocal(LOCAL_KEYS.ventas).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
   },
 
   async addVenta(venta) {
-    if (LOCAL_MODE) {
-      const list = readLocal(LOCAL_KEYS.ventas);
-      const nueva = { id: uid(), created_at: new Date().toISOString(), ...normalizeVenta(venta) };
-      list.push(nueva);
-      writeLocal(LOCAL_KEYS.ventas, list);
-      return nueva;
-    }
-    const { data, error } = await withMissingColumnRetry(
-      (payload) => supabaseClient.from('ventas').insert(payload).select().single(),
-      normalizeVenta(venta),
-      'ventas'
-    );
-    if (error) throw normalizeDbError(error, 'ventas');
-    return data;
+    const list = readLocal(LOCAL_KEYS.ventas);
+    const nueva = { id: uid(), created_at: new Date().toISOString(), ...normalizeVenta(venta) };
+    list.push(nueva);
+    writeLocal(LOCAL_KEYS.ventas, list);
+    return nueva;
   },
 
   async updateVenta(id, changes) {
-    if (LOCAL_MODE) {
-      const list = readLocal(LOCAL_KEYS.ventas);
-      const idx = list.findIndex(v => v.id === id);
-      if (idx > -1) list[idx] = { ...list[idx], ...normalizeVenta({ ...list[idx], ...changes }) };
-      writeLocal(LOCAL_KEYS.ventas, list);
-      return list[idx];
-    }
-    const { data, error } = await withMissingColumnRetry(
-      (payload) => supabaseClient.from('ventas').update(payload).eq('id', id).select().single(),
-      normalizeVenta(changes),
-      'ventas'
-    );
-    if (error) throw normalizeDbError(error, 'ventas');
-    return data;
+    const list = readLocal(LOCAL_KEYS.ventas);
+    const idx = list.findIndex(v => v.id === id);
+    if (idx > -1) list[idx] = { ...list[idx], ...normalizeVenta({ ...list[idx], ...changes }) };
+    writeLocal(LOCAL_KEYS.ventas, list);
+    return list[idx];
   },
 
   async deleteVenta(id) {
-    if (LOCAL_MODE) {
-      const list = readLocal(LOCAL_KEYS.ventas).filter(v => v.id !== id);
-      writeLocal(LOCAL_KEYS.ventas, list);
-      return true;
-    }
-    const { error } = await supabaseClient.from('ventas').delete().eq('id', id);
-    if (error) throw normalizeDbError(error, 'ventas');
+    const list = readLocal(LOCAL_KEYS.ventas).filter(v => v.id !== id);
+    writeLocal(LOCAL_KEYS.ventas, list);
     return true;
   },
 
   async bulkInsertVentas(ventas) {
-    if (LOCAL_MODE) {
-      const list = readLocal(LOCAL_KEYS.ventas);
-      ventas.forEach(v => list.push({ id: v.id || uid(), created_at: v.created_at || new Date().toISOString(), ...normalizeVenta(v) }));
-      writeLocal(LOCAL_KEYS.ventas, list);
-      return true;
-    }
-    const { error } = await supabaseClient.from('ventas').insert(ventas.map(normalizeVenta));
-    if (error) throw normalizeDbError(error, 'ventas');
+    const list = readLocal(LOCAL_KEYS.ventas);
+    ventas.forEach(v => list.push({ id: v.id || uid(), created_at: v.created_at || new Date().toISOString(), ...normalizeVenta(v) }));
+    writeLocal(LOCAL_KEYS.ventas, list);
     return true;
   },
 
   async bulkInsertParques(parques) {
-    if (LOCAL_MODE) {
-      const list = readLocal(LOCAL_KEYS.parques);
-      parques.forEach(p => list.push({ id: p.id || uid(), created_at: p.created_at || new Date().toISOString(), ...sanitizeParque(p) }));
-      writeLocal(LOCAL_KEYS.parques, list);
-      return true;
-    }
-    const { error } = await supabaseClient.from('parques').insert(parques.map(sanitizeParque));
-    if (error) throw normalizeDbError(error, 'parques');
+    const list = readLocal(LOCAL_KEYS.parques);
+    parques.forEach(p => list.push({ id: p.id || uid(), created_at: p.created_at || new Date().toISOString(), ...sanitizeParque(p) }));
+    writeLocal(LOCAL_KEYS.parques, list);
     return true;
   },
 
   async bulkInsertTiposBono(tiposBono) {
-    if (LOCAL_MODE) {
-      const list = readLocal(LOCAL_KEYS.tipos_bono);
-      tiposBono.forEach(b => list.push({ id: b.id || uid(), created_at: b.created_at || new Date().toISOString(), ...sanitizeParque(b) }));
-      writeLocal(LOCAL_KEYS.tipos_bono, list);
-      return true;
-    }
-    const { error } = await supabaseClient.from('tipos_bono').insert(tiposBono.map(sanitizeParque));
-    if (error) throw normalizeDbError(error, 'tipos_bono');
+    const list = readLocal(LOCAL_KEYS.tipos_bono);
+    tiposBono.forEach(b => list.push({ id: b.id || uid(), created_at: b.created_at || new Date().toISOString(), ...sanitizeParque(b) }));
+    writeLocal(LOCAL_KEYS.tipos_bono, list);
     return true;
   },
 };
