@@ -1,4 +1,4 @@
-﻿/* ============================================================================
+/* ============================================================================
    dashboard.js — vista "Dashboard"
 ============================================================================ */
 
@@ -803,6 +803,29 @@ function openProfileSettings() {
               <span>${fmtEUR(goal)}</span>
             </div>
           ` : ''}
+          <div class="profile-goal-tips">
+            <div class="profile-goal-tip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <div>
+                <strong>Progreso</strong>
+                <span>${progressPct > 0 ? `${progressPct}% de la meta` : 'Sin meta activa'}</span>
+              </div>
+            </div>
+            <div class="profile-goal-tip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <div>
+                <strong>Este mes</strong>
+                <span>${fmtEUR(currentMonthSales)} vendidos</span>
+              </div>
+            </div>
+            <div class="profile-goal-tip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <div>
+                <strong>Actualiza</strong>
+                <span>Meta editable siempre</span>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section class="profile-section profile-section--security">
@@ -819,6 +842,10 @@ function openProfileSettings() {
                 <div class="profile-input-wrap">
                   <svg class="profile-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   <input type="password" id="profile-password" name="new-password" placeholder="Mín. 6 caracteres" autocomplete="new-password">
+                  <button type="button" class="profile-pw-toggle" onclick="togglePasswordVisibility(this)" aria-label="Mostrar contraseña">
+                    <svg class="pw-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="pw-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  </button>
                 </div>
               </label>
               <label class="profile-field">
@@ -826,8 +853,18 @@ function openProfileSettings() {
                 <div class="profile-input-wrap">
                   <svg class="profile-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   <input type="password" id="profile-password-confirm" name="new-password-confirm" placeholder="Repite la contraseña" autocomplete="new-password">
+                  <button type="button" class="profile-pw-toggle" onclick="togglePasswordVisibility(this)" aria-label="Mostrar contraseña">
+                    <svg class="pw-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="pw-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  </button>
                 </div>
               </label>
+            </div>
+          </div>
+          <div class="profile-pw-tips">
+            <div class="profile-pw-tip profile-pw-tip--done">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Mín. 6 caracteres obligatorio</span>
             </div>
           </div>
           <div id="profile-password-error" class="profile-password-error"></div>
@@ -951,3 +988,20 @@ document.addEventListener('DOMContentLoaded', () => {
   wireProfilePanel();
   wireTopbarUserMenu();
 });
+window.togglePasswordVisibility = function(btn) {
+  const input = btn.previousElementSibling;
+  const eye = btn.querySelector('.pw-eye');
+  const eyeOff = btn.querySelector('.pw-eye-off');
+
+  if (input && input.tagName === 'INPUT') {
+    if (input.type === 'password') {
+      input.type = 'text';
+      if (eye) eye.style.display = 'none';
+      if (eyeOff) eyeOff.style.display = 'block';
+    } else {
+      input.type = 'password';
+      if (eye) eye.style.display = 'block';
+      if (eyeOff) eyeOff.style.display = 'none';
+    }
+  }
+};

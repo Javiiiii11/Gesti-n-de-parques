@@ -12,6 +12,26 @@ const MAIL_ASSISTANT_STATE = {
 };
 
 
+/* ────────────────────────────────────────────────
+   Utilidades de caducidad de apuntes
+──────────────────────────────────────────────── */
+
+/** Devuelve los días restantes hasta la fecha (positivo = quedan días, negativo = caducado) */
+function diasHastaExpiracion(expiresStr) {
+  if (!expiresStr) return Infinity;
+  const ahora = new Date();
+  const tope = new Date(expiresStr + 'T23:59:59');
+  return Math.floor((tope - ahora) / (1000 * 60 * 60 * 24));
+}
+
+/** Devuelve la clase CSS del chip según los días restantes */
+function chipClass(dias) {
+  if (dias < 0)  return 'chip-expired';
+  if (dias <= 3) return 'chip-danger';
+  if (dias <= 10) return 'chip-warning';
+  return '';
+}
+
 function initChatIA() {
   if (typeof HALLOWEEN_KNOWLEDGE !== 'undefined') {
     Object.assign(MAIL_KNOWLEDGE.parques, HALLOWEEN_KNOWLEDGE.parques);
@@ -25,6 +45,7 @@ function initChatIA() {
   wireFrasesBuscador();
   renderFrases('');
   populateParkSelect();
+  renderKnowledgeChips();
   renderEmptyEmailDraft();
 }
 
@@ -71,7 +92,11 @@ function detectParks(rawText) {
 }
 
 function getParkFacts(parkKey) {
-  return parkKey && MAIL_KNOWLEDGE.parques[parkKey] ? MAIL_KNOWLEDGE.parques[parkKey].facts : [];
+  if (!parkKey || !MAIL_KNOWLEDGE.parques[parkKey]) return [];
+  const park = MAIL_KNOWLEDGE.parques[parkKey];
+  // Si el apunte está caducado, no lo usa para redactar
+  if (park.expires && diasHastaExpiracion(park.expires) < 0) return [];
+  return park.facts;
 }
 
 function collectRelevantNotes(questionText, parkKey) {
@@ -397,12 +422,42 @@ function populateParkSelect() {
 function renderKnowledgeChips() {
   const wrap = document.getElementById('chat-ia-knowledge-list');
   if (!wrap) return;
-  const keys = Object.keys(MAIL_KNOWLEDGE.parques).sort((a, b) => formatParkName(a).localeCompare(formatParkName(b), 'es'));
-  wrap.innerHTML = keys.map((key) => `
-    <button type="button" class="chat-ia-chip" data-park-chip="${escapeHtml(key)}">${escapeHtml(formatParkName(key))}</button>
-  `).join('');
 
-  wrap.querySelectorAll('[data-park-chip]').forEach((btn) => {
+  const all = Object.keys(MAIL_KNOWLEDGE.parques).sort((a, b) => formatParkName(a).localeCompare(formatParkName(b), 'es'));
+  const activos   = [];
+  const caducados = [];
+
+  all.forEach((key) => {
+    const park = MAIL_KNOWLEDGE.parques[key];
+    const dias = diasHastaExpiracion(park.expires);
+    if (dias < 0) caducados.push({ key, dias });
+    else          activos.push({ key, dias });
+  });
+
+  function chipHtml({ key, dias }) {
+    const park = MAIL_KNOWLEDGE.parques[key];
+    const cls  = chipClass(dias);
+    const expired = dias < 0;
+    let badge = '';
+    if (park.expires && !expired && dias <= 10) {
+      badge = `<span class="chip-days">${dias}d</span>`;
+    }
+    if (park.expires && expired) {
+      badge = `<span class="chip-days">Caducado</span>`;
+    }
+    return `<button type="button" class="chat-ia-chip ${cls}" data-park-chip="${escapeHtml(key)}" ${expired ? 'disabled' : ''}>${escapeHtml(formatParkName(key))}${badge}</button>`;
+  }
+
+  let html = activos.map(chipHtml).join('');
+
+  if (caducados.length) {
+    html += `<span class="chip-obsoletos-title">⚠️ Obsoletos — para eliminar</span>`;
+    html += caducados.map(chipHtml).join('');
+  }
+
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('[data-park-chip]:not([disabled])').forEach((btn) => {
     btn.addEventListener('click', () => {
       const value = btn.getAttribute('data-park-chip') || '';
       const parkInput = document.getElementById('chat-ia-park');

@@ -7,6 +7,8 @@ let CONTACTOS_STATE = {
   tipo: '',
   via: '',
   estado: '',
+  sortBy: 'fecha',
+  sortDir: 'desc',
   selectedContactos: new Set()
 };
 
@@ -38,9 +40,27 @@ function wireContactosView() {
     CONTACTOS_STATE.tipo = '';
     CONTACTOS_STATE.via = '';
     CONTACTOS_STATE.estado = '';
+    CONTACTOS_STATE.sortBy = 'fecha';
+    CONTACTOS_STATE.sortDir = 'desc';
     document.getElementById('contactos-search').value = '';
+    document.getElementById('contactos-filtro-tipo').value = '';
+    document.getElementById('contactos-filtro-via').value = '';
     document.getElementById('contactos-filtro-estado').value = '';
     renderContactos();
+  });
+
+  document.querySelectorAll('#contactos-table thead th[data-sort]').forEach((th) => {
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', () => {
+      const key = th.dataset.sort;
+      if (CONTACTOS_STATE.sortBy === key) {
+        CONTACTOS_STATE.sortDir = CONTACTOS_STATE.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        CONTACTOS_STATE.sortBy = key;
+        CONTACTOS_STATE.sortDir = 'asc';
+      }
+      renderContactos();
+    });
   });
 
   document.getElementById('contactos-select-all').addEventListener('change', (e) => {
@@ -83,14 +103,14 @@ function updateContactosBatchUI() {
   const count = document.getElementById('contactos-batch-count');
   const allCb = document.getElementById('contactos-select-all');
   const size = CONTACTOS_STATE.selectedContactos.size;
-  
+
   if (size > 0) {
     btn.style.display = 'inline-flex';
     count.textContent = size;
   } else {
     btn.style.display = 'none';
   }
-  
+
   const cbs = Array.from(document.querySelectorAll('.contactos-row-cb'));
   if (cbs.length > 0 && cbs.every(cb => cb.checked)) {
     allCb.checked = true;
@@ -189,32 +209,61 @@ function wireContactoQuickParse(updateFormVisibility) {
     setVal('cf-telefono', data.telefono);
   }
 
-  btnParse.addEventListener('click', () => {
-    const line = textarea.value.trim();
-    if (!line) { toast('Pega el texto de la tabla primero', 'error'); return; }
-
-    parsedData = parseLineContacto(line);
-    if (!parsedData) {
-      toast('No se pudo interpretar el formato. Revisa que tenga: localizador, nombre, precio, correo y teléfono', 'error');
-      return;
-    }
-
-    // Mostrar preview de lo parseado
+  function showPreview(data) {
     if (preview) {
       preview.innerHTML = `
         <div class="qp-card">
           <div class="qp-head">📋 Vista previa de datos detectados</div>
-          <div class="qp-row"><span>Localizador</span><strong>${escapeHtml(parsedData.localizador)}</strong></div>
-          <div class="qp-row"><span>Cliente</span><strong>${escapeHtml(parsedData.nombreCliente)}</strong></div>
-          <div class="qp-row"><span>Importe</span><strong>${typeof fmtEUR === 'function' ? fmtEUR(parsedData.precio) : parsedData.precio.toFixed(2) + ' €'}</strong></div>
-          <div class="qp-row"><span>Correo</span><strong>${escapeHtml(parsedData.correo)}</strong></div>
-          <div class="qp-row"><span>Teléfono</span><strong>${escapeHtml(parsedData.telefono)}</strong></div>
+          <div class="qp-row"><span>Localizador</span><strong>${escapeHtml(data.localizador) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
+          <div class="qp-row"><span>Cliente</span><strong>${escapeHtml(data.nombreCliente) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
+          <div class="qp-row"><span>Importe</span><strong>${typeof fmtEUR === 'function' ? fmtEUR(data.precio) : data.precio.toFixed(2) + ' €'}</strong></div>
+          <div class="qp-row"><span>Correo</span><strong>${escapeHtml(data.correo) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
+          <div class="qp-row"><span>Teléfono</span><strong>${escapeHtml(data.telefono) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
         </div>
       `;
       preview.style.display = 'block';
     }
     if (btnConfirm) btnConfirm.style.display = 'inline-flex';
     if (btnCancel) btnCancel.style.display = 'inline-flex';
+    if (btnParse) btnParse.style.display = 'none';
+  }
+
+  function hidePreview() {
+    parsedData = null;
+    if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+    if (btnConfirm) btnConfirm.style.display = 'none';
+    if (btnCancel) btnCancel.style.display = 'none';
+    if (btnParse) btnParse.style.display = 'inline-flex';
+  }
+
+  const doAutoParse = () => {
+    const text = textarea.value.trim();
+    if (!text) { hidePreview(); return; }
+    const result = parseLineContacto(text);
+    if (result) {
+      parsedData = result;
+      showPreview(parsedData);
+    } else {
+      hidePreview();
+    }
+  };
+
+  // Auto-interpret on paste (like ventas)
+  textarea.addEventListener('paste', () => {
+    setTimeout(doAutoParse, 50);
+  });
+  textarea.addEventListener('input', doAutoParse);
+
+  // Manual parse button as fallback
+  btnParse.addEventListener('click', () => {
+    const line = textarea.value.trim();
+    if (!line) { toast('Pega el texto de la tabla primero', 'error'); return; }
+    parsedData = parseLineContacto(line);
+    if (!parsedData) {
+      toast('No se pudo interpretar el formato. Revisa que tenga: localizador, nombre, precio, correo y teléfono', 'error');
+      return;
+    }
+    showPreview(parsedData);
   });
 
   btnConfirm.addEventListener('click', () => {
@@ -261,6 +310,53 @@ function renderContactos() {
     return true;
   });
 
+  // Ordenación por columna
+  const dir = CONTACTOS_STATE.sortDir === 'asc' ? 1 : -1;
+  const key = CONTACTOS_STATE.sortBy;
+  filtrados.sort((a, b) => {
+    let va, vb;
+    if (key === 'fecha') {
+      va = new Date(a.created_at || 0).getTime();
+      vb = new Date(b.created_at || 0).getTime();
+    } else if (key === 'cliente') {
+      va = (a.nombre_apellidos || '').toLowerCase();
+      vb = (b.nombre_apellidos || '').toLowerCase();
+    } else if (key === 'tipo') {
+      va = a.tipo || 'entrada';
+      vb = b.tipo || 'entrada';
+    } else if (key === 'via') {
+      va = a.via || 'llamada';
+      vb = b.via || 'llamada';
+    } else if (key === 'detalles') {
+      va = (a.tipo === 'entrada' ? parqueNombre(a.parque_id) : bonoNombre(a.bono_id)).toLowerCase();
+      vb = (b.tipo === 'entrada' ? parqueNombre(b.parque_id) : bonoNombre(b.bono_id)).toLowerCase();
+    } else if (key === 'localizador') {
+      va = (a.localizador || '').toLowerCase();
+      vb = (b.localizador || '').toLowerCase();
+    } else if (key === 'importe') {
+      va = Number(a.importe_total) || 0;
+      vb = Number(b.importe_total) || 0;
+    } else if (key === 'estado') {
+      va = (a.estado_pago || '').toLowerCase();
+      vb = (b.estado_pago || '').toLowerCase();
+    } else {
+      va = a[key] ?? '';
+      vb = b[key] ?? '';
+    }
+    if (typeof va === 'string') return va.localeCompare(vb) * dir;
+    return (va - vb) * dir;
+  });
+
+  // Actualizar flechas de cabecera
+  document.querySelectorAll('#contactos-table thead th[data-sort]').forEach((th) => {
+    const arrow = th.querySelector('.sort-arrow');
+    if (arrow) {
+      arrow.textContent = th.dataset.sort === CONTACTOS_STATE.sortBy
+        ? (CONTACTOS_STATE.sortDir === 'asc' ? ' ▲' : ' ▼')
+        : '';
+    }
+  });
+
   if (!filtrados.length) {
     tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -305,10 +401,44 @@ function renderContactos() {
     const subtextHtml = infoSubtext || '&nbsp;';
     const checked = CONTACTOS_STATE.selectedContactos.has(c.id) ? 'checked' : '';
 
+    const ahora = Date.now();
+    const creadoMs = c.created_at ? new Date(c.created_at).getTime() : ahora;
+    const diasEdad = Math.floor((ahora - creadoMs) / 86400000);
+    let edadLabel = '';
+    if (diasEdad === 0) edadLabel = 'Hoy';
+    else if (diasEdad === 1) edadLabel = 'Ayer';
+    else if (diasEdad < 7) edadLabel = `Hace ${diasEdad} días`;
+    else if (diasEdad < 14) edadLabel = 'La semana pasada';
+    else edadLabel = `Hace ${Math.floor(diasEdad / 7)} sem.`;
+
+    // Color de fila según fecha_maxima
+    let rowStyle = '';
+    let fechaMaxBadge = '';
+    if (c.fecha_maxima) {
+      const maxMs = new Date(c.fecha_maxima + 'T23:59:59').getTime();
+      const diasMax = Math.floor((maxMs - ahora) / 86400000);
+      if (diasMax < 0) {
+        rowStyle = 'opacity:0.5; text-decoration:line-through;';
+        fechaMaxBadge = `<span style="display:inline-block;margin-top:3px;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:rgba(239,68,68,0.15);color:#ef4444;">Fecha límite pasada</span>`;
+      } else if (diasMax <= 2) {
+        rowStyle = 'background:rgba(239,68,68,0.06);';
+        fechaMaxBadge = `<span style="display:inline-block;margin-top:3px;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:rgba(239,68,68,0.15);color:#ef4444;">🔴 ${diasMax === 0 ? 'Hoy' : diasMax + 'd'}</span>`;
+      } else if (diasMax <= 7) {
+        rowStyle = 'background:rgba(234,179,8,0.05);';
+        fechaMaxBadge = `<span style="display:inline-block;margin-top:3px;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:rgba(234,179,8,0.15);color:#d97706;">🟡 ${diasMax}d</span>`;
+      } else {
+        fechaMaxBadge = `<span style="display:inline-block;margin-top:3px;font-size:10px;padding:1px 6px;border-radius:999px;background:var(--bg-elevated);color:var(--text-muted);">📅 ${diasMax}d</span>`;
+      }
+    }
+
     return `
-      <tr>
+      <tr style="${rowStyle}">
         <td style="text-align:center;"><input type="checkbox" class="contactos-row-cb" data-id="${c.id}" ${checked}></td>
-        <td style="white-space:nowrap; color:var(--text-secondary)">${fmtDateShort(c.created_at)}</td>
+        <td style="white-space:nowrap; color:var(--text-secondary); font-size:12px;">
+          ${fmtDateShort(c.created_at)}
+          <div style="font-size:11px; color:var(--text-muted); margin-top:1px;">${edadLabel}</div>
+          ${fechaMaxBadge}
+        </td>
         <td>
           <div style="font-weight:600; color:var(--text-primary);">${escapeHtml(c.nombre_apellidos)}</div>
           <small style="color:var(--text-muted); display:block; min-height:16px; font-size:12px;">${subtextHtml}</small>
@@ -352,7 +482,7 @@ function renderContactos() {
       updateContactosBatchUI();
     });
   });
-  
+
   updateContactosBatchUI();
 }
 
@@ -497,6 +627,10 @@ function openContactoForm(id = null) {
         <div class="form-field" style="flex: 1 1 140px; min-width: 0;">
           <label for="cf-localizador">🚩 Localizador</label>
           <input type="text" id="cf-localizador" value="${escapeHtml(c?.localizador || '')}" placeholder="Sin localizador">
+        </div>
+        <div class="form-field" style="flex: 1 1 160px; min-width: 0;">
+          <label for="cf-fecha-maxima">📅 Fecha máx. de visita</label>
+          <input type="date" id="cf-fecha-maxima" value="${c?.fecha_maxima || ''}">
         </div>
         <div class="form-field" style="flex: 1 1 140px; min-width: 0;">
           <label for="cf-via">Vía de venta</label>
@@ -814,7 +948,8 @@ function openContactoForm(id = null) {
       importe_total,
       estado_pago,
       anotaciones: document.getElementById('cf-anotaciones').value.trim(),
-      localizador: localizadorVal || null
+      localizador: localizadorVal || null,
+      fecha_maxima: document.getElementById('cf-fecha-maxima')?.value || null
     };
 
     if (tipo === 'entrada') {

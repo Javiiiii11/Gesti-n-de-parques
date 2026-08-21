@@ -141,10 +141,11 @@ const CONTACTO_COLUMNS = [
   'tipo', 'estado_pago', 'nombre_apellidos', 'correo', 'importe_total', 'anotaciones',
   'telefono', 'parque_id', 'cantidad_entradas', 'extras', 'num_bono', 'dni',
   'fecha_nacimiento', 'bono_id', 'cantidad_bonos', 'via', 'localizador', 'localizador_bono',
+  'fecha_maxima',
 ];
 
 /** Columnas que pueden no existir en schemas antiguos de Supabase */
-const CONTACTO_OPTIONAL_COLUMNS = new Set(['via', 'localizador', 'localizador_bono']);
+const CONTACTO_OPTIONAL_COLUMNS = new Set(['via', 'localizador', 'localizador_bono', 'fecha_maxima']);
 /** Cache "tabla.columna" detectadas como inexistentes */
 const knownMissingColumns = new Set();
 

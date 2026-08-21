@@ -4,8 +4,17 @@
    del navegador y se pueden descargar como .json cuando quieras.
 ============================================================================ */
 
-const BACKUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hora
-const BACKUP_MAX_FILES = 15;
+const BACKUP_INTERVAL_MS = 30 * 60 * 1000; // 30 minutos
+
+// Horas fijas de copia al final del día (hora local, formato [H, M])
+const BACKUP_SCHEDULED_TIMES = [
+  [16, 55], // 4:55 PM
+  [17, 55], // 5:55 PM
+  [19, 55], // 7:55 PM
+];
+
+let scheduledBackupTimers = [];
+const BACKUP_MAX_FILES = 30;
 const BACKUP_DB_NAME = 'parksales_backups_db';
 const BACKUP_DB_STORE = 'backups';
 
@@ -172,6 +181,8 @@ async function initAutoBackup() {
   autoBackupEnabled = true;
   updateBackupUI();
   startBackupInterval();
+  // Programar copias a horas fijas del día (16:55, 17:55, 19:55)
+  startScheduledBackups();
 
   // Mostrar estado con el último backup guardado (si existe)
   try {
@@ -194,7 +205,7 @@ function startBackupInterval() {
 }
 
 /* --- Generar y guardar el backup en IndexedDB --- */
-async function runBackupNow() {
+async function runBackupNow(label) {
   try {
     const backup = {
       generado_en: new Date().toISOString(),
@@ -203,16 +214,51 @@ async function runBackupNow() {
       tipos_bono: STATE.tipos_bono,
       contactos: STATE.contactos,
       ventas: STATE.ventas,
+      // Notas rápidas (guardadas en localStorage)
+      notas_rapidas: localStorage.getItem('parksales_quick_notes') || '',
     };
 
     const entry = await saveBackupToDB(backup);
     await cleanupOldBackupsDB();
 
-    setBackupStatus(`Última copia: ${new Date().toLocaleString('es-ES')}`);
+    const tipoLabel = label ? ` (${label})` : '';
+    setBackupStatus(`Última copia${tipoLabel}: ${new Date().toLocaleString('es-ES')}`);
   } catch (err) {
     console.error('Error al generar la copia automática:', err);
     setBackupStatus('Error al generar la última copia: ' + err.message);
   }
+}
+
+/* --- Programar copias a horas fijas del día --- */
+function scheduleFixedTimeBackup([hour, minute]) {
+  function schedule() {
+    const now = new Date();
+    const target = new Date();
+    target.setHours(hour, minute, 0, 0);
+
+    // Si ya pasó la hora hoy, programar para mañana
+    if (target <= now) target.setDate(target.getDate() + 1);
+
+    const msUntil = target - now;
+    const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+
+    const timerId = setTimeout(async () => {
+      await runBackupNow(`copia de las ${timeStr}`);
+      // Programar de nuevo para el día siguiente
+      schedule();
+    }, msUntil);
+
+    scheduledBackupTimers.push(timerId);
+  }
+  schedule();
+}
+
+function startScheduledBackups() {
+  // Limpiar timers previos si los hubiera
+  scheduledBackupTimers.forEach(id => clearTimeout(id));
+  scheduledBackupTimers = [];
+
+  BACKUP_SCHEDULED_TIMES.forEach(scheduleFixedTimeBackup);
 }
 
 /* --- Mostrar lista de backups guardados (para la UI) --- */

@@ -1,6 +1,7 @@
 const HALLOWEEN_KNOWLEDGE = {
   parques: {
     'halloween y scary nights': {
+      expires: '2026-11-03',
       aliases: [
         'halloween', 'scary', 'scary nights', 'pasaje', 'pasajes', 'enlace royal', 
         'fábrica acme', 'fabrica acme', 'teatro chino', 'calle de batman', 'teatro de la máscara'

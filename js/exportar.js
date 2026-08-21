@@ -364,6 +364,11 @@ function handleImportFile(file) {
                   fecha_nacimiento: rest.fecha_nacimiento || null,
                   bono_id: bono_id ? getNewBonoId(bono_id) : null,
                   cantidad_bonos: rest.cantidad_bonos || null,
+                  // Campos opcionales que antes se perdián al restaurar:
+                  via: rest.via || null,
+                  localizador: rest.localizador || null,
+                  localizador_bono: rest.localizador_bono || null,
+                  fecha_maxima: rest.fecha_maxima || null,
                   created_at: created_at || new Date().toISOString()
                 };
               });
@@ -372,6 +377,17 @@ function handleImportFile(file) {
                 await DB.addContacto(apunte);
               }
               STATE.contactos = await DB.getContactos();
+            }
+
+            // 5. Notas rápidas (si el backup las incluíe)
+            if (typeof data.notas_rapidas === 'string' && data.notas_rapidas.trim()) {
+              const notasActuales = localStorage.getItem('parksales_quick_notes') || '';
+              // Fusionar: añadir al final si ya hay notas, o reemplazar si está vacío
+              if (notasActuales.trim()) {
+                localStorage.setItem('parksales_quick_notes', notasActuales + '\n\n--- Restaurado del backup ---\n' + data.notas_rapidas);
+              } else {
+                localStorage.setItem('parksales_quick_notes', data.notas_rapidas);
+              }
             }
 
             toast('Copia de seguridad importada correctamente', 'success');

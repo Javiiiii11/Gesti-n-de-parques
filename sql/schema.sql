@@ -295,3 +295,11 @@ begin
   -- Crear la nueva restricción que incluye 'Apunte rápido'
   alter table public.contactos add constraint chk_contactos_estado_pago check (estado_pago in ('pendiente', 'pagado', 'Apunte rápido'));
 end $$;
+
+-- ----------------------------------------------------------------------------
+-- Columna: fecha_maxima en contactos
+-- Fecha límite opcional para la visita (ej: último día en que el cliente
+-- puede usar las entradas). Si pasa esta fecha, el apunte se marca visualmente
+-- como obsoleto en la app.
+-- ----------------------------------------------------------------------------
+alter table public.contactos add column if not exists fecha_maxima date;
