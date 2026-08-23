@@ -4585,7 +4585,7 @@ textarea:focus-visible,
 
 .promos-card-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;

@@ -25,7 +25,7 @@
   <meta name="description" content="Registra y analiza tus ventas de entradas a parques de ocio">
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 34 34%22><defs><linearGradient id=%22l%22 x1=%220%22 y1=%220%22 x2=%2234%22 y2=%2234%22><stop offset=%220%%22 stop-color=%22%23FF9A44%22/><stop offset=%22100%%22 stop-color=%22%23FC6076%22/></linearGradient></defs><rect width=%2234%22 height=%2234%22 rx=%2210%22 fill=%22url(%23l)%22/><circle cx=%2217%22 cy=%2217%22 r=%227%22 stroke=%22white%22 stroke-width=%222%22 stroke-dasharray=%223 3%22/><circle cx=%2217%22 cy=%2217%22 r=%223%22 fill=%22white%22/><path d=%22M17 17 L22 27 M17 17 L12 27%22 stroke=%22white%22 stroke-width=%222%22 stroke-linecap=%22round%22/></svg>">
-  <link rel="stylesheet" href="css/style.css?v=10">
+  <link rel="stylesheet" href="css/style.css?v=11">
 
   <!-- Chart.js para gráficos interactivos (con fallback de CDN secundario) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
@@ -1134,25 +1134,44 @@
             </div>
           </div>
 
-          <!-- Sección de Promociones -->
+          <!-- Sección de Archivos -->
           <div class="card card-pad promos-card" style="margin-bottom: 24px;">
             <div class="promos-card-header">
-              <span class="promos-icon">🎉</span>
+              <span class="promos-icon">📁</span>
               <div>
-                <h3 class="section-title" style="margin:0;">Promociones y Ofertas</h3>
-                <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Consulta el Excel con todas las
-                  promociones, de todos los parques actuales.</p>
+                <h3 class="section-title" style="margin:0;">Archivos</h3>
+                <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Accede a promociones, alérgenos e
+                  información útil de los parques.</p>
               </div>
             </div>
-            <div class="promos-card-actions"> <!--enlace promociones-->
+            <div class="promos-card-actions">
               <a href="https://grprsc.sharepoint.com/:x:/r/sites/CALLCENTERPARQUEWARNER/_layouts/15/Doc.aspx?sourcedoc=%7B0B188C87-80A0-4EEC-A485-0FBD4B5C3A1B%7D&file=Promociones%20de%20todos%20los%20parques.xlsx&action=default&mobileredirect=true&isSPOFile=1&ovuser=dbb21a28-035f-4"
-                target="_blank" class="btn btn-primary" id="promos-excel-btn">
+                target="_blank" class="btn btn-primary btn-sm" id="promos-excel-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                   stroke-linejoin="round">
                   <path d="M14 3v4a1 1 0 0 0 1 1h4"></path>
                   <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path>
                 </svg>
-                Abrir Excel de Promociones
+                Promociones
+              </a>
+              <a href="https://www.parquewarner.com/content/dam/war/files/WARNER%20Alergenos.pdf" target="_blank"
+                class="btn btn-secondary btn-sm" id="warner-alergenos-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                Alérgenos Warner
+              </a>
+              <a href="#" target="_blank" class="btn btn-secondary btn-sm" id="aquopolis-info-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                Info Aquopolis
               </a>
             </div>
           </div>
