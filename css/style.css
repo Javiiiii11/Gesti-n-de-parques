@@ -4569,7 +4569,7 @@ textarea:focus-visible,
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
