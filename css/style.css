@@ -4583,6 +4583,14 @@ textarea:focus-visible,
   font-size: 28px;
 }
 
+.promos-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .horarios-parks-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
