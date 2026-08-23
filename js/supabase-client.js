@@ -89,7 +89,8 @@ const LOCAL_KEYS = {
   parques: 'parksales_parques', 
   user: 'parksales_local_user',
   tipos_bono: 'parksales_tipos_bono',
-  contactos: 'parksales_contactos'
+  contactos: 'parksales_contactos',
+  objetivos_mensuales: 'parksales_objetivos_mensuales',
 };
 
 function localSeedIfEmpty() {
@@ -104,6 +105,9 @@ function localSeedIfEmpty() {
   }
   if (!localStorage.getItem(LOCAL_KEYS.ventas)) {
     localStorage.setItem(LOCAL_KEYS.ventas, JSON.stringify([]));
+  }
+  if (!localStorage.getItem(LOCAL_KEYS.objetivos_mensuales)) {
+    localStorage.setItem(LOCAL_KEYS.objetivos_mensuales, JSON.stringify([]));
   }
 }
 
@@ -519,6 +523,74 @@ const DB = {
       }
     }
     return true;
+  },
+
+  // --------------------------------------------------------- OBJETIVOS MENSUALES
+  async getObjetivosMensuales() {
+    localSeedIfEmpty();
+    if (!CATALOG_SUPABASE) {
+      return readLocal(LOCAL_KEYS.objetivos_mensuales)
+        .sort((a, b) => String(b.mes).localeCompare(String(a.mes)));
+    }
+    try {
+      const user = await AUTH.getCurrentUser();
+      if (!user?.id) {
+        return readLocal(LOCAL_KEYS.objetivos_mensuales)
+          .sort((a, b) => String(b.mes).localeCompare(String(a.mes)));
+      }
+      const { data, error } = await supabaseClient
+        .from('objetivos_mensuales')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('mes', { ascending: false });
+      if (error) throw error;
+      writeLocal(LOCAL_KEYS.objetivos_mensuales, data);
+      return data;
+    } catch (err) {
+      console.warn('[ParkSales] Supabase no disponible para objetivos → caché local:', err);
+      return readLocal(LOCAL_KEYS.objetivos_mensuales)
+        .sort((a, b) => String(b.mes).localeCompare(String(a.mes)));
+    }
+  },
+
+  async setObjetivoMensual(mes, importe) {
+    if (!/^\d{4}-\d{2}$/.test(String(mes || ''))) {
+      throw new Error('Mes inválido. Usa el formato YYYY-MM.');
+    }
+    const amount = Math.max(0, Number(importe) || 0);
+
+    if (!CATALOG_SUPABASE) {
+      const list = readLocal(LOCAL_KEYS.objetivos_mensuales);
+      const idx = list.findIndex((row) => row.mes === mes);
+      const row = {
+        id: idx >= 0 ? list[idx].id : uid(),
+        mes,
+        importe: amount,
+        updated_at: new Date().toISOString(),
+        created_at: idx >= 0 ? list[idx].created_at : new Date().toISOString(),
+      };
+      if (idx >= 0) list[idx] = { ...list[idx], ...row };
+      else list.push(row);
+      writeLocal(LOCAL_KEYS.objetivos_mensuales, list);
+      return row;
+    }
+
+    const user = await AUTH.getCurrentUser();
+    if (!user?.id) throw new Error('No hay sesión activa para guardar la meta mensual.');
+
+    const { data, error } = await supabaseClient
+      .from('objetivos_mensuales')
+      .upsert({ user_id: user.id, mes, importe: amount }, { onConflict: 'user_id,mes' })
+      .select()
+      .single();
+    if (error) throw normalizeDbError(error, 'objetivos_mensuales');
+
+    const list = readLocal(LOCAL_KEYS.objetivos_mensuales);
+    const idx = list.findIndex((row) => row.mes === mes);
+    if (idx >= 0) list[idx] = data;
+    else list.push(data);
+    writeLocal(LOCAL_KEYS.objetivos_mensuales, list);
+    return data;
   },
 };
 

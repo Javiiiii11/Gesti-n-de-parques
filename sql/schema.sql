@@ -2,9 +2,10 @@
 -- ParkSales · Esquema de base de datos para Supabase (PostgreSQL)
 -- ============================================================================
 -- IMPORTANTE: En la BD SOLO se guardan:
---   · parques      (definiciones predefinidas de parques)
---   · tipos_bono   (bonos predefinidos)
---   · usuarios     (auth de Supabase)
+--   · parques              (definiciones predefinidas de parques)
+--   · tipos_bono           (bonos predefinidos)
+--   · objetivos_mensuales  (meta de ventas por mes y usuario)
+--   · usuarios             (auth de Supabase)
 --
 -- Las ventas, apuntes (contactos), llamadas, notas, etc. se guardan
 -- SIEMPRE en el navegador (localStorage / IndexedDB) y NUNCA en la BD.
@@ -52,10 +53,27 @@ create table if not exists public.tipos_bono (
 comment on table public.tipos_bono is 'Tipos de bonos que se venden';
 
 -- ----------------------------------------------------------------------------
+-- Tabla: objetivos_mensuales
+-- ----------------------------------------------------------------------------
+create table if not exists public.objetivos_mensuales (
+    id          uuid primary key default gen_random_uuid(),
+    user_id     uuid not null references auth.users (id) on delete cascade,
+    mes         text not null check (mes ~ '^\d{4}-\d{2}$'),
+    importe     numeric not null default 0 check (importe >= 0),
+    created_at  timestamptz not null default now(),
+    updated_at  timestamptz not null default now(),
+    unique (user_id, mes)
+);
+
+comment on table public.objetivos_mensuales is 'Meta de ventas mensual por usuario (formato mes YYYY-MM)';
+
+-- ----------------------------------------------------------------------------
 -- Índices para que las consultas sigan siendo rápidas
 -- ----------------------------------------------------------------------------
 create index if not exists idx_parques_activo       on public.parques (activo);
 create index if not exists idx_tipos_bono_activo    on public.tipos_bono (activo);
+create index if not exists idx_objetivos_mensuales_user_mes
+    on public.objetivos_mensuales (user_id, mes desc);
 
 -- ----------------------------------------------------------------------------
 -- Trigger: mantener updated_at en parques y tipos_bono
@@ -78,11 +96,17 @@ create trigger trg_tipos_bono_updated_at
     before update on public.tipos_bono
     for each row execute function public.set_updated_at();
 
+drop trigger if exists trg_objetivos_mensuales_updated_at on public.objetivos_mensuales;
+create trigger trg_objetivos_mensuales_updated_at
+    before update on public.objetivos_mensuales
+    for each row execute function public.set_updated_at();
+
 -- ----------------------------------------------------------------------------
 -- Row Level Security
 -- ----------------------------------------------------------------------------
 alter table public.parques enable row level security;
 alter table public.tipos_bono enable row level security;
+alter table public.objetivos_mensuales enable row level security;
 
 -- Lectura y escritura para cualquier usuario autenticado.
 drop policy if exists "parques_select" on public.parques;
@@ -116,6 +140,22 @@ create policy "tipos_bono_update" on public.tipos_bono
 drop policy if exists "tipos_bono_delete" on public.tipos_bono;
 create policy "tipos_bono_delete" on public.tipos_bono
     for delete using (auth.role() = 'authenticated');
+
+drop policy if exists "objetivos_mensuales_select" on public.objetivos_mensuales;
+create policy "objetivos_mensuales_select" on public.objetivos_mensuales
+    for select using (auth.uid() = user_id);
+
+drop policy if exists "objetivos_mensuales_insert" on public.objetivos_mensuales;
+create policy "objetivos_mensuales_insert" on public.objetivos_mensuales
+    for insert with check (auth.uid() = user_id);
+
+drop policy if exists "objetivos_mensuales_update" on public.objetivos_mensuales;
+create policy "objetivos_mensuales_update" on public.objetivos_mensuales
+    for update using (auth.uid() = user_id);
+
+drop policy if exists "objetivos_mensuales_delete" on public.objetivos_mensuales;
+create policy "objetivos_mensuales_delete" on public.objetivos_mensuales
+    for delete using (auth.uid() = user_id);
 
 -- ----------------------------------------------------------------------------
 -- LIMPIEZA: eliminar tablas que ya NO se usan en la BD

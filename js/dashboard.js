@@ -7,7 +7,7 @@ let chartParques = null;
 let chartObjetivo = null;
 let dashboardControlsWired = false;
 
-const MONTHLY_GOAL_KEY = 'parksales_objetivo_mensual';
+const MONTHLY_GOAL_LEGACY_KEY = 'parksales_objetivo_mensual';
 const DASHBOARD_FILTERS_KEY = 'parksales_dashboard_filters';
 
 const MONTH_NAMES = [
@@ -27,12 +27,53 @@ function toMonthInputValue(date = new Date()) {
   return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}`;
 }
 
-function getMonthlyGoal() {
-  return Math.max(0, Number(localStorage.getItem(MONTHLY_GOAL_KEY)) || 0);
+function formatMonthLabel(monthKey) {
+  const [year, month] = String(monthKey || '').split('-').map(Number);
+  if (!year || !month) return '—';
+  return `${MONTH_NAMES[month - 1]} ${year}`;
 }
 
-function setMonthlyGoal(value) {
-  localStorage.setItem(MONTHLY_GOAL_KEY, String(Math.max(0, Number(value) || 0)));
+function getMonthSales(monthKey) {
+  const [year, month] = String(monthKey || '').split('-').map(Number);
+  if (!year || !month) return 0;
+  const ref = new Date(year, month - 1, 1);
+  return STATE.ventas
+    .filter((venta) => isMismoMes(venta.fecha, ref))
+    .reduce((acc, venta) => acc + Number(venta.importe_total || 0), 0);
+}
+
+function getMonthlyGoalForMonth(monthKey) {
+  const entry = (STATE.objetivosMensuales || []).find((row) => row.mes === monthKey);
+  return Math.max(0, Number(entry?.importe) || 0);
+}
+
+async function saveMonthlyGoalForMonth(monthKey, value) {
+  const saved = await DB.setObjetivoMensual(monthKey, value);
+  const list = STATE.objetivosMensuales || [];
+  const idx = list.findIndex((row) => row.mes === monthKey);
+  if (idx >= 0) list[idx] = saved;
+  else list.push(saved);
+  STATE.objetivosMensuales = list.sort((a, b) => String(b.mes).localeCompare(String(a.mes)));
+  return saved;
+}
+
+async function migrateLegacyMonthlyGoal() {
+  const legacy = localStorage.getItem(MONTHLY_GOAL_LEGACY_KEY);
+  if (!legacy) return;
+  const amount = Number(legacy);
+  localStorage.removeItem(MONTHLY_GOAL_LEGACY_KEY);
+  if (!amount) return;
+
+  const mes = toMonthInputValue(new Date());
+  if (getMonthlyGoalForMonth(mes) > 0) return;
+
+  await saveMonthlyGoalForMonth(mes, amount);
+}
+
+function getGoalMonthKeyFromFilters(filters, referenceDate) {
+  if (filters.period === 'month' && isValidMonthValue(filters.value)) return filters.value;
+  if (filters.period === 'day' && isValidDateValue(filters.value)) return filters.value.slice(0, 7);
+  return toMonthInputValue(referenceDate);
 }
 
 function getDefaultDashboardFilters() {
@@ -216,7 +257,9 @@ function renderDashboard() {
   const now = new Date();
   const referenceDate = getDashboardReferenceDate(filters);
   const filtradas = getFilteredVentas(filters);
-  const goal = getMonthlyGoal();
+  const goalMonthKey = getGoalMonthKeyFromFilters(filters, referenceDate);
+  const goal = getMonthlyGoalForMonth(goalMonthKey);
+  const goalMonthLabel = formatMonthLabel(goalMonthKey);
 
   const sum = (arr, key) => arr.reduce((acc, venta) => acc + Number(venta[key] || 0), 0);
   
@@ -303,7 +346,7 @@ function renderDashboard() {
     { label: 'Total en filtro', value: fmtEUR(filteredTotal), sub: `${fmtNum(filteredCount)} entradas`, icon: 'M12 8v8M8 12h8' },
     { label: 'Parque más vendido', value: topParkName, sub: topParkEntry ? `${fmtNum(topParkEntries)} entradas · ${fmtEUR(topParkRevenue)}` : 'Sin ventas en el filtro', icon: 'M3 21l7-14 4 8 3-5 4 11H3z' },
     { label: 'Media diaria del mes', value: fmtEUR(averageDailyMonthSales), sub: workdaysElapsed ? `${fmtNum(workdaysElapsed)} días laborables calculados` : 'Sin días laborables en el periodo', icon: 'M3 13h4l3 7 4-14 3 7h4' },
-    { label: 'Cuota / día restante', value: goal > 0 ? fmtEUR(dailyGoalRemaining) : '—', sub: goal > 0 ? (isCurrentReferenceMonth ? `Te quedan ${fmtNum(workdaysRemaining)} días laborables de ${fmtNum(actualMonthWorkdays)} este mes` : `Mes cerrado · ${fmtNum(actualMonthWorkdays)} días laborables`) : 'Configura un objetivo mensual', icon: 'M4 19h16M6 16V9M12 16V5M18 16v-4' },
+    { label: 'Cuota / día restante', value: goal > 0 ? fmtEUR(dailyGoalRemaining) : '—', sub: goal > 0 ? (isCurrentReferenceMonth ? `Te quedan ${fmtNum(workdaysRemaining)} días laborables de ${fmtNum(actualMonthWorkdays)} este mes` : `Mes cerrado · ${fmtNum(actualMonthWorkdays)} días laborables`) : `Sin meta para ${goalMonthLabel}`, icon: 'M4 19h16M6 16V9M12 16V5M18 16v-4' },
     { label: 'Ventas totales del día', value: fmtEUR(totalHoy), sub: countHoy ? `${fmtNum(countHoy)} entradas en la fecha seleccionada` : 'Sin ventas en la fecha seleccionada', icon: 'M3 3v18h18' },
     { label: 'Ventas de la semana', value: fmtEUR(totalSemana), sub: countSemana ? `${fmtNum(countSemana)} entradas` : 'Sin ventas esta semana', icon: 'M16 2v4M8 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M12 14v4M10 16h4' },
   ];
@@ -318,6 +361,8 @@ function renderDashboard() {
 
   renderGoalChart(currentMonthSales, goal);
   renderGoalWidget({
+    goalMonthKey,
+    goalMonthLabel,
     currentMonthSales,
     goal,
     goalRemaining,
@@ -330,6 +375,7 @@ function renderDashboard() {
     totalSemana,
     countSemana,
   });
+  renderGoalPanelTitle(goalMonthKey, goalMonthLabel, goal);
   renderRankingParques(filtradas);
 }
 
@@ -467,7 +513,21 @@ function renderGoalChart(currentMonthSales, goal) {
   });
 }
 
+function renderGoalPanelTitle(goalMonthKey, goalMonthLabel, goal) {
+  const titleEl = document.getElementById('dashboard-goal-title');
+  const subEl = document.getElementById('dashboard-goal-sub');
+  if (!titleEl) return;
+  titleEl.textContent = `Meta mensual · ${goalMonthLabel}`;
+  if (subEl) {
+    subEl.textContent = goal > 0
+      ? `Objetivo de ${goalMonthLabel}: cuánto llevas, cuánto falta y ritmo diario estimado.`
+      : `No hay meta guardada para ${goalMonthLabel}. Configúrala desde tu perfil.`;
+  }
+}
+
 function renderGoalWidget({
+  goalMonthKey,
+  goalMonthLabel,
   currentMonthSales,
   goal,
   goalRemaining,
@@ -477,8 +537,6 @@ function renderGoalWidget({
   missingPerWorkingDay,
   workdaysTotal,
   workdaysLeft,
-  totalSemana,
-  countSemana,
 }) {
   const percentage = goal ? Math.min(100, goalProgress) : 0;
 
@@ -486,12 +544,12 @@ function renderGoalWidget({
     document.getElementById('goal-widget').innerHTML = `
       <div class="goal-summary">
         <div class="goal-summary-row">
-          <span>Ventas del mes</span>
+          <span>Ventas de ${escapeHtml(goalMonthLabel)}</span>
           <b>${fmtEUR(currentMonthSales)}</b>
         </div>
         <div style="color:var(--text-muted); font-size:12.5px; margin-top:10px; text-align:center; padding:8px 0;">
-          Sin objetivo configurado.<br>
-          <span style="color:var(--accent); cursor:pointer; font-weight:600;" onclick="openProfileSettings()">Configura tu meta mensual →</span>
+          Sin objetivo para ${escapeHtml(goalMonthLabel)}.<br>
+          <span style="color:var(--accent); cursor:pointer; font-weight:600;" onclick="openProfileSettings('${goalMonthKey}')">Configura la meta de este mes →</span>
         </div>
       </div>
     `;
@@ -510,7 +568,7 @@ const quotaStateLabel =
   document.getElementById('goal-widget').innerHTML = `
     <div class="goal-summary">
       <div class="goal-summary-row">
-        <span>Objetivo configurado</span>
+        <span>Objetivo · ${escapeHtml(goalMonthLabel)}</span>
         <b>${fmtEUR(goal)}</b>
       </div>
       <div class="goal-summary-row">
@@ -736,21 +794,109 @@ function renderRankingParques(ventas) {
   `).join('');
 }
 
-function openProfileSettings() {
-  const goal = getMonthlyGoal();
+function renderProfileGoalPreview(monthKey) {
+  const goal = getMonthlyGoalForMonth(monthKey);
+  const monthSales = getMonthSales(monthKey);
+  const progressPct = goal > 0 ? Math.min(100, Math.round((monthSales / goal) * 100)) : 0;
+  const monthLabel = formatMonthLabel(monthKey);
+
+  const preview = document.getElementById('profile-goal-preview');
+  const goalInput = document.getElementById('profile-goal');
+  const barWrap = document.getElementById('profile-goal-bar-wrap');
+  const progressTip = document.getElementById('profile-goal-tip-progress');
+  const monthTip = document.getElementById('profile-goal-tip-month');
+  const heroMonth = document.getElementById('profile-hero-month');
+  const heroProgress = document.getElementById('profile-hero-progress-label');
+  const heroBar = document.querySelector('.profile-progress-fill');
+
+  if (goalInput) {
+    goalInput.value = goal || '';
+  }
+
+  if (preview) {
+    preview.innerHTML = `
+      <span>${escapeHtml(monthLabel)}</span>
+      <strong>${fmtEUR(monthSales)}</strong>
+      <small>${goal ? `${progressPct}% de tu meta` : 'Sin meta guardada para este mes'}</small>
+    `;
+  }
+
+  if (barWrap) {
+    barWrap.innerHTML = goal ? `
+      <div class="profile-goal-bar">
+        <div class="profile-goal-bar-fill" style="width:${progressPct}%"></div>
+      </div>
+      <div class="profile-goal-bar-labels">
+        <span>${fmtEUR(monthSales)}</span>
+        <span>${fmtEUR(goal)}</span>
+      </div>
+    ` : '';
+  }
+
+  if (progressTip) {
+    progressTip.textContent = goal ? `${progressPct}% de la meta` : 'Sin meta activa';
+  }
+  if (monthTip) {
+    monthTip.textContent = `${fmtEUR(monthSales)} vendidos`;
+  }
+  if (heroMonth) heroMonth.textContent = monthLabel;
+  if (heroProgress) {
+    heroProgress.textContent = goal > 0
+      ? `${fmtEUR(monthSales)} de ${fmtEUR(goal)} · ${progressPct}%`
+      : `${fmtEUR(monthSales)} · sin meta`;
+  }
+  if (heroBar) heroBar.style.width = `${progressPct}%`;
+
+  document.querySelectorAll('.profile-goal-history-row').forEach((row) => {
+    row.classList.toggle('is-active', row.dataset.month === monthKey);
+  });
+}
+
+function renderGoalHistoryHtml(activeMonthKey) {
+  const entries = (STATE.objetivosMensuales || [])
+    .slice()
+    .sort((a, b) => String(b.mes).localeCompare(String(a.mes)));
+
+  if (!entries.length) {
+    return '<p class="profile-goal-history-empty">Aún no hay metas guardadas. Elige un mes arriba y guarda tu primera meta.</p>';
+  }
+
+  return `
+    <div class="profile-goal-history">
+      <h5>Historial de metas</h5>
+      <div class="profile-goal-history-list">
+        ${entries.map((entry) => {
+          const sales = getMonthSales(entry.mes);
+          const goal = Number(entry.importe) || 0;
+          const pct = goal > 0 ? Math.min(100, Math.round((sales / goal) * 100)) : 0;
+          return `
+            <button type="button" class="profile-goal-history-row ${entry.mes === activeMonthKey ? 'is-active' : ''}" data-month="${escapeHtml(entry.mes)}">
+              <span class="profile-goal-history-month">${escapeHtml(formatMonthLabel(entry.mes))}</span>
+              <span class="profile-goal-history-meta">${fmtEUR(sales)} / ${fmtEUR(goal)} · ${pct}%</span>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function openProfileSettings(initialMonthKey = null) {
   const now = new Date();
-  const currentMonthName = MONTH_NAMES[now.getMonth()];
+  const selectedMonthKey = initialMonthKey && /^\d{4}-\d{2}$/.test(initialMonthKey)
+    ? initialMonthKey
+    : toMonthInputValue(now);
+  const goal = getMonthlyGoalForMonth(selectedMonthKey);
+  const monthSales = getMonthSales(selectedMonthKey);
+  const progressPct = goal > 0 ? Math.min(100, Math.round((monthSales / goal) * 100)) : 0;
+  const selectedMonthLabel = formatMonthLabel(selectedMonthKey);
   const user = STATE.currentUser || {};
   const rawUserEmail = user.email || '';
   const userEmail = escapeHtml(rawUserEmail || 'Sin correo');
   const displayName = escapeHtml(getUserDisplayName(user));
-
-  const mesActual = STATE.ventas.filter((venta) => isMismoMes(venta.fecha, now));
-  const currentMonthSales = mesActual.reduce((acc, venta) => acc + Number(venta.importe_total || 0), 0);
-  const progressPct = goal > 0 ? Math.min(100, Math.round((currentMonthSales / goal) * 100)) : 0;
   const progressLabel = goal > 0
-    ? `${fmtEUR(currentMonthSales)} de ${fmtEUR(goal)} · ${progressPct}%`
-    : `${fmtEUR(currentMonthSales)} este mes · sin meta`;
+    ? `${fmtEUR(monthSales)} de ${fmtEUR(goal)} · ${progressPct}%`
+    : `${fmtEUR(monthSales)} · sin meta`;
 
   const bodyHtml = `
     <div class="profile-panel">
@@ -764,8 +910,8 @@ function openProfileSettings() {
         </div>
         <div class="profile-hero-progress">
           <div class="profile-progress-head">
-            <span>${escapeHtml(currentMonthName)}</span>
-            <strong>${escapeHtml(progressLabel)}</strong>
+            <span id="profile-hero-month">${escapeHtml(selectedMonthLabel)}</span>
+            <strong id="profile-hero-progress-label">${escapeHtml(progressLabel)}</strong>
           </div>
           <div class="profile-progress-track" role="progressbar" aria-valuenow="${progressPct}" aria-valuemin="0" aria-valuemax="100">
             <div class="profile-progress-fill" style="width:${progressPct}%"></div>
@@ -779,53 +925,60 @@ function openProfileSettings() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
             Objetivo mensual
           </span>
-          <p class="profile-section-desc">Define cuánto quieres vender cada mes. El dashboard calculará tu progreso automáticamente.</p>
+          <p class="profile-section-desc">Cada mes puede tener su propia meta. Se guarda en la nube y el dashboard la usa al filtrar por ese mes.</p>
           <div class="profile-fields profile-fields--goal">
+            <label class="profile-field">
+              <span>Mes</span>
+              <input type="month" id="profile-goal-month" value="${selectedMonthKey}">
+            </label>
             <label class="profile-field profile-field--goal-input">
               <span>Meta mensual (€)</span>
               <div class="profile-input-wrap">
                 <span class="profile-input-prefix">€</span>
-                <input type="number" id="profile-goal" min="0" step="100" value="${goal}" placeholder="Ej. 20000">
+                <input type="number" id="profile-goal" min="0" step="100" value="${goal || ''}" placeholder="Ej. 20000">
               </div>
             </label>
-            <div class="profile-goal-preview">
-              <span>Este mes llevas</span>
-              <strong>${fmtEUR(currentMonthSales)}</strong>
-              <small>${goal ? `${progressPct}% de tu meta` : 'Configura una meta para ver tu avance'}</small>
+            <div class="profile-goal-preview" id="profile-goal-preview">
+              <span>${escapeHtml(selectedMonthLabel)}</span>
+              <strong>${fmtEUR(monthSales)}</strong>
+              <small>${goal ? `${progressPct}% de tu meta` : 'Sin meta guardada para este mes'}</small>
             </div>
           </div>
-          ${goal ? `
-            <div class="profile-goal-bar">
-              <div class="profile-goal-bar-fill" style="width:${progressPct}%"></div>
-            </div>
-            <div class="profile-goal-bar-labels">
-              <span>${fmtEUR(currentMonthSales)}</span>
-              <span>${fmtEUR(goal)}</span>
-            </div>
-          ` : ''}
+          <div id="profile-goal-bar-wrap">
+            ${goal ? `
+              <div class="profile-goal-bar">
+                <div class="profile-goal-bar-fill" style="width:${progressPct}%"></div>
+              </div>
+              <div class="profile-goal-bar-labels">
+                <span>${fmtEUR(monthSales)}</span>
+                <span>${fmtEUR(goal)}</span>
+              </div>
+            ` : ''}
+          </div>
           <div class="profile-goal-tips">
             <div class="profile-goal-tip">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
               <div>
                 <strong>Progreso</strong>
-                <span>${progressPct > 0 ? `${progressPct}% de la meta` : 'Sin meta activa'}</span>
+                <span id="profile-goal-tip-progress">${progressPct > 0 ? `${progressPct}% de la meta` : 'Sin meta activa'}</span>
               </div>
             </div>
             <div class="profile-goal-tip">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               <div>
                 <strong>Este mes</strong>
-                <span>${fmtEUR(currentMonthSales)} vendidos</span>
+                <span id="profile-goal-tip-month">${fmtEUR(monthSales)} vendidos</span>
               </div>
             </div>
             <div class="profile-goal-tip">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               <div>
-                <strong>Actualiza</strong>
-                <span>Meta editable siempre</span>
+                <strong>Historial</strong>
+                <span>Consulta y edita metas de meses anteriores</span>
               </div>
             </div>
           </div>
+          <div id="profile-goal-history-wrap">${renderGoalHistoryHtml(selectedMonthKey)}</div>
         </section>
 
         <section class="profile-section profile-section--security">
@@ -893,6 +1046,35 @@ function openProfileSettings() {
   });
 
   document.getElementById('profile-cancel-btn').addEventListener('click', closeModal);
+
+  const monthInput = document.getElementById('profile-goal-month');
+  const goalInput = document.getElementById('profile-goal');
+  const historyWrap = document.getElementById('profile-goal-history-wrap');
+
+  monthInput?.addEventListener('change', () => {
+    renderProfileGoalPreview(monthInput.value);
+  });
+  goalInput?.addEventListener('input', () => {
+    const monthKey = monthInput?.value || selectedMonthKey;
+    const draftGoal = Math.max(0, Number(goalInput.value) || 0);
+    const monthSales = getMonthSales(monthKey);
+    const progressPct = draftGoal > 0 ? Math.min(100, Math.round((monthSales / draftGoal) * 100)) : 0;
+    const preview = document.getElementById('profile-goal-preview');
+    if (preview) {
+      preview.innerHTML = `
+        <span>${escapeHtml(formatMonthLabel(monthKey))}</span>
+        <strong>${fmtEUR(monthSales)}</strong>
+        <small>${draftGoal ? `${progressPct}% de tu meta` : 'Sin meta guardada para este mes'}</small>
+      `;
+    }
+  });
+  historyWrap?.addEventListener('click', (event) => {
+    const row = event.target.closest('.profile-goal-history-row');
+    if (!row?.dataset.month || !monthInput) return;
+    monthInput.value = row.dataset.month;
+    renderProfileGoalPreview(row.dataset.month);
+  });
+
   const changePasswordBtn = document.getElementById('profile-password-btn');
 
   changePasswordBtn.addEventListener('click', async () => {
@@ -930,11 +1112,22 @@ function openProfileSettings() {
     }
   });
 
-  document.getElementById('profile-save-btn').addEventListener('click', () => {
-    setMonthlyGoal(document.getElementById('profile-goal').value);
-    closeModal();
-    renderDashboard();
-    toast('Perfil actualizado. Meta mensual guardada.', 'success');
+  document.getElementById('profile-save-btn').addEventListener('click', async () => {
+    const monthKey = document.getElementById('profile-goal-month').value;
+    const saveBtn = document.getElementById('profile-save-btn');
+    saveBtn.disabled = true;
+    try {
+      await saveMonthlyGoalForMonth(monthKey, document.getElementById('profile-goal').value);
+      const historyWrapEl = document.getElementById('profile-goal-history-wrap');
+      if (historyWrapEl) historyWrapEl.innerHTML = renderGoalHistoryHtml(monthKey);
+      closeModal();
+      renderDashboard();
+      toast(`Meta de ${formatMonthLabel(monthKey)} guardada.`, 'success');
+    } catch (err) {
+      toast(err?.message || 'No se pudo guardar la meta mensual.', 'error');
+    } finally {
+      saveBtn.disabled = false;
+    }
   });
 }
 
@@ -988,6 +1181,7 @@ document.addEventListener('DOMContentLoaded', () => {
   wireProfilePanel();
   wireTopbarUserMenu();
 });
+window.openProfileSettings = openProfileSettings;
 window.togglePasswordVisibility = function(btn) {
   const input = btn.previousElementSibling;
   const eye = btn.querySelector('.pw-eye');

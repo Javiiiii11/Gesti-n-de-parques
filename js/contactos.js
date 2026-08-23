@@ -500,7 +500,7 @@ function saveNuevoApunteDraft() {
     importe_total: document.getElementById('cf-importe')?.value || '',
     localizador: document.getElementById('cf-localizador')?.value || '',
     via: document.getElementById('cf-via')?.value || 'llamada',
-    estado_pago: document.getElementById('cf-estado')?.value || 'Apunte rápido',
+    estado_pago: document.getElementById('cf-estado')?.value || 'pendiente',
     anotaciones: document.getElementById('cf-anotaciones')?.value || '',
     parque_id: document.getElementById('cf-parque')?.value || '',
     bono_id: document.getElementById('cf-bono')?.value || '',
@@ -643,8 +643,8 @@ function openContactoForm(id = null) {
         <div class="form-field" style="flex: 1 1 140px; min-width: 0;">
           <label for="cf-estado">💳 Estado de pago</label>
           <select id="cf-estado">
-            <option value="Apunte rápido" ${(!c || c.estado_pago === 'Apunte rápido') ? 'selected' : ''}>Apunte rápido</option>
-            <option value="pendiente" ${c?.estado_pago === 'pendiente' ? 'selected' : ''}>Pendiente de pago</option>
+            <option value="Apunte rápido" ${c?.estado_pago === 'Apunte rápido' ? 'selected' : ''}>Apunte rápido</option>
+            <option value="pendiente" ${(!c || c.estado_pago === 'pendiente') ? 'selected' : ''}>Pendiente de pago</option>
             <option value="pagado" ${c?.estado_pago === 'pagado' ? 'selected' : ''}>Pagado (Sumará a ventas)</option>
           </select>
         </div>
@@ -917,7 +917,7 @@ function openContactoForm(id = null) {
     document.getElementById('cf-nombre').value = '';
     document.getElementById('cf-importe').value = '';
     document.getElementById('cf-localizador').value = '';
-    document.getElementById('cf-estado').value = 'Apunte rápido';
+    document.getElementById('cf-estado').value = 'pendiente';
     document.getElementById('cf-anotaciones').value = '';
     document.getElementById('cf-correo').value = '';
     if (document.getElementById('cf-field-parque').style.display !== 'none') {

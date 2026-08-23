@@ -200,6 +200,7 @@ const STATE = {
   parques: [],
   tipos_bono: [],
   contactos: [],
+  objetivosMensuales: [],
   currentUser: null,
 };
 

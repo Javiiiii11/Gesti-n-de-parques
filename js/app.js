@@ -124,6 +124,10 @@ async function bootApp(user) {
     STATE.tipos_bono = await DB.getTiposBono();
     STATE.contactos = await DB.getContactos();
     STATE.ventas = await DB.getVentas();
+    STATE.objetivosMensuales = await DB.getObjetivosMensuales();
+    if (typeof migrateLegacyMonthlyGoal === 'function') {
+      await migrateLegacyMonthlyGoal();
+    }
   } catch (err) {
     toast('Error al cargar datos: ' + err.message, 'error', 6000);
   }
