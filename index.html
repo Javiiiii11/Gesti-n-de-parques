@@ -25,7 +25,7 @@
   <meta name="description" content="Registra y analiza tus ventas de entradas a parques de ocio">
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 34 34%22><defs><linearGradient id=%22l%22 x1=%220%22 y1=%220%22 x2=%2234%22 y2=%2234%22><stop offset=%220%%22 stop-color=%22%23FF9A44%22/><stop offset=%22100%%22 stop-color=%22%23FC6076%22/></linearGradient></defs><rect width=%2234%22 height=%2234%22 rx=%2210%22 fill=%22url(%23l)%22/><circle cx=%2217%22 cy=%2217%22 r=%227%22 stroke=%22white%22 stroke-width=%222%22 stroke-dasharray=%223 3%22/><circle cx=%2217%22 cy=%2217%22 r=%223%22 fill=%22white%22/><path d=%22M17 17 L22 27 M17 17 L12 27%22 stroke=%22white%22 stroke-width=%222%22 stroke-linecap=%22round%22/></svg>">
-  <link rel="stylesheet" href="css/style.css?v=6">
+  <link rel="stylesheet" href="css/style.css?v=9">
 
   <!-- Chart.js para gráficos interactivos (con fallback de CDN secundario) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
@@ -475,7 +475,8 @@
               </div>
               <div class="ranking-list" id="ranking-parques"></div>
             </div>
-        </section>
+                  </div>
+</section>
 
         <!-- ========================= REGISTRO RÁPIDO ========================= -->
         <section class="view" id="view-venta-rapida">
@@ -703,8 +704,8 @@
           <style>
             .parques-view-grid {
               display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-              gap: 24px;
+              grid-template-columns: 1fr 1fr;
+              gap: 16px;
             }
 
             .parques-panel {
@@ -794,7 +795,7 @@
               margin: 2px 0 0 0;
             }
 
-            @media (max-width: 768px) {
+            @media (max-width: 640px) {
               .parques-view-grid {
                 grid-template-columns: 1fr;
               }
@@ -1991,7 +1992,7 @@
   <div id="toast-stack"></div>
 
 
-  <script src="js/supabase-client.js?v=9"></script>
+  <script src="js/supabase-client.js?v=10"></script>
   <script src="js/utils.js?v=4"></script>
   <script src="js/auth.js?v=5"></script>
   <script src="js/parques.js?v=4"></script>

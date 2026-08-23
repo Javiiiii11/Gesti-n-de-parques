@@ -1,10 +1,18 @@
 -- ============================================================================
 -- ParkSales · Esquema de base de datos para Supabase (PostgreSQL)
 -- ============================================================================
+-- IMPORTANTE: En la BD SOLO se guardan:
+--   · parques      (definiciones predefinidas de parques)
+--   · tipos_bono   (bonos predefinidos)
+--   · usuarios     (auth de Supabase)
+--
+-- Las ventas, apuntes (contactos), llamadas, notas, etc. se guardan
+-- SIEMPRE en el navegador (localStorage / IndexedDB) y NUNCA en la BD.
+--
 -- Instrucciones:
 -- 1. Entra en tu proyecto de Supabase → SQL Editor → New query
 -- 2. Pega este archivo completo y pulsa "Run"
--- 3. Comprueba en Table Editor que se han creado "parques" y "ventas"
+-- 3. Comprueba en Table Editor que se han creado "parques" y "tipos_bono"
 -- ============================================================================
 
 -- Extensión para generar UUIDs
@@ -44,131 +52,13 @@ create table if not exists public.tipos_bono (
 comment on table public.tipos_bono is 'Tipos de bonos que se venden';
 
 -- ----------------------------------------------------------------------------
--- Tabla: ventas
+-- Índices para que las consultas sigan siendo rápidas
 -- ----------------------------------------------------------------------------
-create table if not exists public.ventas (
-  id              uuid primary key default gen_random_uuid(),
-  fecha           timestamptz not null default now(),
-  tipo            text not null check (tipo in ('entrada', 'bono')) default 'entrada',
-  via             text not null check (via in ('llamada', 'correo', 'chat')) default 'llamada',
-  parque_id       uuid references public.parques(id) on delete restrict,
-  bono_id         uuid references public.tipos_bono(id) on delete restrict,
-  cliente_nombre  text not null,
-  importe_total   numeric(10,2) not null check (importe_total >= 0),
-  localizador     text,
-  created_at      timestamptz not null default now(),
-  -- At least one of parque_id or bono_id must be set
-  constraint chk_parque_or_bono check (
-    (tipo = 'entrada' and parque_id is not null) or 
-    (tipo = 'bono' and bono_id is not null)
-  )
-);
-
--- ----------------------------------------------------------------------------
--- Tabla: contactos
--- ----------------------------------------------------------------------------
-create table if not exists public.contactos (
-  id uuid default gen_random_uuid() primary key,
-  tipo text not null check (tipo in ('entrada', 'bono')),
-  estado_pago text not null check (estado_pago in ('pendiente', 'pagado', 'Apunte rápido')),
-  nombre_apellidos text not null,
-  correo text,
-  importe_total numeric default 0,
-  anotaciones text,
-  via text check (via in ('llamada', 'correo', 'chat')) default 'llamada',
-  
-  -- Campos para entradas
-  telefono text,
-  parque_id uuid references public.parques(id) on delete cascade,
-  cantidad_entradas integer,
-  extras text,
-  localizador text,
-  
-  -- Campos para bonos
-  num_bono text,
-  dni text,
-  fecha_nacimiento date,
-  bono_id uuid references public.tipos_bono(id),
-  cantidad_bonos integer,
-  localizador_bono text,
-  
-  created_at timestamptz not null default now()
-);
-
--- Compatibilidad con proyectos que crearon contactos antes de via/localizador
-alter table public.contactos add column if not exists via text;
-alter table public.contactos add column if not exists localizador text;
-alter table public.contactos add column if not exists localizador_bono text;
-
--- Permitir borrar un parque aunque tenga apuntes: se eliminan en cascada
-alter table public.contactos drop constraint if exists contactos_parque_id_fkey;
-alter table public.contactos
-  add constraint contactos_parque_id_fkey
-  foreign key (parque_id) references public.parques(id) on delete cascade;
-
-comment on table public.ventas is 'Registro individual de ventas de entradas y bonos';
-
--- Add missing columns to existing ventas table and make parque_id nullable
-alter table public.ventas add column if not exists tipo text check (tipo in ('entrada', 'bono')) default 'entrada';
-alter table public.ventas add column if not exists bono_id uuid references public.tipos_bono(id) on delete restrict;
-alter table public.ventas add column if not exists via text check (via in ('llamada', 'correo', 'chat')) default 'llamada';
-alter table public.ventas add column if not exists localizador text;
-alter table public.ventas add column if not exists cliente_nombre text;
-
--- Make parque_id nullable (if it's not already)
-do $$
-begin
-  if exists (
-    select 1 from information_schema.columns 
-    where table_name = 'ventas' 
-    and column_name = 'parque_id' 
-    and is_nullable = 'NO'
-  ) then
-    alter table public.ventas alter column parque_id drop not null;
-  end if;
-end $$;
-
--- Add check constraint if not exists
-do $$ 
-begin
-  if not exists (
-    select 1 from information_schema.table_constraints 
-    where table_name = 'ventas' and constraint_name = 'chk_parque_or_bono'
-  ) then
-    alter table public.ventas 
-    add constraint chk_parque_or_bono 
-    check (
-      (tipo = 'entrada' and parque_id is not null) or 
-      (tipo = 'bono' and bono_id is not null)
-    );
-  end if;
-end $$;
-
-update public.ventas set cliente_nombre = coalesce(cliente_nombre, 'Cliente') where cliente_nombre is null;
-
-drop view if exists public.vw_ventas_resumen;
-
-alter table public.ventas drop column if exists tipo_entrada;
-alter table public.ventas drop column if exists cantidad;
-alter table public.ventas drop column if exists precio_unitario;
-alter table public.ventas drop column if exists comision;
-alter table public.ventas drop column if exists observaciones;
-alter table public.ventas drop column if exists user_id;
-
--- ----------------------------------------------------------------------------
--- Índices para que las consultas sigan siendo rápidas con miles de registros
--- ----------------------------------------------------------------------------
-create index if not exists idx_ventas_fecha        on public.ventas (fecha desc);
-create index if not exists idx_ventas_tipo         on public.ventas (tipo);
-create index if not exists idx_ventas_parque_id     on public.ventas (parque_id);
-create index if not exists idx_ventas_bono_id       on public.ventas (bono_id);
-create index if not exists idx_ventas_cliente_nombre on public.ventas (cliente_nombre);
-create index if not exists idx_ventas_importe_total  on public.ventas (importe_total desc);
-create index if not exists idx_ventas_created_at    on public.ventas (created_at desc);
 create index if not exists idx_parques_activo       on public.parques (activo);
+create index if not exists idx_tipos_bono_activo    on public.tipos_bono (activo);
 
 -- ----------------------------------------------------------------------------
--- Trigger: mantener updated_at en parques
+-- Trigger: mantener updated_at en parques y tipos_bono
 -- ----------------------------------------------------------------------------
 create or replace function public.set_updated_at()
 returns trigger as $$
@@ -183,38 +73,18 @@ create trigger trg_parques_updated_at
     before update on public.parques
     for each row execute function public.set_updated_at();
 
--- ----------------------------------------------------------------------------
--- Vista de estadísticas pre-agregadas (acelera el dashboard)
--- ----------------------------------------------------------------------------
-create or replace view public.vw_ventas_resumen as
-select
-    v.id,
-    v.fecha,
-    v.tipo,
-    date_trunc('day', v.fecha)   as dia,
-    date_trunc('week', v.fecha)  as semana,
-    date_trunc('month', v.fecha) as mes,
-    p.nombre as parque,
-    tb.nombre as tipo_bono,
-    v.cliente_nombre,
-    v.importe_total,
-    v.created_at
-from public.ventas v
-left join public.parques p on p.id = v.parque_id
-left join public.tipos_bono tb on tb.id = v.bono_id;
+drop trigger if exists trg_tipos_bono_updated_at on public.tipos_bono;
+create trigger trg_tipos_bono_updated_at
+    before update on public.tipos_bono
+    for each row execute function public.set_updated_at();
 
 -- ----------------------------------------------------------------------------
 -- Row Level Security
 -- ----------------------------------------------------------------------------
 alter table public.parques enable row level security;
-alter table public.ventas  enable row level security;
 alter table public.tipos_bono enable row level security;
-alter table public.contactos enable row level security;
 
 -- Lectura y escritura para cualquier usuario autenticado.
--- Ajusta estas políticas si en el futuro quieres separar datos por usuario
--- (por ejemplo añadiendo "user_id = auth.uid()" a cada política).
-
 drop policy if exists "parques_select" on public.parques;
 create policy "parques_select" on public.parques
     for select using (auth.role() = 'authenticated');
@@ -231,23 +101,6 @@ drop policy if exists "parques_delete" on public.parques;
 create policy "parques_delete" on public.parques
     for delete using (auth.role() = 'authenticated');
 
-drop policy if exists "ventas_select" on public.ventas;
-create policy "ventas_select" on public.ventas
-    for select using (auth.role() = 'authenticated');
-
-drop policy if exists "ventas_insert" on public.ventas;
-create policy "ventas_insert" on public.ventas
-    for insert with check (auth.role() = 'authenticated');
-
-drop policy if exists "ventas_update" on public.ventas;
-create policy "ventas_update" on public.ventas
-    for update using (auth.role() = 'authenticated');
-
-drop policy if exists "ventas_delete" on public.ventas;
-create policy "ventas_delete" on public.ventas
-    for delete using (auth.role() = 'authenticated');
-
--- RLS policies for tipos_bono
 drop policy if exists "tipos_bono_select" on public.tipos_bono;
 create policy "tipos_bono_select" on public.tipos_bono
     for select using (auth.role() = 'authenticated');
@@ -264,42 +117,11 @@ drop policy if exists "tipos_bono_delete" on public.tipos_bono;
 create policy "tipos_bono_delete" on public.tipos_bono
     for delete using (auth.role() = 'authenticated');
 
--- RLS policies for contactos
-drop policy if exists "contactos_select" on public.contactos;
-create policy "contactos_select" on public.contactos
-    for select using (auth.role() = 'authenticated');
-
-drop policy if exists "contactos_insert" on public.contactos;
-create policy "contactos_insert" on public.contactos
-    for insert with check (auth.role() = 'authenticated');
-
-drop policy if exists "contactos_update" on public.contactos;
-create policy "contactos_update" on public.contactos
-    for update using (auth.role() = 'authenticated');
-
-drop policy if exists "contactos_delete" on public.contactos;
-create policy "contactos_delete" on public.contactos
-    for delete using (auth.role() = 'authenticated');
-
 -- ----------------------------------------------------------------------------
--- Actualización del check constraint para estado_pago en contactos
+-- LIMPIEZA: eliminar tablas que ya NO se usan en la BD
+-- (ventas y contactos ahora viven SOLO en el navegador)
 -- ----------------------------------------------------------------------------
-do $$
-begin
-  -- Intentar eliminar la restricción por defecto de Supabase (suele llamarse contactos_estado_pago_check)
-  alter table public.contactos drop constraint if exists contactos_estado_pago_check;
-  
-  -- Intentar eliminar chk_contactos_estado_pago si ya se creó antes
-  alter table public.contactos drop constraint if exists chk_contactos_estado_pago;
-
-  -- Crear la nueva restricción que incluye 'Apunte rápido'
-  alter table public.contactos add constraint chk_contactos_estado_pago check (estado_pago in ('pendiente', 'pagado', 'Apunte rápido'));
-end $$;
-
--- ----------------------------------------------------------------------------
--- Columna: fecha_maxima en contactos
--- Fecha límite opcional para la visita (ej: último día en que el cliente
--- puede usar las entradas). Si pasa esta fecha, el apunte se marca visualmente
--- como obsoleto en la app.
--- ----------------------------------------------------------------------------
-alter table public.contactos add column if not exists fecha_maxima date;
+-- Primero la vista (depende de ventas), luego las tablas.
+drop view if exists public.vw_ventas_resumen;
+drop table if exists public.ventas;
+drop table if exists public.contactos;

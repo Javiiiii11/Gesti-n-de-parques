@@ -72,11 +72,13 @@ if (SUPABASE_CONFIGURED) {
 // ============================================================================
 // MODO DE ALMACENAMIENTO DE DATOS
 // ----------------------------------------------------------------------------
-// Los datos de la app (ventas, contactos, parques, bonos, etc.) se guardan
-// SIEMPRE en localStorage del navegador. Supabase se usa únicamente para la
-// autenticación (usuarios y contraseñas).
+// • VENTAS y CONTACTOS (apuntes) → SIEMPRE en localStorage del navegador.
+// • PARQUES y TIPOS DE BONO     → en Supabase (si está configurado);
+//   si no hay Supabase disponible (offline / sin config) se usa localStorage
+//   como caché y fallback.
+// • Usuarios                      → Supabase Auth.
 // ============================================================================
-const DATA_STORAGE_MODE = 'local'; // 'local' | 'supabase'
+const CATALOG_SUPABASE = SUPABASE_CONFIGURED;
 
 // LOCAL_MODE controla solo la autenticación: si Supabase está configurado,
 // el login usa Supabase; si no, usa un usuario local de prueba.
@@ -249,61 +251,188 @@ function normalizeAuthError(error) {
 ============================================================================ */
 const DB = {
 
-  isLocal() { return true; },
+  isLocal() { return !CATALOG_SUPABASE; },
 
   // ---------------------------------------------------------------- PARQUES
+  // Los parques predefinidos viven en Supabase (si está configurado).
   async getParques() {
     localSeedIfEmpty();
-    return readLocal(LOCAL_KEYS.parques).sort((a, b) => a.nombre.localeCompare(b.nombre));
+    if (!CATALOG_SUPABASE) {
+      return readLocal(LOCAL_KEYS.parques).sort((a, b) => a.nombre.localeCompare(b.nombre));
+    }
+    try {
+      const { data, error } = await supabaseClient.from('parques').select('*').order('nombre', { ascending: true });
+      if (error) throw error;
+
+      // Migración: si la BD está vacía pero había parques locales, se suben.
+      if (data.length === 0) {
+        const local = readLocal(LOCAL_KEYS.parques);
+        if (local.length > 0) {
+          const payload = local.map((p) => {
+            const { id, ...clean } = sanitizeParque(p);
+            return { id: id || uid(), ...clean };
+          });
+          const { data: inserted, error: insErr } = await supabaseClient.from('parques').insert(payload).select();
+          if (insErr) throw insErr;
+          writeLocal(LOCAL_KEYS.parques, inserted);
+          return inserted;
+        }
+      }
+
+      // Caché local para modo offline
+      writeLocal(LOCAL_KEYS.parques, data);
+      return data;
+    } catch (err) {
+      console.warn('[ParkSales] Supabase no disponible para parques → caché local:', err);
+      return readLocal(LOCAL_KEYS.parques).sort((a, b) => a.nombre.localeCompare(b.nombre));
+    }
   },
 
   async addParque(parque) {
+    const clean = sanitizeParque(parque);
+    if (!CATALOG_SUPABASE) {
+      const list = readLocal(LOCAL_KEYS.parques);
+      const nuevo = { id: uid(), created_at: new Date().toISOString(), ...clean };
+      list.push(nuevo);
+      writeLocal(LOCAL_KEYS.parques, list);
+      return nuevo;
+    }
+    const { data, error } = await supabaseClient.from('parques')
+      .insert({ nombre: clean.nombre, activo: clean.activo !== false })
+      .select()
+      .single();
+    if (error) throw error;
+    // Caché local para modo offline
     const list = readLocal(LOCAL_KEYS.parques);
-    const nuevo = { id: uid(), created_at: new Date().toISOString(), ...sanitizeParque(parque) };
-    list.push(nuevo);
+    list.push(data);
     writeLocal(LOCAL_KEYS.parques, list);
-    return nuevo;
+    return data;
   },
 
   async updateParque(id, changes) {
+    const clean = sanitizeParque(changes);
+    if (!CATALOG_SUPABASE) {
+      const list = readLocal(LOCAL_KEYS.parques);
+      const idx = list.findIndex((p) => p.id === id);
+      if (idx > -1) list[idx] = { ...list[idx], ...clean };
+      writeLocal(LOCAL_KEYS.parques, list);
+      return list[idx];
+    }
+    const { data, error } = await supabaseClient.from('parques')
+      .update({ nombre: clean.nombre, activo: clean.activo !== false })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
     const list = readLocal(LOCAL_KEYS.parques);
-    const idx = list.findIndex(p => p.id === id);
-    if (idx > -1) list[idx] = { ...list[idx], ...sanitizeParque(changes) };
+    const idx = list.findIndex((p) => p.id === id);
+    if (idx > -1) list[idx] = { ...list[idx], ...data };
+    else list.push(data);
     writeLocal(LOCAL_KEYS.parques, list);
-    return list[idx];
+    return data;
   },
 
   async deleteParque(id) {
-    writeLocal(LOCAL_KEYS.parques, readLocal(LOCAL_KEYS.parques).filter(p => p.id !== id));
-    writeLocal(LOCAL_KEYS.contactos, readLocal(LOCAL_KEYS.contactos).filter(c => c.parque_id !== id));
+    // Los apuntes (contactos) son locales: se limpian referencias localmente.
+    writeLocal(LOCAL_KEYS.contactos, readLocal(LOCAL_KEYS.contactos).filter((c) => c.parque_id !== id));
+
+    if (!CATALOG_SUPABASE) {
+      writeLocal(LOCAL_KEYS.parques, readLocal(LOCAL_KEYS.parques).filter((p) => p.id !== id));
+      return true;
+    }
+    const { error } = await supabaseClient.from('parques').delete().eq('id', id);
+    if (error) throw error;
+    writeLocal(LOCAL_KEYS.parques, readLocal(LOCAL_KEYS.parques).filter((p) => p.id !== id));
     return true;
   },
 
   // ---------------------------------------------------------------- TIPOS DE BONO
+  // Los bonos predefinidos viven en Supabase (si está configurado).
   async getTiposBono() {
     localSeedIfEmpty();
-    return readLocal(LOCAL_KEYS.tipos_bono).sort((a, b) => a.nombre.localeCompare(b.nombre));
+    if (!CATALOG_SUPABASE) {
+      return readLocal(LOCAL_KEYS.tipos_bono).sort((a, b) => a.nombre.localeCompare(b.nombre));
+    }
+    try {
+      const { data, error } = await supabaseClient.from('tipos_bono').select('*').order('nombre', { ascending: true });
+      if (error) throw error;
+
+      // Migración: si la BD está vacía pero había bonos locales, se suben.
+      if (data.length === 0) {
+        const local = readLocal(LOCAL_KEYS.tipos_bono);
+        if (local.length > 0) {
+          const payload = local.map((b) => {
+            const { id, ...clean } = sanitizeParque(b);
+            return { id: id || uid(), ...clean };
+          });
+          const { data: inserted, error: insErr } = await supabaseClient.from('tipos_bono').insert(payload).select();
+          if (insErr) throw insErr;
+          writeLocal(LOCAL_KEYS.tipos_bono, inserted);
+          return inserted;
+        }
+      }
+
+      // Caché local para modo offline
+      writeLocal(LOCAL_KEYS.tipos_bono, data);
+      return data;
+    } catch (err) {
+      console.warn('[ParkSales] Supabase no disponible para tipos_bono → caché local:', err);
+      return readLocal(LOCAL_KEYS.tipos_bono).sort((a, b) => a.nombre.localeCompare(b.nombre));
+    }
   },
 
   async addTipoBono(bono) {
+    const clean = sanitizeParque(bono);
+    if (!CATALOG_SUPABASE) {
+      const list = readLocal(LOCAL_KEYS.tipos_bono);
+      const nuevo = { id: uid(), created_at: new Date().toISOString(), ...clean };
+      list.push(nuevo);
+      writeLocal(LOCAL_KEYS.tipos_bono, list);
+      return nuevo;
+    }
+    const { data, error } = await supabaseClient.from('tipos_bono')
+      .insert({ nombre: clean.nombre, activo: clean.activo !== false })
+      .select()
+      .single();
+    if (error) throw error;
+    // Caché local para modo offline
     const list = readLocal(LOCAL_KEYS.tipos_bono);
-    const nuevo = { id: uid(), created_at: new Date().toISOString(), ...sanitizeParque(bono) };
-    list.push(nuevo);
+    list.push(data);
     writeLocal(LOCAL_KEYS.tipos_bono, list);
-    return nuevo;
+    return data;
   },
 
   async updateTipoBono(id, changes) {
+    const clean = sanitizeParque(changes);
+    if (!CATALOG_SUPABASE) {
+      const list = readLocal(LOCAL_KEYS.tipos_bono);
+      const idx = list.findIndex((p) => p.id === id);
+      if (idx > -1) list[idx] = { ...list[idx], ...clean };
+      writeLocal(LOCAL_KEYS.tipos_bono, list);
+      return list[idx];
+    }
+    const { data, error } = await supabaseClient.from('tipos_bono')
+      .update({ nombre: clean.nombre, activo: clean.activo !== false })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
     const list = readLocal(LOCAL_KEYS.tipos_bono);
-    const idx = list.findIndex(p => p.id === id);
-    if (idx > -1) list[idx] = { ...list[idx], ...sanitizeParque(changes) };
+    const idx = list.findIndex((p) => p.id === id);
+    if (idx > -1) list[idx] = { ...list[idx], ...data };
+    else list.push(data);
     writeLocal(LOCAL_KEYS.tipos_bono, list);
-    return list[idx];
+    return data;
   },
 
   async deleteTipoBono(id) {
-    const list = readLocal(LOCAL_KEYS.tipos_bono).filter(p => p.id !== id);
-    writeLocal(LOCAL_KEYS.tipos_bono, list);
+    if (!CATALOG_SUPABASE) {
+      writeLocal(LOCAL_KEYS.tipos_bono, readLocal(LOCAL_KEYS.tipos_bono).filter((p) => p.id !== id));
+      return true;
+    }
+    const { error } = await supabaseClient.from('tipos_bono').delete().eq('id', id);
+    if (error) throw error;
+    writeLocal(LOCAL_KEYS.tipos_bono, readLocal(LOCAL_KEYS.tipos_bono).filter((p) => p.id !== id));
     return true;
   },
 
@@ -371,16 +500,24 @@ const DB = {
   },
 
   async bulkInsertParques(parques) {
-    const list = readLocal(LOCAL_KEYS.parques);
-    parques.forEach(p => list.push({ id: p.id || uid(), created_at: p.created_at || new Date().toISOString(), ...sanitizeParque(p) }));
-    writeLocal(LOCAL_KEYS.parques, list);
+    for (const p of parques) {
+      try {
+        await this.addParque(p);
+      } catch (err) {
+        console.warn('[ParkSales] Fallo al importar parque:', p, err);
+      }
+    }
     return true;
   },
 
   async bulkInsertTiposBono(tiposBono) {
-    const list = readLocal(LOCAL_KEYS.tipos_bono);
-    tiposBono.forEach(b => list.push({ id: b.id || uid(), created_at: b.created_at || new Date().toISOString(), ...sanitizeParque(b) }));
-    writeLocal(LOCAL_KEYS.tipos_bono, list);
+    for (const b of tiposBono) {
+      try {
+        await this.addTipoBono(b);
+      } catch (err) {
+        console.warn('[ParkSales] Fallo al importar bono:', b, err);
+      }
+    }
     return true;
   },
 };

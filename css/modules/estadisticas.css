@@ -1,0 +1,135 @@
+/* ============================== ESTADÍSTICAS =================================== */
+.stats-view-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.stats-view-grid.three-col {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.stat-panel {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--border-hover);
+}
+
+.stat-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--panel-accent, transparent);
+  opacity: 0.85;
+}
+
+.stat-panel.accent-cyan {
+  --panel-accent: linear-gradient(90deg, #00C6FF, #0072FF);
+}
+
+.stat-panel.accent-magenta {
+  --panel-accent: linear-gradient(90deg, #FF4B2B, #FF416C);
+}
+
+.stat-panel.accent-amber {
+  --panel-accent: linear-gradient(90deg, #F5A623, #F76B1C);
+}
+
+.stat-panel.accent-emerald {
+  --panel-accent: linear-gradient(90deg, #11998E, #38EF7D);
+}
+
+.stat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.stat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--bg-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.accent-cyan .stat-icon svg {
+  stroke: #00C6FF;
+}
+
+.accent-magenta .stat-icon svg {
+  stroke: #FF416C;
+}
+
+.accent-amber .stat-icon svg {
+  stroke: #F5A623;
+}
+
+.accent-emerald .stat-icon svg {
+  stroke: #38EF7D;
+}
+
+.stat-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.stat-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 16px 0;
+}
+
+.stat-chart-container {
+  flex-grow: 1;
+  min-height: 250px;
+  position: relative;
+}
+
+.stat-chart-container.small {
+  min-height: 220px;
+}
+
+.stat-table-wrapper {
+  background: var(--bg-body);
+  border-radius: var(--radius-m);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+@media (max-width: 768px) {
+  .stats-view-grid,
+  .stats-view-grid.three-col {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-panel.accent-emerald {
+    grid-column: span 1 !important;
+  }
+}
