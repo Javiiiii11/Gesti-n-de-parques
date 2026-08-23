@@ -3631,6 +3631,10 @@ html.ps-invite-flow #invite-password-backdrop {
     grid-template-columns: 1fr 1fr;
   }
 
+  .dashboard-main-grid {
+    grid-template-columns: 1fr;
+  }
+
   .goal-layout {
     grid-template-columns: 1fr;
   }
@@ -3648,19 +3652,15 @@ html.ps-invite-flow #invite-password-backdrop {
     grid-template-columns: 1fr;
   }
 
+  .quick-sale-layout {
+    grid-template-columns: 1fr;
+  }
+
   .ticket-preview {
     position: static;
   }
 
   .form-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-
-  .dashboard-main-grid,
-  .quick-sale-layout {
     grid-template-columns: 1fr;
   }
 }
