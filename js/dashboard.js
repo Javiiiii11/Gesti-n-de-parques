@@ -803,8 +803,6 @@ function renderProfileGoalPreview(monthKey) {
   const preview = document.getElementById('profile-goal-preview');
   const goalInput = document.getElementById('profile-goal');
   const barWrap = document.getElementById('profile-goal-bar-wrap');
-  const progressTip = document.getElementById('profile-goal-tip-progress');
-  const monthTip = document.getElementById('profile-goal-tip-month');
   const heroMonth = document.getElementById('profile-hero-month');
   const heroProgress = document.getElementById('profile-hero-progress-label');
   const heroBar = document.querySelector('.profile-progress-fill');
@@ -833,12 +831,6 @@ function renderProfileGoalPreview(monthKey) {
     ` : '';
   }
 
-  if (progressTip) {
-    progressTip.textContent = goal ? `${progressPct}% de la meta` : 'Sin meta activa';
-  }
-  if (monthTip) {
-    monthTip.textContent = `${fmtEUR(monthSales)} vendidos`;
-  }
   if (heroMonth) heroMonth.textContent = monthLabel;
   if (heroProgress) {
     heroProgress.textContent = goal > 0
@@ -858,25 +850,22 @@ function renderGoalHistoryHtml(activeMonthKey) {
     .sort((a, b) => String(b.mes).localeCompare(String(a.mes)));
 
   if (!entries.length) {
-    return '<p class="profile-goal-history-empty">Aún no hay metas guardadas. Elige un mes arriba y guarda tu primera meta.</p>';
+    return '<p class="profile-goal-history-empty">Aún no hay metas guardadas. Elige un mes y guarda tu primera meta.</p>';
   }
 
   return `
-    <div class="profile-goal-history">
-      <h5>Historial de metas</h5>
-      <div class="profile-goal-history-list">
-        ${entries.map((entry) => {
-          const sales = getMonthSales(entry.mes);
-          const goal = Number(entry.importe) || 0;
-          const pct = goal > 0 ? Math.min(100, Math.round((sales / goal) * 100)) : 0;
-          return `
-            <button type="button" class="profile-goal-history-row ${entry.mes === activeMonthKey ? 'is-active' : ''}" data-month="${escapeHtml(entry.mes)}">
-              <span class="profile-goal-history-month">${escapeHtml(formatMonthLabel(entry.mes))}</span>
-              <span class="profile-goal-history-meta">${fmtEUR(sales)} / ${fmtEUR(goal)} · ${pct}%</span>
-            </button>
-          `;
-        }).join('')}
-      </div>
+    <div class="profile-goal-history-list">
+      ${entries.map((entry) => {
+        const sales = getMonthSales(entry.mes);
+        const goal = Number(entry.importe) || 0;
+        const pct = goal > 0 ? Math.min(100, Math.round((sales / goal) * 100)) : 0;
+        return `
+          <button type="button" class="profile-goal-history-row ${entry.mes === activeMonthKey ? 'is-active' : ''}" data-month="${escapeHtml(entry.mes)}">
+            <span class="profile-goal-history-month">${escapeHtml(formatMonthLabel(entry.mes))}</span>
+            <span class="profile-goal-history-meta">${fmtEUR(sales)} / ${fmtEUR(goal)} · ${pct}%</span>
+          </button>
+        `;
+      }).join('')}
     </div>
   `;
 }
@@ -899,8 +888,8 @@ function openProfileSettings(initialMonthKey = null) {
     : `${fmtEUR(monthSales)} · sin meta`;
 
   const bodyHtml = `
-    <div class="profile-panel">
-      <section class="profile-hero">
+    <div class="profile-panel profile-panel--wide">
+      <section class="profile-hero profile-hero--compact">
         <div class="profile-hero-glow" aria-hidden="true"></div>
         ${renderUserAvatarHtml(user, { size: 'lg' })}
         <div class="profile-hero-text">
@@ -919,13 +908,13 @@ function openProfileSettings(initialMonthKey = null) {
         </div>
       </section>
 
-      <div class="profile-forms-row">
+      <div class="profile-main-grid">
         <section class="profile-section profile-section--goal">
           <span class="profile-section-badge profile-section-badge--goal">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
             Objetivo mensual
           </span>
-          <p class="profile-section-desc">Cada mes puede tener su propia meta. Se guarda en la nube y el dashboard la usa al filtrar por ese mes.</p>
+          <p class="profile-section-desc">Define la meta del mes seleccionado. El dashboard la usará al filtrar por ese periodo.</p>
           <div class="profile-fields profile-fields--goal">
             <label class="profile-field">
               <span>Mes</span>
@@ -941,7 +930,7 @@ function openProfileSettings(initialMonthKey = null) {
             <div class="profile-goal-preview" id="profile-goal-preview">
               <span>${escapeHtml(selectedMonthLabel)}</span>
               <strong>${fmtEUR(monthSales)}</strong>
-              <small>${goal ? `${progressPct}% de tu meta` : 'Sin meta guardada para este mes'}</small>
+              <small>${goal ? `${progressPct}% de tu meta` : 'Sin meta guardada'}</small>
             </div>
           </div>
           <div id="profile-goal-bar-wrap">
@@ -955,29 +944,14 @@ function openProfileSettings(initialMonthKey = null) {
               </div>
             ` : ''}
           </div>
-          <div class="profile-goal-tips">
-            <div class="profile-goal-tip">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              <div>
-                <strong>Progreso</strong>
-                <span id="profile-goal-tip-progress">${progressPct > 0 ? `${progressPct}% de la meta` : 'Sin meta activa'}</span>
-              </div>
-            </div>
-            <div class="profile-goal-tip">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <div>
-                <strong>Este mes</strong>
-                <span id="profile-goal-tip-month">${fmtEUR(monthSales)} vendidos</span>
-              </div>
-            </div>
-            <div class="profile-goal-tip">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <div>
-                <strong>Historial</strong>
-                <span>Consulta y edita metas de meses anteriores</span>
-              </div>
-            </div>
-          </div>
+        </section>
+
+        <section class="profile-section profile-section--history">
+          <span class="profile-section-badge profile-section-badge--history">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Historial de metas
+          </span>
+          <p class="profile-section-desc">Consulta meses anteriores y pulsa uno para editarlo.</p>
           <div id="profile-goal-history-wrap">${renderGoalHistoryHtml(selectedMonthKey)}</div>
         </section>
 
@@ -1036,7 +1010,7 @@ function openProfileSettings(initialMonthKey = null) {
 
   openModal({
     title: 'Mi perfil y ajustes',
-    width: '1080px',
+    width: '1420px',
     sizeClass: 'profile-modal',
     bodyHtml,
     footHtml: `
