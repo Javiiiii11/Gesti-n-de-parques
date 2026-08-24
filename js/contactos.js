@@ -516,6 +516,7 @@ function saveNuevoApunteDraft() {
 
 function openContactoForm(id = null) {
   const isEdit = Boolean(id);
+  if (!isEdit) NUEVO_APUNTE_DRAFT = null;
   const c = isEdit
     ? STATE.contactos.find((x) => x.id === id)
     : (NUEVO_APUNTE_DRAFT ? {

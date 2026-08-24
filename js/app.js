@@ -120,6 +120,9 @@ async function bootApp(user) {
   document.getElementById('auth-screen').style.display = 'none';
 
   try {
+    if (typeof restoreMirroredData === 'function') {
+      await restoreMirroredData();
+    }
     STATE.parques = await DB.getParques();
     STATE.tipos_bono = await DB.getTiposBono();
     STATE.contactos = await DB.getContactos();

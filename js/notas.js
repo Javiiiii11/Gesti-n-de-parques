@@ -32,6 +32,7 @@ function initNotasRapidas() {
     
     // Guardar de inmediato para evitar cualquier pérdida
     localStorage.setItem('parksales_quick_notes', text);
+    if (typeof mirrorPut === 'function') mirrorPut('parksales_quick_notes', text);
     
     updateNotesStats(text);
     setSavedStatus();

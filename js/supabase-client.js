@@ -118,8 +118,103 @@ function uid() {
   });
 }
 
-function readLocal(key) { return JSON.parse(localStorage.getItem(key) || '[]'); }
-function writeLocal(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+function readLocal(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || '[]');
+  } catch (err) {
+    console.error('[ParkSales] Datos corruptos en localStorage para "' + key + '":', err);
+    return [];
+  }
+}
+function writeLocal(key, data) {
+  const json = JSON.stringify(data);
+  try {
+    localStorage.setItem(key, json);
+  } catch (err) {
+    console.error('[ParkSales] Error al guardar en el navegador (¿almacenamiento lleno?):', err);
+    try { toast('No se pudo guardar en el navegador (almacenamiento lleno). Haz una copia de seguridad.', 'error', 8000); } catch (e) { }
+  }
+  mirrorPut(key, json);
+}
+
+/* ----------------------------------------------------------------------------
+   ESPEJO DURADERO EN IndexedDB
+   localStorage puede ser borrado por el navegador (evicción, modo privado,
+   limpieza). Para no perder nunca ventas/contactos, cada escritura se replica
+   en IndexedDB (almacenamiento persistente) y, si al arrancar localStorage
+   está vacío, se recuperan los datos desde el espejo.
+---------------------------------------------------------------------------- */
+const MIRROR_DB_NAME = 'parksales_mirror_db';
+let mirrorDbPromise = null;
+
+function openMirrorDB() {
+  if (!mirrorDbPromise) {
+    mirrorDbPromise = new Promise((resolve, reject) => {
+      const req = indexedDB.open(MIRROR_DB_NAME, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore('kv');
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  return mirrorDbPromise;
+}
+
+async function mirrorPut(key, json) {
+  try {
+    const db = await openMirrorDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction('kv', 'readwrite');
+      tx.objectStore('kv').put(json, key);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.warn('[ParkSales] No se pudo replicar en IndexedDB:', err);
+  }
+}
+
+async function mirrorGet(key) {
+  try {
+    const db = await openMirrorDB();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction('kv', 'readonly');
+      const req = tx.objectStore('kv').get(key);
+      req.onsuccess = () => resolve(req.result ?? null);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (err) {
+    return null;
+  }
+}
+
+/** Pide al navegador almacenamiento persistente (evita borrado automático) */
+async function requestPersistentStorage() {
+  try {
+    if (navigator.storage && navigator.storage.persist) {
+      const already = await navigator.storage.persisted();
+      if (!already) await navigator.storage.persist();
+    }
+  } catch (err) { /* no crítico */ }
+}
+
+/** Recupera datos del espejo IndexedDB si localStorage los ha perdido */
+async function restoreMirroredData() {
+  await requestPersistentStorage();
+  const keysToRestore = [LOCAL_KEYS.ventas, LOCAL_KEYS.contactos, LOCAL_KEYS.parques, LOCAL_KEYS.tipos_bono, LOCAL_KEYS.objetivos_mensuales, 'parksales_quick_notes'];
+  for (const key of keysToRestore) {
+    const current = localStorage.getItem(key);
+    if (current === null || current === '') {
+      const mirrored = await mirrorGet(key);
+      if (mirrored !== null) {
+        try {
+          JSON.parse(mirrored); // validar que es JSON válido
+          localStorage.setItem(key, mirrored);
+          console.info('[ParkSales] Datos recuperados desde el espejo IndexedDB:', key);
+        } catch (err) { /* espejo corrupto: ignorar */ }
+      }
+    }
+  }
+}
 function sanitizeParque(parque) {
   const { comision_fija, comision_porcentual, ...rest } = parque || {};
   return rest;
