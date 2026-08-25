@@ -98,6 +98,15 @@ function wireLlamadasForm() {
     });
   }
 
+  // Botón limpiar formulario
+  const clearBtn = document.getElementById('ll-clear-form');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      resetLlamadaForm();
+      toast('Formulario limpiado', 'info');
+    });
+  }
+
   // Deshabilitar validación nativa del navegador para que el submit
   // event se dispare siempre y la validación la maneje nuestro JS
   form.noValidate = true;

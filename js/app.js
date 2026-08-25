@@ -9,7 +9,7 @@ const VIEW_TITLES = {
   'contactos': 'Apuntes / Contactos',
   'notas-rapidas': 'Notas rápidas',
   'llamadas': 'Llamadas',
-  'horarios': 'Horarios y Promociones',
+  'horarios': 'Horarios y Archivos',
   'parques': 'Parques / Bonos',
   'estadisticas': 'Estadísticas',
   'exportar': 'Exportar / Importar',
