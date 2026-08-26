@@ -25,7 +25,7 @@
   <meta name="description" content="Registra y analiza tus ventas de entradas a parques de ocio">
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 34 34%22><defs><linearGradient id=%22l%22 x1=%220%22 y1=%220%22 x2=%2234%22 y2=%2234%22><stop offset=%220%%22 stop-color=%22%23FF9A44%22/><stop offset=%22100%%22 stop-color=%22%23FC6076%22/></linearGradient></defs><rect width=%2234%22 height=%2234%22 rx=%2210%22 fill=%22url(%23l)%22/><circle cx=%2217%22 cy=%2217%22 r=%227%22 stroke=%22white%22 stroke-width=%222%22 stroke-dasharray=%223 3%22/><circle cx=%2217%22 cy=%2217%22 r=%223%22 fill=%22white%22/><path d=%22M17 17 L22 27 M17 17 L12 27%22 stroke=%22white%22 stroke-width=%222%22 stroke-linecap=%22round%22/></svg>">
-  <link rel="stylesheet" href="css/style.css?v=12">
+  <link rel="stylesheet" href="css/style.css?v=15">
 
   <!-- Chart.js para gráficos interactivos (con fallback de CDN secundario) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
@@ -228,6 +228,10 @@
             <path d="M3 21l7-14 4 8 3-5 4 11H3z" />
           </svg>
           Parques / Bonos
+        </div>
+        <div class="nav-item" data-view="cuadrante">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+          Mi Cuadrante
         </div>
         <div class="nav-item" data-view="estadisticas">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -1003,6 +1007,60 @@
           </div>
         </section>
 
+        <!-- ============================ CUADRANTE ============================ -->
+        <section class="view" id="view-cuadrante">
+          <div class="view-header">
+            <div>
+              <h2>Mi cuadrante</h2>
+              <p class="desc">Cuadrante automatizado con csv, facil y rápido de usar</p>
+            </div>
+            <div class="cuad-month-nav">
+              <button class="btn btn-ghost btn-sm" type="button" id="cuad-prev" aria-label="Mes anterior">‹</button>
+              <span id="cuad-mes-label"></span>
+              <button class="btn btn-ghost btn-sm" type="button" id="cuad-next" aria-label="Mes siguiente">›</button>
+              <button class="btn btn-secondary btn-sm" type="button" id="cuad-today">Hoy</button>
+            </div>
+          </div>
+
+          <div class="card card-pad cuad-hero" id="cuad-hero"></div>
+          <div class="cuad-stats" id="cuad-stats"></div>
+          <div class="cuad-week" id="cuad-week"></div>
+
+          <div class="cuad-layout">
+            <div class="card card-pad cuad-cal-card">
+              <div class="cuad-cal-head">
+                <h3>Calendario</h3>
+                <div class="cuad-leyenda" id="cuad-leyenda"></div>
+              </div>
+              <div class="cuad-cal" id="cuad-calendario"></div>
+            </div>
+
+            <aside class="cuad-side">
+              <div class="card card-pad">
+                <h3>Día seleccionado</h3>
+                <div id="cuad-day-detail"></div>
+              </div>
+              <div class="card card-pad">
+                <h3>Días que trabajas</h3>
+                <div class="cuad-agenda" id="cuad-agenda"></div>
+              </div>
+            </aside>
+          </div>
+
+          <div class="card card-pad cuad-admin-card" id="cuad-admin-card">
+            <div class="cuad-admin-head">
+              <div>
+                <h3>Cuadrantes del equipo</h3>
+                <p class="desc" id="cuad-admin-hint">Solo quien tenga la contraseña puede subir o borrar un Excel. El resto del equipo solo lo consulta.</p>
+              </div>
+              <div class="cuad-admin-actions">
+                <button class="btn btn-primary" type="button" id="cuad-btn-upload">Subir calendario CSV</button>
+              </div>
+            </div>
+            <div id="cuad-lista" class="cuad-lista"></div>
+          </div>
+        </section>
+
         <!-- ============================ LLAMADAS ============================ -->
         <section class="view" id="view-llamadas" style="padding-bottom: 100px;">
           <div class="ll-layout">
@@ -1135,8 +1193,8 @@
           </div>
 
           <!-- Sección de Archivos -->
-          <div class="card card-pad promos-card" style="margin-bottom: 24px;">
-            <div class="promos-card-header">
+          <div class="card card-pad promos-card" style="margin-bottom: 24px; display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+            <div class="promos-card-header" style="flex:1; min-width:220px;">
               <span class="promos-icon">📁</span>
               <div>
                 <h3 class="section-title" style="margin:0;">Archivos</h3>
@@ -2025,7 +2083,7 @@
   <div id="toast-stack"></div>
 
 
-  <script src="js/supabase-client.js?v=10"></script>
+  <script src="js/supabase-client.js?v=11"></script>
   <script src="js/utils.js?v=4"></script>
   <script src="js/auth.js?v=5"></script>
   <script src="js/parques.js?v=4"></script>
@@ -2039,13 +2097,14 @@
   <script src="js/notas.js?v=3"></script>
   <script src="js/llamadas.js?v=3"></script>
   <script src="js/horarios.js?v=3"></script>
+  <script src="js/cuadrante.js?v=14"></script>
   <script src="js/pomodoro.js?v=3"></script>
   <script src="js/music.js?v=3"></script>
   <script src="js/calculator.js?v=3"></script>
   <script src="js/conocimiento/chat-ia-knowledge.js"></script>
   <script src="js/conocimiento/chat-ia-halloween.js"></script>
   <script src="js/chat-ia.js?v=3"></script>
-  <script src="js/app.js?v=4"></script>
+  <script src="js/app.js?v=5"></script>
 </body>
 
 </html>

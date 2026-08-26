@@ -8,6 +8,7 @@ const VIEW_TITLES = {
   'historial': 'Historial de ventas',
   'contactos': 'Apuntes / Contactos',
   'notas-rapidas': 'Notas rápidas',
+  'cuadrante': 'Mi cuadrante',
   'llamadas': 'Llamadas',
   'horarios': 'Horarios y Archivos',
   'parques': 'Parques / Bonos',
@@ -34,6 +35,7 @@ function switchView(viewId) {
     if (typeof markCallsAlertAsRead === 'function') markCallsAlertAsRead();
   }
   if (viewId === 'horarios') initHorarios();
+  if (viewId === 'cuadrante' && typeof cuadOnView === 'function') cuadOnView();
   if (viewId === 'notas-rapidas') {
     const txt = document.getElementById('notas-rapidas-textarea');
     if (txt) txt.focus();

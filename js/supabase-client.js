@@ -91,6 +91,8 @@ const LOCAL_KEYS = {
   tipos_bono: 'parksales_tipos_bono',
   contactos: 'parksales_contactos',
   objetivos_mensuales: 'parksales_objetivos_mensuales',
+  cuadrante_list: 'parksales_cuadrante_list',
+  cuadrante_data: 'parksales_cuadrante_data',
 };
 
 function localSeedIfEmpty() {
@@ -200,7 +202,7 @@ async function requestPersistentStorage() {
 /** Recupera datos del espejo IndexedDB si localStorage los ha perdido */
 async function restoreMirroredData() {
   await requestPersistentStorage();
-  const keysToRestore = [LOCAL_KEYS.ventas, LOCAL_KEYS.contactos, LOCAL_KEYS.parques, LOCAL_KEYS.tipos_bono, LOCAL_KEYS.objetivos_mensuales, 'parksales_quick_notes'];
+  const keysToRestore = [LOCAL_KEYS.ventas, LOCAL_KEYS.contactos, LOCAL_KEYS.parques, LOCAL_KEYS.tipos_bono, LOCAL_KEYS.objetivos_mensuales, 'parksales_quick_notes', LOCAL_KEYS.cuadrante_list];
   for (const key of keysToRestore) {
     const current = localStorage.getItem(key);
     if (current === null || current === '') {
@@ -214,6 +216,23 @@ async function restoreMirroredData() {
       }
     }
   }
+  try {
+    const list = JSON.parse(localStorage.getItem(LOCAL_KEYS.cuadrante_list) || '[]');
+    if (Array.isArray(list)) {
+      for (const item of list) {
+        if (!item?.mes) continue;
+        const key = LOCAL_KEYS.cuadrante_data + '_' + item.mes;
+        if (localStorage.getItem(key)) continue;
+        const mirrored = await mirrorGet(key);
+        if (mirrored !== null) {
+          try {
+            JSON.parse(mirrored);
+            localStorage.setItem(key, mirrored);
+          } catch (err) { /* espejo corrupto */ }
+        }
+      }
+    }
+  } catch (err) { /* lista de cuadrantes ilegible */ }
 }
 function sanitizeParque(parque) {
   const { comision_fija, comision_porcentual, ...rest } = parque || {};
@@ -617,6 +636,156 @@ const DB = {
         console.warn('[ParkSales] Fallo al importar bono:', b, err);
       }
     }
+    return true;
+  },
+
+  // --------------------------------------------------------- CUADRANTE
+  _readCuadranteLocal(mesKey) {
+    const raw = localStorage.getItem(LOCAL_KEYS.cuadrante_data + '_' + mesKey);
+    if (!raw) return null;
+    try {
+      let data = JSON.parse(raw);
+      if (typeof data === 'string') data = JSON.parse(data);
+      if (!data || typeof data !== 'object' || !data.users) return null;
+      return data;
+    } catch (err) {
+      return null;
+    }
+  },
+
+  _writeCuadranteLocal(mesKey, payload, meta) {
+    const json = JSON.stringify(payload);
+    localStorage.setItem(LOCAL_KEYS.cuadrante_data + '_' + mesKey, json);
+    const list = readLocal(LOCAL_KEYS.cuadrante_list);
+    const info = {
+      mes: mesKey,
+      updated: meta?.updated || new Date().toISOString(),
+      totalUsers: meta?.totalUsers ?? Object.keys(payload.users || {}).length,
+      nombreArchivo: meta?.nombreArchivo || '',
+      source: meta?.source || 'local',
+    };
+    const existing = list.findIndex((x) => x.mes === mesKey);
+    if (existing > -1) list[existing] = { ...list[existing], ...info };
+    else list.unshift(info);
+    writeLocal(LOCAL_KEYS.cuadrante_list, list);
+    if (typeof mirrorPut === 'function') {
+      mirrorPut(LOCAL_KEYS.cuadrante_data + '_' + mesKey, json);
+    }
+    return info;
+  },
+
+  async getCuadranteList() {
+    localSeedIfEmpty();
+    const local = readLocal(LOCAL_KEYS.cuadrante_list)
+      .filter((x) => x && x.mes)
+      .sort((a, b) => String(b.mes).localeCompare(String(a.mes)));
+
+    if (!CATALOG_SUPABASE) return local;
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('cuadrantes')
+        .select('mes, nombre_archivo, total_usuarios, updated_at')
+        .order('mes', { ascending: false });
+      if (error) throw error;
+      const remote = (data || []).map((row) => ({
+        mes: row.mes,
+        updated: row.updated_at,
+        totalUsers: row.total_usuarios || 0,
+        nombreArchivo: row.nombre_archivo || '',
+        source: 'supabase',
+      }));
+      writeLocal(LOCAL_KEYS.cuadrante_list, remote);
+      return remote;
+    } catch (err) {
+      console.warn('[ParkSales] Supabase no disponible para cuadrantes → caché local:', err);
+      return local;
+    }
+  },
+
+  async getCuadrante(mesKey) {
+    if (!/^\d{4}-\d{2}$/.test(String(mesKey || ''))) return null;
+
+    if (CATALOG_SUPABASE) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('cuadrantes')
+          .select('mes, nombre_archivo, datos, total_usuarios, updated_at')
+          .eq('mes', mesKey)
+          .maybeSingle();
+        if (error) throw error;
+        if (data?.datos?.users) {
+          this._writeCuadranteLocal(mesKey, data.datos, {
+            updated: data.updated_at,
+            totalUsers: data.total_usuarios,
+            nombreArchivo: data.nombre_archivo,
+            source: 'supabase',
+          });
+          return data.datos;
+        }
+      } catch (err) {
+        console.warn('[ParkSales] No se pudo leer el cuadrante en Supabase:', err);
+      }
+    }
+
+    return this._readCuadranteLocal(mesKey);
+  },
+
+  async saveCuadrante(mesKey, cuadData, extra = {}) {
+    if (!/^\d{4}-\d{2}$/.test(String(mesKey || ''))) {
+      throw new Error('Mes inválido. Usa el formato YYYY-MM.');
+    }
+    const payload = {
+      users: cuadData.users || {},
+      holidays: Array.isArray(cuadData.holidays) ? cuadData.holidays : [],
+      range: cuadData.range || null,
+    };
+    const totalUsers = Object.keys(payload.users).length;
+    const nombreArchivo = extra.nombreArchivo || extra.nombre_archivo || '';
+
+    this._writeCuadranteLocal(mesKey, payload, {
+      totalUsers,
+      nombreArchivo,
+      source: CATALOG_SUPABASE ? 'supabase' : 'local',
+    });
+
+    if (!CATALOG_SUPABASE) return { mes: mesKey, localOnly: true };
+
+    try {
+      const user = await AUTH.getCurrentUser().catch(() => null);
+      const row = {
+        mes: mesKey,
+        nombre_archivo: nombreArchivo || null,
+        datos: payload,
+        total_usuarios: totalUsers,
+        uploaded_by: user?.id || null,
+      };
+      const { data, error } = await supabaseClient
+        .from('cuadrantes')
+        .upsert(row, { onConflict: 'mes' })
+        .select('mes, updated_at, total_usuarios')
+        .single();
+      if (error) throw error;
+      return { mes: data.mes, localOnly: false };
+    } catch (err) {
+      const normalized = normalizeDbError(err, 'cuadrantes');
+      const missingTable = /Falta crear la tabla cuadrantes/i.test(normalized.message || '');
+      if (missingTable) {
+        return { mes: mesKey, localOnly: true, missingTable: true };
+      }
+      throw normalized;
+    }
+  },
+
+  async deleteCuadrante(mesKey) {
+    localStorage.removeItem(LOCAL_KEYS.cuadrante_data + '_' + mesKey);
+    const list = readLocal(LOCAL_KEYS.cuadrante_list).filter((x) => x.mes !== mesKey);
+    writeLocal(LOCAL_KEYS.cuadrante_list, list);
+
+    if (!CATALOG_SUPABASE) return true;
+
+    const { error } = await supabaseClient.from('cuadrantes').delete().eq('mes', mesKey);
+    if (error) throw normalizeDbError(error, 'cuadrantes');
     return true;
   },
 
