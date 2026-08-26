@@ -1149,6 +1149,15 @@ function wireTopbarUserMenu() {
     toggleTopbarUserMenu();
   });
   document.addEventListener('click', closeTopbarUserMenuOnOutside);
+  const cuadBtn = document.getElementById('tbm-cuadrante-btn');
+  if (cuadBtn && cuadBtn.dataset.wired !== '1') {
+    cuadBtn.dataset.wired = '1';
+    cuadBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleTopbarUserMenu(false);
+      if (typeof switchView === 'function') switchView('cuadrante');
+    });
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

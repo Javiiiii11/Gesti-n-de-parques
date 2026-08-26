@@ -1700,19 +1700,24 @@ label:has(input[type="radio"]:checked) {
   display: none !important;
 }
 
-/* ---- Modal de perfil (panorámico, sin scroll vertical) ---- */
+/* ---- Modal de perfil (responsive con scroll) ---- */
 .modal.profile-modal {
-  width: min(1420px, 98vw);
-  max-height: none;
-  overflow: visible;
+  width: min(720px, 94vw);
+  max-height: 90vh;
+  max-height: 90dvh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--border);
+  box-sizing: border-box;
 }
 
 .modal.profile-modal .modal-body {
   padding: 16px 22px 14px;
-  overflow: visible;
-  flex: 0 0 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .modal.profile-modal .modal-head,
@@ -1765,15 +1770,20 @@ label:has(input[type="radio"]:checked) {
 
 .profile-main-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr) minmax(0, 1fr);
-  gap: 12px;
-  align-items: stretch;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: start;
 }
+.profile-main-grid > * { min-width: 0; overflow: hidden; }
 
 .profile-hero--compact {
-  grid-template-columns: auto minmax(0, 1fr) minmax(220px, 300px);
+  grid-template-columns: auto minmax(0, 1fr);
   padding: 14px 20px;
   column-gap: 18px;
+  gap: 14px;
+}
+@media (min-width: 760px) {
+  .profile-hero--compact { grid-template-columns: auto minmax(0, 1fr) minmax(220px, 300px); }
 }
 
 .profile-hero--compact .profile-hero-name {
@@ -1826,8 +1836,16 @@ label:has(input[type="radio"]:checked) {
 }
 
 .profile-panel--wide .profile-fields--goal {
-  grid-template-columns: minmax(130px, 0.85fr) minmax(150px, 1fr) minmax(150px, auto);
+  display: grid;
+  grid-template-columns: 1fr;
   align-items: end;
+  gap: 10px;
+}
+@media (min-width: 700px) {
+  .profile-panel--wide .profile-fields--goal { grid-template-columns: 1fr auto; }
+}
+@media (min-width: 1200px) {
+  .profile-panel--wide .profile-fields--goal { grid-template-columns: minmax(110px, 0.8fr) minmax(150px, 1fr) minmax(130px, auto); }
 }
 
 .profile-panel--wide .profile-field input {
@@ -1836,8 +1854,14 @@ label:has(input[type="radio"]:checked) {
 }
 
 .profile-panel--wide .profile-goal-preview {
-  min-width: 150px;
+  min-width: 0;
+  width: 100%;
   padding: 10px 12px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+@media (min-width: 700px) {
+  .profile-panel--wide .profile-goal-preview { width: auto; justify-self: end; max-width: 220px; }
 }
 
 .profile-panel--wide .profile-goal-preview strong {
@@ -1866,11 +1890,12 @@ label:has(input[type="radio"]:checked) {
 .profile-hero {
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(280px, 0.85fr);
-  grid-template-areas: "avatar text progress";
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "avatar text" "progress progress";
   align-items: center;
   column-gap: 22px;
-  padding: 26px 30px;
+  row-gap: 16px;
+  padding: 18px 20px;
   border-radius: var(--radius-l);
   border: 1px solid rgba(245, 166, 35, 0.25);
   background:
@@ -1881,6 +1906,14 @@ label:has(input[type="radio"]:checked) {
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(245, 166, 35, 0.12);
 }
 
+@media (min-width: 860px) {
+  .profile-hero {
+    grid-template-columns: auto minmax(0, 1fr) minmax(260px, 0.85fr);
+    grid-template-areas: "avatar text progress";
+    row-gap: 0;
+    padding: 26px 30px;
+  }
+}
 .profile-hero .ps-avatar {
   grid-area: avatar;
 }
@@ -1986,9 +2019,12 @@ label:has(input[type="radio"]:checked) {
 /* ── GRID SECCIONES ─────────────────────── */
 .profile-forms-row {
   display: grid;
-  grid-template-columns: 1.15fr 1fr;
+  grid-template-columns: 1fr;
   gap: 14px;
   align-items: stretch;
+}
+@media (min-width: 860px) {
+  .profile-forms-row { grid-template-columns: 1.15fr 1fr; }
 }
 
 /* ── TARJETA SECCIÓN ────────────────────── */
@@ -2376,8 +2412,9 @@ label:has(input[type="radio"]:checked) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
+  max-width: 100%;
   padding: 10px 12px;
   border-radius: var(--radius-s);
   border: 1px solid rgba(245, 166, 35, 0.12);
@@ -2386,6 +2423,9 @@ label:has(input[type="radio"]:checked) {
   text-align: left;
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease;
+  box-sizing: border-box;
+  overflow: hidden;
+  flex-wrap: wrap;
 }
 
 .profile-goal-history-row:hover,
@@ -2403,7 +2443,11 @@ label:has(input[type="radio"]:checked) {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-secondary);
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
+  text-align: right;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .profile-goal-history-empty {
@@ -5998,7 +6042,8 @@ textarea:focus-visible,
 
 /* ===================== CUADRANTE — Mi calendario de trabajo ===================== */
 #view-cuadrante .cuad-month-nav{display:flex;align-items:center;gap:8px}
-#view-cuadrante #cuad-mes-label{font-family:var(--font-display);font-weight:700;font-size:15px;min-width:160px;text-align:center}
+#view-cuadrante #cuad-mes-label,#view-cuadrante #cuad-mid-mes-label{font-family:var(--font-display);font-weight:700;font-size:15px;min-width:160px;text-align:center}
+.cuad-month-nav--mid{justify-content:center;margin:10px 0 12px;padding:10px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-m)}
 .cuad-hero{display:flex;justify-content:space-between;gap:16px;align-items:center;background:radial-gradient(120% 120% at 0% 0%,rgba(245,166,35,.14),transparent 50%),radial-gradient(100% 100% at 100% 100%,rgba(96,165,250,.1),transparent 50%),var(--bg-card)}
 .cuad-kicker{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
 .cuad-hero h3{font-size:22px}

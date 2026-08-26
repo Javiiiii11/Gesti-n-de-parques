@@ -25,7 +25,7 @@
   <meta name="description" content="Registra y analiza tus ventas de entradas a parques de ocio">
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 34 34%22><defs><linearGradient id=%22l%22 x1=%220%22 y1=%220%22 x2=%2234%22 y2=%2234%22><stop offset=%220%%22 stop-color=%22%23FF9A44%22/><stop offset=%22100%%22 stop-color=%22%23FC6076%22/></linearGradient></defs><rect width=%2234%22 height=%2234%22 rx=%2210%22 fill=%22url(%23l)%22/><circle cx=%2217%22 cy=%2217%22 r=%227%22 stroke=%22white%22 stroke-width=%222%22 stroke-dasharray=%223 3%22/><circle cx=%2217%22 cy=%2217%22 r=%223%22 fill=%22white%22/><path d=%22M17 17 L22 27 M17 17 L12 27%22 stroke=%22white%22 stroke-width=%222%22 stroke-linecap=%22round%22/></svg>">
-  <link rel="stylesheet" href="css/style.css?v=15">
+  <link rel="stylesheet" href="css/style.css?v=19">
 
   <!-- Chart.js para gráficos interactivos (con fallback de CDN secundario) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
@@ -379,6 +379,10 @@
                   d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
               Ajustes perfil
+            </button>
+            <button class="tbm-item" id="tbm-cuadrante-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+              Mi cuadrante
             </button>
             <div class="tbm-separator"><span>BACKUP</span></div>
             <button class="tbm-item backup-toggle-btn">
@@ -1032,6 +1036,12 @@
                 <h3>Calendario</h3>
                 <div class="cuad-leyenda" id="cuad-leyenda"></div>
               </div>
+              <div class="cuad-month-nav cuad-month-nav--mid" id="cuad-mid-nav">
+                <button class="btn btn-ghost btn-sm" type="button" id="cuad-mid-prev" aria-label="Mes anterior">‹</button>
+                <span id="cuad-mid-mes-label"></span>
+                <button class="btn btn-ghost btn-sm" type="button" id="cuad-mid-next" aria-label="Mes siguiente">›</button>
+                <button class="btn btn-secondary btn-sm" type="button" id="cuad-mid-today">Hoy</button>
+              </div>
               <div class="cuad-cal" id="cuad-calendario"></div>
             </div>
 
@@ -1220,14 +1230,14 @@
                 </svg>
                 Alérgenos Warner
               </a>
-              <a href="#" target="_blank" class="btn btn-secondary" id="aquopolis-vip-btn">
+              <a href="https://grprsc-my.sharepoint.com/:x:/r/personal/agarrido_selwo_es/_layouts/15/doc2.aspx?sourcedoc=%7B87C7149A-6A8E-4881-945C-9A7387E42B7A%7D&file=ZONAS%20VIPS%20Y%20OTROS%20DETALLES%20-%20ACU%u00c1TICOS%202026.xlsx&action=default&mobileredirect=true" target="_blank" class="btn btn-secondary" id="aquopolis-vip-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                   stroke-linejoin="round">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                 </svg>
                 Zonas VIP Aquopolis
               </a>
-              <a href="#" target="_blank" class="btn btn-secondary" id="aquopolis-info-btn">
+              <a href="https://grprsc.sharepoint.com/:x:/r/sites/CALLCENTERPARQUEWARNER/_layouts/15/Doc.aspx?sourcedoc=%7BA5A2BE46-D257-4749-914A-2A03CDA2CC21%7D&file=AQ%2BEspa%u00f1a.xlsx&action=default&mobileredirect=true&wdExp=TEAMS-TREATMENT&web=1" target="_blank" class="btn btn-secondary" id="aquopolis-info-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                   stroke-linejoin="round">
                   <circle cx="12" cy="12" r="10"></circle>
@@ -2090,14 +2100,14 @@
   <script src="js/ventas.js?v=3"></script>
   <script src="js/historial.js?v=5"></script>
   <script src="js/contactos.js?v=3"></script>
-  <script src="js/dashboard.js?v=6"></script>
+  <script src="js/dashboard.js?v=7"></script>
   <script src="js/estadisticas.js?v=3"></script>
   <script src="js/exportar.js?v=3"></script>
   <script src="js/backup-auto.js?v=3"></script>
   <script src="js/notas.js?v=3"></script>
   <script src="js/llamadas.js?v=3"></script>
   <script src="js/horarios.js?v=3"></script>
-  <script src="js/cuadrante.js?v=14"></script>
+  <script src="js/cuadrante.js?v=15"></script>
   <script src="js/pomodoro.js?v=3"></script>
   <script src="js/music.js?v=3"></script>
   <script src="js/calculator.js?v=3"></script>

@@ -637,6 +637,8 @@ function weekdayLong(date) {
 function renderCuad() {
   const mesLabel = document.getElementById('cuad-mes-label');
   if (mesLabel) mesLabel.textContent = formatMes(cuadMonth);
+  const midLabel = document.getElementById('cuad-mid-mes-label');
+  if (midLabel) midLabel.textContent = formatMes(cuadMonth);
 
   const person = currentPerson();
   const hasData = Object.keys(cuadBundle.users || {}).length > 0;
@@ -1347,7 +1349,20 @@ function cuadBind() {
     cuadMonth = addMonths(cuadMonth, 1);
     loadMonth();
   });
+  document.getElementById('cuad-mid-prev')?.addEventListener('click', () => {
+    cuadMonth = addMonths(cuadMonth, -1);
+    loadMonth();
+  });
+  document.getElementById('cuad-mid-next')?.addEventListener('click', () => {
+    cuadMonth = addMonths(cuadMonth, 1);
+    loadMonth();
+  });
   document.getElementById('cuad-today')?.addEventListener('click', () => {
+    cuadMonth = startOfMonth(new Date());
+    cuadSelectedIso = isoLocal(new Date());
+    loadMonth();
+  });
+  document.getElementById('cuad-mid-today')?.addEventListener('click', () => {
     cuadMonth = startOfMonth(new Date());
     cuadSelectedIso = isoLocal(new Date());
     loadMonth();
