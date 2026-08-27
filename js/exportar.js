@@ -507,10 +507,11 @@ async function handleImportCSVFiles(fileList) {
             nombreImport = bonoPorAlias.nombre;
             parquesInvolucrados.add(nombreImport);
           } else if (pl.includes('multipark') || pl === '') {
-            // Multipark -> Sin especificar (sin parque)
-            tipoImport = 'entrada';
-            parqueId = null;
-            nombreImport = 'Sin especificar';
+            // Multipark SOLO sale al exportar bonos (los parques sí traen su nombre)
+            // No lo hemos roto: los parques siguen entrando por el if de arriba
+            tipoImport = 'bono';
+            bonoId = null;
+            nombreImport = 'Sin especificar · Bono';
             parquesInvolucrados.add(nombreImport);
           } else {
             throw new Error(`Ni parque ni bono "${parqueLine}" existe. Para bonos usa "Bono Oro" en la línea 2; para Multipark se guardará como Sin especificar.`);
@@ -652,9 +653,9 @@ async function handleImportCSVFiles(fileList) {
   const countsByPark = {};
   for (const v of totalNuevasVentas) {
     const name = v.tipo === 'bono'
-      ? (STATE.tipos_bono.find(b => b.id === v.bono_id)?.nombre || 'Bono')
+      ? (v.bono_id ? (STATE.tipos_bono.find(b => b.id === v.bono_id)?.nombre || 'Bono') : 'Sin especificar')
       : (v.parque_id ? (STATE.parques.find(p => p.id === v.parque_id)?.nombre || 'Desconocido') : 'Sin especificar');
-    const key = name + (v.tipo === 'bono' ? ' · Bono' : (name === 'Sin especificar' ? '' : ''));
+    const key = name + (v.tipo === 'bono' ? ' · Bono' : '');
     countsByPark[key] = (countsByPark[key] || 0) + 1;
   }
 
