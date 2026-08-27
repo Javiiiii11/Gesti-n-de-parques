@@ -71,7 +71,12 @@ function weekdayMon0(date) {
   return (date.getDay() + 6) % 7;
 }
 
-function daysInMonth(date) {
+function daysInMonth(a, b) {
+  // Compatible con dashboard.js que llama daysInMonth(year, monthIndex)
+  if (typeof a === 'number' && typeof b === 'number') {
+    return new Date(a, b + 1, 0).getDate();
+  }
+  const date = a;
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 }
 
