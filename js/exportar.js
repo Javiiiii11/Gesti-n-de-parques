@@ -474,11 +474,47 @@ async function handleImportCSVFiles(fileList) {
             if (aliasMatch) parqueLine = aliasMatch;
           }
 
-          const parqueEncontrado = STATE.parques.find(p => p.nombre.toLowerCase() === parqueLine.toLowerCase());
-          if (!parqueEncontrado) throw new Error(`El parque "${parqueLine}" no existe en la app.`);
+          // --- Detección parque / bono / Multipark -> Sin especificar ---
+          let tipoImport = 'entrada';
+          let parqueId = null;
+          let bonoId = null;
+          let nombreImport = '';
 
-          const parqueId = parqueEncontrado.id;
-          parquesInvolucrados.add(parqueEncontrado.nombre);
+          const parqueEncontrado = STATE.parques.find(p => p.nombre.toLowerCase() === parqueLine.toLowerCase());
+          const bonoEncontrado = STATE.tipos_bono.find(b => b.nombre.toLowerCase() === parqueLine.toLowerCase() || pl === b.nombre.toLowerCase());
+          const bonoAliases = {
+            'bono oro': 'Bono Oro',
+            'bono oro + parking': 'Bono Oro + Parking',
+            'bono plata': 'Bono Plata',
+            'bono platino': 'Bono Platino',
+            'bono verano': 'Bono Verano Estándar'
+          };
+          let bonoPorAlias = bonoAliases[pl] ? STATE.tipos_bono.find(b => b.nombre === bonoAliases[pl]) : null;
+
+          if (parqueEncontrado) {
+            tipoImport = 'entrada';
+            parqueId = parqueEncontrado.id;
+            nombreImport = parqueEncontrado.nombre;
+            parquesInvolucrados.add(nombreImport);
+          } else if (bonoEncontrado) {
+            tipoImport = 'bono';
+            bonoId = bonoEncontrado.id;
+            nombreImport = bonoEncontrado.nombre;
+            parquesInvolucrados.add(nombreImport);
+          } else if (bonoPorAlias) {
+            tipoImport = 'bono';
+            bonoId = bonoPorAlias.id;
+            nombreImport = bonoPorAlias.nombre;
+            parquesInvolucrados.add(nombreImport);
+          } else if (pl.includes('multipark') || pl === '') {
+            // Multipark -> Sin especificar (sin parque)
+            tipoImport = 'entrada';
+            parqueId = null;
+            nombreImport = 'Sin especificar';
+            parquesInvolucrados.add(nombreImport);
+          } else {
+            throw new Error(`Ni parque ni bono "${parqueLine}" existe. Para bonos usa "Bono Oro" en la línea 2; para Multipark se guardará como Sin especificar.`);
+          }
 
           let headerIdx = -1;
           for (let i = 0; i < lines.length; i++) {
@@ -494,11 +530,15 @@ async function handleImportCSVFiles(fileList) {
           const fileNuevosApuntes = [];
 
           const localizadoresExistentes = new Set(
-            STATE.ventas.filter(v => v.parque_id === parqueId && v.localizador).map(v => v.localizador)
+            STATE.ventas.filter(v => {
+              if (tipoImport === 'entrada') return v.parque_id === parqueId && v.localizador;
+              return v.bono_id === bonoId && v.localizador;
+            }).map(v => v.localizador)
           );
 
           for (const v of totalNuevasVentas) {
-            if (v.parque_id === parqueId && v.localizador) localizadoresExistentes.add(v.localizador);
+            if (tipoImport === 'entrada' && v.parque_id === parqueId && v.localizador) localizadoresExistentes.add(v.localizador);
+            if (tipoImport === 'bono' && v.bono_id === bonoId && v.localizador) localizadoresExistentes.add(v.localizador);
           }
 
           for (let i = headerIdx + 1; i < lines.length; i++) {
@@ -539,26 +579,28 @@ async function handleImportCSVFiles(fileList) {
 
             fileNuevasVentas.push({
               fecha: isoDate,
-              tipo: 'entrada',
+              tipo: tipoImport,
               via: 'llamada',
-              parque_id: parqueId,
-              bono_id: null,
+              parque_id: tipoImport === 'entrada' ? parqueId : null,
+              bono_id: tipoImport === 'bono' ? bonoId : null,
               cliente_nombre,
               importe_total,
               localizador
             });
 
             fileNuevosApuntes.push({
-              tipo: 'entrada',
+              tipo: tipoImport,
               via: 'llamada',
               estado_pago: 'pagado',
               nombre_apellidos: cliente_nombre,
               correo: correo || null,
               importe_total: importe_total,
-              anotaciones: 'Importado de CSV telemarketing',
+              anotaciones: 'Importado de CSV telemarketing' + (tipoImport === 'bono' ? ' · Bono' : '') + (nombreImport === 'Sin especificar' ? ' · Sin especificar' : ''),
               telefono: telefono || null,
-              parque_id: parqueId,
-              cantidad_entradas: 1,
+              parque_id: tipoImport === 'entrada' ? parqueId : null,
+              bono_id: tipoImport === 'bono' ? bonoId : null,
+              cantidad_entradas: tipoImport === 'entrada' ? 1 : null,
+              cantidad_bonos: tipoImport === 'bono' ? 1 : null,
               extras: metodoPago ? `Método: ${metodoPago}` : null,
               localizador: localizador,
               created_at: isoDate
@@ -606,11 +648,14 @@ async function handleImportCSVFiles(fileList) {
     return;
   }
 
-  // Agrupar ventas por parque para el resumen
+  // Agrupar ventas por parque/bono para el resumen
   const countsByPark = {};
   for (const v of totalNuevasVentas) {
-    const pName = STATE.parques.find(p => p.id === v.parque_id)?.nombre || 'Desconocido';
-    countsByPark[pName] = (countsByPark[pName] || 0) + 1;
+    const name = v.tipo === 'bono'
+      ? (STATE.tipos_bono.find(b => b.id === v.bono_id)?.nombre || 'Bono')
+      : (v.parque_id ? (STATE.parques.find(p => p.id === v.parque_id)?.nombre || 'Desconocido') : 'Sin especificar');
+    const key = name + (v.tipo === 'bono' ? ' · Bono' : (name === 'Sin especificar' ? '' : ''));
+    countsByPark[key] = (countsByPark[key] || 0) + 1;
   }
 
   let listHtml = '<ul style="margin: 8px 0 16px 20px; font-size: 13px;">';
