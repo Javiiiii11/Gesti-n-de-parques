@@ -570,6 +570,142 @@ function monthStats(person, monthDate) {
   return { work, free, vac, weekendWork, weekendFines, weekendHalf, hours, byCode, total };
 }
 
+// --- Intercambio de finde (máx 10 días seguidos) ---
+const CUAD_MAX_CONSECUTIVE = 10;
+function getWeekendIsos(iso) {
+  const d = new Date(iso + 'T12:00:00');
+  const day = d.getDay(); // 0 dom, 6 sab
+  let sat, sun;
+  if (day === 6) { // sábado
+    sat = iso;
+    const sunDate = new Date(d); sunDate.setDate(d.getDate() + 1);
+    sun = isoLocal(sunDate);
+  } else if (day === 0) { // domingo
+    sun = iso;
+    const satDate = new Date(d); satDate.setDate(d.getDate() - 1);
+    sat = isoLocal(satDate);
+  } else {
+    return null;
+  }
+  return [sat, sun];
+}
+function getCompensatoryIsos(weekend) {
+  // Las libranzas por trabajar finde suelen ser L el lunes+martes posterior o jueves+viernes anterior
+  // Detectamos cuál es el bloque real para ese finde mirando a la mayoría de los que trabajaron
+  const [sat] = weekend;
+  const satDate = new Date(sat + 'T12:00:00');
+  const thuIso = isoLocal(new Date(satDate.getFullYear(), satDate.getMonth(), satDate.getDate() - 2));
+  const friIso = isoLocal(new Date(satDate.getFullYear(), satDate.getMonth(), satDate.getDate() - 1));
+  const monIso = isoLocal(new Date(satDate.getFullYear(), satDate.getMonth(), satDate.getDate() + 2));
+  const tueIso = isoLocal(new Date(satDate.getFullYear(), satDate.getMonth(), satDate.getDate() + 3));
+  const range = bundleDateRange();
+  // Solo consideramos isos dentro del rango del CSV
+  const inRange = (iso) => !range || (iso >= range.from && iso <= range.to);
+  let countBefore = 0, countAfter = 0, totalWorkers = 0;
+  for (const p of allPeople()) {
+    if (!isWorkIso(p, weekend[0]) && !isWorkIso(p, weekend[1])) continue;
+    totalWorkers++;
+    const beforeL = [thuIso, friIso].filter(iso => inRange(iso) && codeOn(p, iso) === 'L').length;
+    const afterL = [monIso, tueIso].filter(iso => inRange(iso) && codeOn(p, iso) === 'L').length;
+    if (afterL > 0) countAfter++;
+    if (beforeL > 0) countBefore++;
+  }
+  if (totalWorkers === 0) return [];
+  // El bloque con más L entre los que trabajaron es el compensatorio oficial
+  if (countAfter > countBefore) return [monIso, tueIso].filter(inRange);
+  if (countBefore > countAfter) return [thuIso, friIso].filter(inRange);
+  // Empate: por defecto lunes+martes (más común)
+  // Si ninguno tiene L, devolvemos el bloque que esté dentro del rango para poder intercambiarlo igualmente
+  if (countAfter === 0 && countBefore === 0) {
+    // Si el finde está al inicio del rango, el bloque anterior queda fuera -> usa el posterior
+    const afterInRange = [monIso, tueIso].filter(inRange);
+    const beforeInRange = [thuIso, friIso].filter(inRange);
+    if (afterInRange.length) return afterInRange;
+    return beforeInRange;
+  }
+  return [monIso, tueIso].filter(inRange);
+}
+function isWorkIso(person, iso) {
+  const code = codeOn(person, iso);
+  // finde vacío dentro del rango se considera Libre (0) -> no trabajo
+  const range = bundleDateRange();
+  let effCode = code;
+  if (!effCode && isWeekendDate(new Date(iso + 'T12:00:00')) && range && iso >= range.from && iso <= range.to) effCode = '0';
+  if (!effCode) return false;
+  const meta = shiftMeta(effCode, iso);
+  return !!meta?.work;
+}
+function longestStreakWithOverrides(person, overrides) {
+  const range = bundleDateRange();
+  if (!range) return 0;
+  let cur = 0, max = 0;
+  let start = new Date(range.from + 'T12:00:00');
+  let end = new Date(range.to + 'T12:00:00');
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const iso = isoLocal(d);
+    let code = overrides && iso in overrides ? overrides[iso] : codeOn(person, iso);
+    if (!code && isWeekendDate(d) && iso >= range.from && iso <= range.to) code = '0';
+    const meta = code ? shiftMeta(code, iso) : null;
+    const isWork = !!meta?.work;
+    if (isWork) { cur++; max = Math.max(max, cur); }
+    else cur = 0;
+  }
+  return max;
+}
+function findSwapCandidates(selectedIso) {
+  const me = currentPerson();
+  if (!me) return [];
+  const weekend = getWeekendIsos(selectedIso);
+  if (!weekend) return [];
+  const [sat, sun] = weekend;
+  const candidates = [];
+  // Encargados con los que no se puede cambiar
+  const CUAD_SWAP_BLOCKED = [/olga/, /encarn/, /ricardo/, /adrian.*garrido/];
+  for (const other of allPeople()) {
+    if (normalizePerson(other.orig) === normalizePerson(me.orig)) continue;
+    if (CUAD_SWAP_BLOCKED.some(rx => rx.test(normalizePerson(other.orig)))) continue;
+    // Solo fines donde uno trabaja y el otro libra (intercambio con sentido)
+    const mySatWork = isWorkIso(me, sat);
+    const mySunWork = isWorkIso(me, sun);
+    const otherSatWork = isWorkIso(other, sat);
+    const otherSunWork = isWorkIso(other, sun);
+    const myWorksWeekend = mySatWork || mySunWork;
+    const otherWorksWeekend = otherSatWork || otherSunWork;
+    if (myWorksWeekend === otherWorksWeekend) continue; // ambos igual, no hay intercambio útil
+
+    const compIsos = getCompensatoryIsos(weekend);
+    const myOverrides = {};
+    const otherOverrides = {};
+    // intercambio del finde (sábado+domingo)
+    const mySatCode = codeOn(me, sat) || (mySatWork ? 'TFS' : '0');
+    const mySunCode = codeOn(me, sun) || (mySunWork ? 'TFS' : '0');
+    const otherSatCode = codeOn(other, sat) || (otherSatWork ? 'TFS' : '0');
+    const otherSunCode = codeOn(other, sun) || (otherSunWork ? 'TFS' : '0');
+    myOverrides[sat] = otherSatCode;
+    myOverrides[sun] = otherSunCode;
+    otherOverrides[sat] = mySatCode;
+    otherOverrides[sun] = mySunCode;
+    // + libranzas compensatorias (L) asociadas a ese finde — se mueven con el finde
+    for (const iso of compIsos) {
+      myOverrides[iso] = codeOn(other, iso) || '';
+      otherOverrides[iso] = codeOn(me, iso) || '';
+    }
+
+    const myStreak = longestStreakWithOverrides(me, myOverrides);
+    const otherStreak = longestStreakWithOverrides(other, otherOverrides);
+    const ok = myStreak < CUAD_MAX_CONSECUTIVE && otherStreak < CUAD_MAX_CONSECUTIVE;
+    candidates.push({
+      person: other,
+      myWorksWeekend, otherWorksWeekend,
+      myStreak, otherStreak, ok,
+      weekend,
+      compIsos
+    });
+  }
+  candidates.sort((a,b) => (a.ok === b.ok ? 0 : a.ok ? -1 : 1));
+  return candidates;
+}
+
 function nextShift(person, fromDate) {
   if (!person) return null;
   const start = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
@@ -953,12 +1089,16 @@ function renderAgenda(person) {
     const range = bundleDateRange();
     if (!code && isWeekendDate(date) && person && range && iso >= range.from && iso <= range.to) code = '0';
     const holiday = (cuadBundle.holidays || []).includes(iso);
+    const isWeekend = isWeekendDate(date);
+    const swapBtn = isWeekend && person ? `<button class="btn btn-secondary btn-sm" type="button" id="cuad-swap-btn" style="margin-top:10px;width:100%;justify-content:center;gap:6px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg> Buscar intercambio para este finde</button><p class="desc" style="font-size:11px;margin-top:6px;opacity:.7">Máx. 10 días seguidos — se comprueba para los dos</p>` : '';
     detail.innerHTML = `
       <div class="cuad-detail ${code ? `code-${code}` : ''}">
         <p class="cuad-kicker">${escapeHtml(relativeDayLabel(date))}</p>
         <h4>${escapeHtml(weekdayLong(date))}</h4>
         <p class="cuad-detail-shift">${escapeHtml(shiftTitle(code, date))}${holiday ? ' · festivo' : ''}</p>
-      </div>`;
+      </div>
+      ${swapBtn}`;
+    document.getElementById('cuad-swap-btn')?.addEventListener('click', () => openSwapModal(iso));
   }
 
   const items = upcomingWorkDays(person, cuadMonth, 14);
@@ -1075,6 +1215,62 @@ function exportCuadIcs(person) {
   a.click();
   URL.revokeObjectURL(a.href);
   toast('Calendario exportado. Ábrelo en Google Calendar o Outlook.', 'success');
+}
+
+function openSwapModal(iso) {
+  const me = currentPerson();
+  if (!me) { toast('No te he identificado en el cuadrante', 'error'); return; }
+  const weekend = getWeekendIsos(iso);
+  if (!weekend) { toast('Selecciona un sábado o domingo', 'error'); return; }
+  const [sat, sun] = weekend;
+  const satDate = new Date(sat + 'T12:00:00');
+  const sunDate = new Date(sun + 'T12:00:00');
+  const weekendLabel = `${satDate.toLocaleDateString('es-ES',{weekday:'long', day:'numeric', month:'short'})} y ${sunDate.toLocaleDateString('es-ES',{weekday:'long', day:'numeric'})}`;
+  const mySatWork = isWorkIso(me, sat);
+  const mySunWork = isWorkIso(me, sun);
+  const myLabel = mySatWork || mySunWork ? 'Trabajas' : 'Libras';
+  const candidates = findSwapCandidates(iso);
+  const compatibles = candidates.filter(c => c.ok);
+  const noCompatibles = candidates.filter(c => !c.ok);
+
+  const rowHtml = (c) => {
+    const otherSatWork = isWorkIso(c.person, sat);
+    const otherSunWork = isWorkIso(c.person, sun);
+    const otherLabel = otherSatWork || otherSunWork ? 'Trabaja' : 'Libra';
+    const status = c.ok
+      ? `<span class="cuad-swap-badge ok">✓ Compatible</span><span class="cuad-swap-streak">Tú ${c.myStreak} días máx · ${escapeHtml(c.person.orig)} ${c.otherStreak} días</span>`
+      : `<span class="cuad-swap-badge no">✗ ${c.myStreak >= 10 ? `Tú harías ${c.myStreak} días seguidos` : `${escapeHtml(c.person.orig)} haría ${c.otherStreak} días`}</span><span class="cuad-swap-streak">Límite 10</span>`;
+    return `
+      <div class="cuad-swap-row ${c.ok ? 'is-ok' : 'is-no'}">
+        <div class="cuad-swap-person">
+          <strong>${escapeHtml(c.person.orig)}</strong>
+          <span>${otherLabel} ese finde · ${myLabel} tú</span>
+        </div>
+        <div class="cuad-swap-status">${status}</div>
+      </div>`;
+  };
+
+  const compIsos = getCompensatoryIsos(weekend);
+  const compLabel = compIsos.length ? compIsos.map(iso => new Date(iso+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short', day:'numeric'})).join(' y ') : '—';
+  const html = `
+    <p class="desc" style="margin-bottom:10px;">Fin de semana del <strong>${escapeHtml(weekendLabel)}</strong> — tú <strong>${escapeHtml(myLabel)}</strong>. Si cambiáis, se mueven también las <strong>libranzas (L) del ${escapeHtml(compLabel)}</strong> asociadas a ese finde. Solo muestro compis donde el finde es opuesto y <strong>ninguno supera 10 días seguidos</strong> en todo el rango del CSV, no solo en el mismo mes.</p>
+    <div class="cuad-swap-summary">
+      <span class="cuad-chip">Tú: ${escapeHtml(myLabel)}</span>
+      <span class="cuad-chip">Libranzas: ${escapeHtml(compLabel)}</span>
+      <span class="cuad-chip">Rango: ${escapeHtml(bundleDateRange()?.from || '—')} → ${escapeHtml(bundleDateRange()?.to || '—')}</span>
+    </div>
+    ${compatibles.length ? `<h4 class="cuad-swap-title ok">✓ Con quién sí puedes cambiar (${compatibles.length})</h4><div class="cuad-swap-list">${compatibles.map(rowHtml).join('')}</div>` : '<p class="desc" style="margin:8px 0;color:var(--success)">No hay compatibles para ese finde.</p>'}
+    ${noCompatibles.length ? `<h4 class="cuad-swap-title no">✗ No compatibles (${noCompatibles.length})</h4><div class="cuad-swap-list is-muted">${noCompatibles.map(rowHtml).join('')}</div>` : ''}
+    <p class="desc" style="margin-top:12px;font-size:11px;opacity:.7">Intercambio = <strong>sábado + domingo + libranzas</strong>. Avisad y que el responsable actualice el Excel/CSV.</p>
+  `;
+
+  openModal({
+    title: `Intercambio de finde · ${satDate.toLocaleDateString('es-ES',{day:'numeric', month:'short'})}–${sunDate.getDate()}`,
+    width: '560px',
+    bodyHtml: html,
+    footHtml: `<button class="btn btn-ghost" type="button" id="cuad-swap-close">Cerrar</button>`
+  });
+  document.getElementById('cuad-swap-close')?.addEventListener('click', closeModal);
 }
 
 /* ---------------------------------- data ----------------------------------- */
