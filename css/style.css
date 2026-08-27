@@ -6117,6 +6117,7 @@ textarea:focus-visible,
 .cuad-modal-status{margin-top:8px;font-size:12px;min-height:16px}
 .cuad-modal-status.is-error{color:var(--danger)}
 @media(max-width:900px){.cuad-stats{grid-template-columns:repeat(2,1fr)}.cuad-layout{grid-template-columns:1fr}}
+#btn-quick-parse,#btn-cf-quick-parse{display:none!important}
 /* Día seleccionado — versión sutil */
 .cuad-detail{padding:12px 14px;border-radius:var(--radius-m);border:1px solid var(--border);background:var(--bg-elevated)!important;position:relative;overflow:hidden;border-left-width:4px}
 .cuad-detail.code-TM1{color:#38BDF8;border-left-color:#38BDF8;background:linear-gradient(90deg,rgba(56,189,248,.08),transparent 70%),var(--bg-elevated)!important}

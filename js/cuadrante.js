@@ -18,7 +18,7 @@ const CUAD_SHIFTS = {
   TM1: { work: true, kind: 'work', label: 'Mañana', hours: '9:00–17:00', start: '09:00', end: '17:00', hoursNum: 8 },
   TM2: { work: true, kind: 'work', label: 'Media mañana', hours: '10:00–18:00', start: '10:00', end: '18:00', hoursNum: 8 },
   TT1: { work: true, kind: 'work', label: 'Tarde', hours: '12:00–20:00', start: '12:00', end: '20:00', hoursNum: 8 },
-  TFS: { work: true, kind: 'weekend-work', label: 'Finde', hours: 'Trabajas', start: null, end: null, hoursNum: 8 },
+  TFS: { work: true, kind: 'weekend-work', label: 'Finde', hours: '10:00–18:00', start: '10:00', end: '18:00', hoursNum: 8 },
   L: { work: false, kind: 'off', label: 'Libre', hours: '', start: null, end: null, hoursNum: 0 },
   V: { work: false, kind: 'vac', label: 'Vacaciones', hours: '', start: null, end: null, hoursNum: 0 },
   0: { work: false, kind: 'weekend-off', label: 'Finde libre', hours: '', start: null, end: null, hoursNum: 0 },
@@ -548,10 +548,13 @@ function monthStats(person, monthDate) {
   let weekendWork = 0;
   let hours = 0;
   const byCode = {};
+  const range = bundleDateRange();
   for (let d = 1; d <= total; d++) {
     const date = new Date(y, m, d);
     const iso = isoLocal(date);
-    const code = codeOn(person, iso);
+    let code = codeOn(person, iso);
+    // Mismo criterio que el calendario: finde vacío dentro del CSV = Libre
+    if (!code && isWeekendDate(date) && range && iso >= range.from && iso <= range.to) code = '0';
     if (!code) continue;
     const meta = shiftMeta(code, date);
     byCode[code] = (byCode[code] || 0) + 1;
