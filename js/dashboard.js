@@ -281,11 +281,11 @@ function renderDashboard() {
   const goalMonthLabel = formatMonthLabel(goalMonthKey);
 
   const sum = (arr, key) => arr.reduce((acc, venta) => acc + Number(venta[key] || 0), 0);
-  
+
   // Calculate stats from filtered data
   const filteredTotal = sum(filtradas, 'importe_total');
   const filteredCount = filtradas.length;
-  
+
   // Get sales by park from filtered data
   const filteredSalesByPark = {};
   filtradas.forEach((venta) => {
@@ -294,15 +294,15 @@ function renderDashboard() {
     filteredSalesByPark[name].ventas += 1;
     filteredSalesByPark[name].total += Number(venta.importe_total) || 0;
   });
-  
+
   const topParkEntry = Object.entries(filteredSalesByPark).sort((a, b) => b[1].ventas - a[1].ventas)[0];
   const topParkName = topParkEntry ? topParkEntry[0] : '—';
   const topParkEntries = topParkEntry ? topParkEntry[1].ventas : 0;
   const topParkRevenue = topParkEntry ? topParkEntry[1].total : 0;
-  
+
   // Calculate average per sale in filtered data
   const averagePerSale = filteredCount ? filteredTotal / filteredCount : 0;
-  
+
   // Ventas del día de referencia dentro del periodo seleccionado
   const referenceDay = toDateInputValue(referenceDate);
   const ventasHoy = STATE.ventas.filter((venta) => isSameLocalDay(venta.fecha, referenceDay));
@@ -316,7 +316,7 @@ function renderDashboard() {
   const dailyAverageFiltered = daysInFilter ? filteredTotal / daysInFilter : 0;
 
   const filteredSummary = buildDashboardFilterSummary(filters, filtradas.length);
-  
+
   // Meta y métricas calculadas sobre el mes del periodo seleccionado
   const mesReferencia = STATE.ventas.filter((venta) => isMismoMes(venta.fecha, referenceDate));
   const currentMonthSales = sum(mesReferencia, 'importe_total');
@@ -596,7 +596,7 @@ function renderGoalChart(currentMonthSales, goal) {
 
   const datasetsData = remaining > 0 ? [filled, remaining] : [filled];
   const bgColors = remaining > 0 ? [currentColor, previousColor] : [currentColor];
-  
+
   // Texto central: % real y emoji del tier
   const pctText = rawPct.toFixed(1) + '%';
   const overlay = document.getElementById('goal-ring-overlay');
@@ -615,7 +615,7 @@ function renderGoalChart(currentMonthSales, goal) {
         data: datasetsData,
         backgroundColor: bgColors,
         borderWidth: 0,
-        borderRadius: 4,
+        borderRadius: 1,
       }],
     },
     options: {
@@ -707,9 +707,9 @@ function renderGoalWidget({
   // Mensajes motivadores por estado (estilo corto y directo)
   const MOTIVATION = {
     below: [
-      { max: 25,  msg: '🚀 Has vendido menos de lo previsto, ¡sube la cuota!' },
-      { max: 50,  msg: '🚀 Vas a mitad de camino, ¡mantén el ritmo!' },
-      { max: 75,  msg: '🔥 ¡Vas bien! La recta final es tuya 💪🏻' },
+      { max: 25, msg: '🚀 Has vendido menos de lo previsto, ¡sube la cuota!' },
+      { max: 50, msg: '🚀 Vas a mitad de camino, ¡mantén el ritmo!' },
+      { max: 75, msg: '🔥 ¡Vas bien! La recta final es tuya 💪🏻' },
       { max: 100, msg: '🎯 ¡A un paso del objetivo! ¡Último empujón!' },
     ],
     tier1: [
@@ -837,7 +837,7 @@ function renderGoalWidget({
           ${milestonesHtml}
         </div>
       </div>
-      <div class="goal-progress-meta" style="color:${motivColor}; font-weight: 600;">${rawPct.toFixed(1)}% del objetivo base ${currentTier > 0 ? '· ' + MILESTONES[currentTier-1].emoji + ' Hito ' + currentTier + ' alcanzado' : ''}</div>
+      <div class="goal-progress-meta" style="color:${motivColor}; font-weight: 600;">${rawPct.toFixed(1)}% del objetivo base ${currentTier > 0 ? '· ' + MILESTONES[currentTier - 1].emoji + ' Hito ' + currentTier + ' alcanzado' : ''}</div>
 
       <!-- Píldoras de hitos -->
       <div class="goal-milestone-pills">
@@ -1090,10 +1090,10 @@ function renderProfileGoalPreview(monthKey) {
   }
 
   const isCompleted = goal > 0 && monthSales >= goal;
-  const badgeHtml = goal > 0 
-    ? (isCompleted 
-        ? `<div class="goal-preview-pill pill-success">🔥 Meta 100% superada</div>`
-        : `<div class="goal-preview-pill pill-progress">⚡ ${fmtEUR(goal - monthSales)} restantes</div>`)
+  const badgeHtml = goal > 0
+    ? (isCompleted
+      ? `<div class="goal-preview-pill pill-success">🔥 Meta 100% superada</div>`
+      : `<div class="goal-preview-pill pill-progress">⚡ ${fmtEUR(goal - monthSales)} restantes</div>`)
     : `<div class="goal-preview-pill pill-none">Sin meta definida</div>`;
 
   if (preview) {
@@ -1145,17 +1145,17 @@ function renderGoalHistoryHtml(activeMonthKey) {
   return `
     <div class="profile-goal-history-list">
       ${entries.map((entry) => {
-        const sales = getMonthSales(entry.mes);
-        const goal = Number(entry.importe) || 0;
-        const pct = goal > 0 ? Math.min(100, Math.round((sales / goal) * 100)) : 0;
-        const effectiveDays = getEffectiveWorkdaysCount(entry.mes);
-        return `
+    const sales = getMonthSales(entry.mes);
+    const goal = Number(entry.importe) || 0;
+    const pct = goal > 0 ? Math.min(100, Math.round((sales / goal) * 100)) : 0;
+    const effectiveDays = getEffectiveWorkdaysCount(entry.mes);
+    return `
           <button type="button" class="profile-goal-history-row ${entry.mes === activeMonthKey ? 'is-active' : ''}" data-month="${escapeHtml(entry.mes)}">
             <span class="profile-goal-history-month">${escapeHtml(formatMonthLabel(entry.mes))}</span>
             <span class="profile-goal-history-meta">${fmtEUR(sales)} / ${fmtEUR(goal)} · ${pct}% <small style="opacity:0.75;">(${effectiveDays}d)</small></span>
           </button>
         `;
-      }).join('')}
+  }).join('')}
     </div>
   `;
 }
@@ -1183,10 +1183,10 @@ function openProfileSettings(initialMonthKey = null) {
     : `${fmtEUR(monthSales)} · sin meta`;
 
   const isCompleted = goal > 0 && monthSales >= goal;
-  const badgeHtml = goal > 0 
-    ? (isCompleted 
-        ? `<div class="goal-preview-pill pill-success">🔥 Meta 100% superada</div>`
-        : `<div class="goal-preview-pill pill-progress">⚡ ${fmtEUR(goal - monthSales)} restantes</div>`)
+  const badgeHtml = goal > 0
+    ? (isCompleted
+      ? `<div class="goal-preview-pill pill-success">🔥 Meta 100% superada</div>`
+      : `<div class="goal-preview-pill pill-progress">⚡ ${fmtEUR(goal - monthSales)} restantes</div>`)
     : `<div class="goal-preview-pill pill-none">Sin meta definida</div>`;
 
   const bodyHtml = `
@@ -1359,10 +1359,10 @@ function openProfileSettings(initialMonthKey = null) {
 
     const preview = document.getElementById('profile-goal-preview');
     const isCompleted = draftGoal > 0 && monthSales >= draftGoal;
-    const badgeHtml = draftGoal > 0 
-      ? (isCompleted 
-          ? `<div class="goal-preview-pill pill-success">🔥 Meta 100% superada</div>`
-          : `<div class="goal-preview-pill pill-progress">⚡ ${fmtEUR(draftGoal - monthSales)} restantes</div>`)
+    const badgeHtml = draftGoal > 0
+      ? (isCompleted
+        ? `<div class="goal-preview-pill pill-success">🔥 Meta 100% superada</div>`
+        : `<div class="goal-preview-pill pill-progress">⚡ ${fmtEUR(draftGoal - monthSales)} restantes</div>`)
       : `<div class="goal-preview-pill pill-none">Sin meta definida</div>`;
 
     if (preview) {
@@ -1518,7 +1518,7 @@ document.addEventListener('DOMContentLoaded', () => {
   wireTopbarUserMenu();
 });
 window.openProfileSettings = openProfileSettings;
-window.togglePasswordVisibility = function(btn) {
+window.togglePasswordVisibility = function (btn) {
   const input = btn.previousElementSibling;
   const eye = btn.querySelector('.pw-eye');
   const eyeOff = btn.querySelector('.pw-eye-off');
