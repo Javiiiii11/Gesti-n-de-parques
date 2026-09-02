@@ -1,3 +1,6 @@
+
+[![Park-Sales: Potencia tus Ventas de Parques](https://repoclip.io/api/badge/8d4e32f1-937b-49e6-8239-492301a8e7b5)](https://repoclip.io/v/8d4e32f1-937b-49e6-8239-492301a8e7b5)
+
 # ParkSales — Gestión y análisis de ventas de entradas a parques de ocio
 
 Aplicación web (HTML/CSS/JS vanilla) para registrar ventas de entradas de forma
