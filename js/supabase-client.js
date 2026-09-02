@@ -817,11 +817,14 @@ const DB = {
     }
   },
 
-  async setObjetivoMensual(mes, importe) {
+  async setObjetivoMensual(mes, importe, diasLaborables = null) {
     if (!/^\d{4}-\d{2}$/.test(String(mes || ''))) {
       throw new Error('Mes inválido. Usa el formato YYYY-MM.');
     }
     const amount = Math.max(0, Number(importe) || 0);
+    const workdays = (diasLaborables !== null && diasLaborables !== undefined && String(diasLaborables).trim() !== '')
+      ? Math.max(1, Math.min(31, Number(diasLaborables) || 0))
+      : null;
 
     if (!CATALOG_SUPABASE) {
       const list = readLocal(LOCAL_KEYS.objetivos_mensuales);
@@ -830,6 +833,7 @@ const DB = {
         id: idx >= 0 ? list[idx].id : uid(),
         mes,
         importe: amount,
+        dias_laborables: workdays,
         updated_at: new Date().toISOString(),
         created_at: idx >= 0 ? list[idx].created_at : new Date().toISOString(),
       };
@@ -842,19 +846,43 @@ const DB = {
     const user = await AUTH.getCurrentUser();
     if (!user?.id) throw new Error('No hay sesión activa para guardar la meta mensual.');
 
-    const { data, error } = await supabaseClient
-      .from('objetivos_mensuales')
-      .upsert({ user_id: user.id, mes, importe: amount }, { onConflict: 'user_id,mes' })
-      .select()
-      .single();
-    if (error) throw normalizeDbError(error, 'objetivos_mensuales');
+    const payload = { user_id: user.id, mes, importe: amount };
+    if (workdays !== null) payload.dias_laborables = workdays;
+
+    let data;
+    let error;
+    try {
+      const res = await supabaseClient
+        .from('objetivos_mensuales')
+        .upsert(payload, { onConflict: 'user_id,mes' })
+        .select()
+        .single();
+      data = res.data;
+      error = res.error;
+    } catch (e) {
+      error = e;
+    }
+
+    if (error && workdays !== null) {
+      delete payload.dias_laborables;
+      const res2 = await supabaseClient
+        .from('objetivos_mensuales')
+        .upsert(payload, { onConflict: 'user_id,mes' })
+        .select()
+        .single();
+      if (res2.error) throw normalizeDbError(res2.error, 'objetivos_mensuales');
+      data = { ...res2.data, dias_laborables: workdays };
+    } else if (error) {
+      throw normalizeDbError(error, 'objetivos_mensuales');
+    }
 
     const list = readLocal(LOCAL_KEYS.objetivos_mensuales);
     const idx = list.findIndex((row) => row.mes === mes);
-    if (idx >= 0) list[idx] = data;
-    else list.push(data);
+    const rowToStore = { ...(data || {}), dias_laborables: workdays };
+    if (idx >= 0) list[idx] = rowToStore;
+    else list.push(rowToStore);
     writeLocal(LOCAL_KEYS.objetivos_mensuales, list);
-    return data;
+    return rowToStore;
   },
 };
 

@@ -230,7 +230,12 @@
           Parques / Bonos
         </div>
         <div class="nav-item" data-view="cuadrante">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <path d="M16 2v4M8 2v4M3 10h18" />
+            <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
+          </svg>
           Mi Cuadrante
         </div>
         <div class="nav-item" data-view="estadisticas">
@@ -381,7 +386,12 @@
               Ajustes perfil
             </button>
             <button class="tbm-item" id="tbm-cuadrante-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+                <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
+              </svg>
               Mi cuadrante
             </button>
             <div class="tbm-separator"><span>BACKUP</span></div>
@@ -469,6 +479,7 @@
               <div class="goal-layout">
                 <div class="goal-chart-wrap">
                   <canvas id="chart-objetivo"></canvas>
+                  <div id="goal-ring-overlay" class="goal-ring-overlay"></div>
                 </div>
                 <div id="goal-widget"></div>
               </div>
@@ -483,8 +494,8 @@
               </div>
               <div class="ranking-list" id="ranking-parques"></div>
             </div>
-                  </div>
-</section>
+          </div>
+        </section>
 
         <!-- ========================= REGISTRO RÁPIDO ========================= -->
         <section class="view" id="view-venta-rapida">
@@ -1037,9 +1048,11 @@
                 <div class="cuad-leyenda" id="cuad-leyenda"></div>
               </div>
               <div class="cuad-month-nav cuad-month-nav--mid" id="cuad-mid-nav">
-                <button class="btn btn-ghost btn-sm" type="button" id="cuad-mid-prev" aria-label="Mes anterior">‹</button>
+                <button class="btn btn-ghost btn-sm" type="button" id="cuad-mid-prev"
+                  aria-label="Mes anterior">‹</button>
                 <span id="cuad-mid-mes-label"></span>
-                <button class="btn btn-ghost btn-sm" type="button" id="cuad-mid-next" aria-label="Mes siguiente">›</button>
+                <button class="btn btn-ghost btn-sm" type="button" id="cuad-mid-next"
+                  aria-label="Mes siguiente">›</button>
                 <button class="btn btn-secondary btn-sm" type="button" id="cuad-mid-today">Hoy</button>
               </div>
               <div class="cuad-cal" id="cuad-calendario"></div>
@@ -1061,7 +1074,8 @@
             <div class="cuad-admin-head">
               <div>
                 <h3>Cuadrantes del equipo</h3>
-                <p class="desc" id="cuad-admin-hint">Solo quien tenga la contraseña puede subir o borrar un calendario. El resto del equipo solo lo consulta.</p>
+                <p class="desc" id="cuad-admin-hint">Solo quien tenga la contraseña puede subir o borrar un calendario.
+                  El resto del equipo solo lo consulta.</p>
               </div>
               <div class="cuad-admin-actions">
                 <button class="btn btn-primary" type="button" id="cuad-btn-upload">Subir calendario CSV</button>
@@ -1203,28 +1217,60 @@
           </div>
 
           <!-- Sección de Archivos -->
-          <div class="card card-pad promos-card" style="margin-bottom: 24px; display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+          <div class="card card-pad promos-card"
+            style="margin-bottom: 24px; display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
             <div class="promos-card-header" style="flex:1; min-width:220px;">
               <span class="promos-icon">📁</span>
               <div>
                 <h3 class="section-title" style="margin:0;">Archivos</h3>
-                <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Accede a archivos de forma rápida</p>
+                <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Accede a archivos de forma rápida
+                </p>
               </div>
             </div>
-            <div class="promos-card-actions" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; width:100%; margin-left:auto;">
-              <a href="https://grprsc.sharepoint.com/:x:/r/sites/CALLCENTERPARQUEWARNER/_layouts/15/Doc.aspx?sourcedoc=%7BA6C36AFF-36B9-48F8-AB48-0C67F714B099%7D&file=DIGE%2022.04.2025.xlsx&action=default&mobileredirect=true&isSPOFile=1&ovuser=dbb21a28-035f-42c1-b1b7-f8918f6416a4%2Cahernandeza%40grpr.com&wdExp=TEAMS-TREATMENT&web=1&clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiI0OS8yNjA1MjkwNjEyMSJ9" target="_blank" class="btn btn-secondary" id="btn-dige">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
+            <div class="promos-card-actions"
+              style="display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; width:100%; margin-left:auto;">
+              <a href="https://grprsc.sharepoint.com/:x:/r/sites/CALLCENTERPARQUEWARNER/_layouts/15/Doc.aspx?sourcedoc=%7B121AD38F-AE83-459E-8556-0C3D15DD6241%7D&file=CONTACTOS.xlsx&action=default&mobileredirect=true&isSPOFile=1&ovuser=dbb21a28-035f-42c1-b1b7-f8918f6416a4%2Ctadell%40grpr.com&wdExp=TEAMS-TREATMENT&web=1&CID=71cb238f-3a83-474f-9318-ecf568f7d78f&clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiI0OS8yNjA0MTYxNzIxNSJ9"
+                target="_blank" class="btn btn-secondary" id="btn-contactos">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                Contactos
+              </a>
+              <a href="https://grprsc.sharepoint.com/:x:/r/sites/CALLCENTERPARQUEWARNER/_layouts/15/Doc.aspx?sourcedoc=%7BA6C36AFF-36B9-48F8-AB48-0C67F714B099%7D&file=DIGE%2022.04.2025.xlsx&action=default&mobileredirect=true&isSPOFile=1&ovuser=dbb21a28-035f-42c1-b1b7-f8918f6416a4%2Cahernandeza%40grpr.com&wdExp=TEAMS-TREATMENT&web=1&clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiI0OS8yNjA1MjkwNjIyMSJ9"
+                target="_blank" class="btn btn-secondary" id="btn-dige">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4" />
+                  <path d="M12 8h.01" />
+                </svg>
                 DIGE
               </a>
-              <a href="https://grprsc.sharepoint.com/:x:/r/sites/ParquesReunidos/_layouts/15/Doc.aspx?sourcedoc=%7B2484B2B5-C1CE-477E-8AE6-2E12BD364D43%7D&file=FECHAS%20CONFIRMADAS%20OD%20PARQUES%202026.xlsx&fromShare=true&action=default&mobileredirect=true" target="_blank" class="btn btn-secondary" id="btn-od-parques">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4" /><path d="M16 2v4" /><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><path d="M8 14h.01" /><path d="M16 14h.01" /><path d="M12 16v4" /><path d="M8 8h.01" /><path d="M16 8h.01" /></svg>
+              <a href="https://grprsc.sharepoint.com/:x:/r/sites/ParquesReunidos/_layouts/15/Doc.aspx?sourcedoc=%7B2484B2B5-C1CE-477E-8AE6-2E12BD364D43%7D&file=FECHAS%20CONFIRMADAS%20OD%20PARQUES%202026.xlsx&fromShare=true&action=default&mobileredirect=true"
+                target="_blank" class="btn btn-secondary" id="btn-od-parques">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M8 2v4" />
+                  <path d="M16 2v4" />
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <path d="M8 14h.01" />
+                  <path d="M16 14h.01" />
+                  <path d="M12 16v4" />
+                  <path d="M8 8h.01" />
+                  <path d="M16 8h.01" />
+                </svg>
                 OD Parques
               </a>
               <a href="https://www.parquewarner.com/content/dam/war/files/WARNER%20Alergenos.pdf" target="_blank"
                 class="btn btn-secondary" id="warner-alergenos-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                   stroke-linejoin="round">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                  </path>
                   <line x1="12" y1="9" x2="12" y2="13"></line>
                   <line x1="12" y1="17" x2="12.01" y2="17"></line>
                 </svg>
@@ -1233,7 +1279,9 @@
               <a href="#" target="_blank" class="btn btn-secondary" id="aquopolis-vip-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                   stroke-linejoin="round">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                  <polygon
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                  </polygon>
                 </svg>
                 Zonas VIP Aquopolis
               </a>
@@ -1886,7 +1934,8 @@
                 </div>
                 <h4 class="ex-title">Importar CSV Telemarketing</h4>
               </div>
-              <p class="ex-desc">Sube el informe en CSV. <strong>Multipark</strong> solo sale en bonos y se guarda como <em>Sin especificar · Bono</em>. Los parques sí traen su nombre.</p>
+              <p class="ex-desc">Sube el informe en CSV. <strong>Multipark</strong> solo sale en bonos y se guarda como
+                <em>Sin especificar · Bono</em>. Los parques sí traen su nombre.</p>
               <div class="ex-file-drop" id="import-csv-drop">Haz clic o arrastra uno o varios archivos .csv aquí</div>
               <input type="file" id="import-csv-file" accept=".csv" style="display:none;" multiple>
             </div>
@@ -2106,7 +2155,8 @@
   <script src="js/notas.js?v=3"></script>
   <script src="js/llamadas.js?v=3"></script>
   <script src="js/horarios.js?v=3"></script>
-  <script src="js/cuadrante.js?v=24"></script>  <script src="js/pomodoro.js?v=3"></script>
+  <script src="js/cuadrante.js?v=24"></script>
+  <script src="js/pomodoro.js?v=3"></script>
   <script src="js/music.js?v=3"></script>
   <script src="js/calculator.js?v=3"></script>
   <script src="js/conocimiento/chat-ia-knowledge.js"></script>

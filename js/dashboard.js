@@ -47,14 +47,33 @@ function getMonthlyGoalForMonth(monthKey) {
   return Math.max(0, Number(entry?.importe) || 0);
 }
 
-async function saveMonthlyGoalForMonth(monthKey, value) {
-  const saved = await DB.setObjetivoMensual(monthKey, value);
+function getCustomWorkdaysForMonth(monthKey) {
+  const entry = (STATE.objetivosMensuales || []).find((row) => row.mes === monthKey);
+  const val = Number(entry?.dias_laborables);
+  return (val > 0 && val <= 31) ? val : null;
+}
+
+function getEffectiveWorkdaysCount(monthKey) {
+  const custom = getCustomWorkdaysForMonth(monthKey);
+  if (custom !== null) return custom;
+  const [year, month] = String(monthKey || '').split('-').map(Number);
+  if (!year || !month) return 22;
+  return countWorkdaysInMonth(year, month - 1);
+}
+
+async function saveMonthlyGoalForMonth(monthKey, amount, customWorkdays = null) {
+  const parsed = Math.max(0, Number(amount) || 0);
+  const parsedDays = (customWorkdays !== null && customWorkdays !== undefined && String(customWorkdays).trim() !== '')
+    ? Math.max(1, Math.min(31, Number(customWorkdays) || 0))
+    : null;
+  const saved = await DB.setObjetivoMensual(monthKey, parsed, parsedDays);
   const list = STATE.objetivosMensuales || [];
   const idx = list.findIndex((row) => row.mes === monthKey);
-  if (idx >= 0) list[idx] = saved;
-  else list.push(saved);
+  const rowObj = saved || { mes: monthKey, importe: parsed, dias_laborables: parsedDays };
+  if (idx >= 0) list[idx] = rowObj;
+  else list.push(rowObj);
   STATE.objetivosMensuales = list.sort((a, b) => String(b.mes).localeCompare(String(a.mes)));
-  return saved;
+  return rowObj;
 }
 
 async function migrateLegacyMonthlyGoal() {
@@ -309,14 +328,34 @@ function renderDashboard() {
   const isCurrentReferenceMonth = referenceYear === now.getFullYear() && referenceMonth === now.getMonth();
   const referenceDayNumber = isCurrentReferenceMonth ? now.getDate() : daysInMonth(referenceYear, referenceMonth);
 
-  // Días laborables reales del mes de referencia (excluye fines de semana)
-  const actualMonthWorkdays = countWorkdaysInMonth(referenceYear, referenceMonth);
-  const workdaysElapsed = countWorkdaysElapsed(referenceYear, referenceMonth, referenceDayNumber);
-  const workdaysRemaining = isCurrentReferenceMonth
+  const customWorkdays = getCustomWorkdaysForMonth(goalMonthKey);
+  const defaultTotal = countWorkdaysInMonth(referenceYear, referenceMonth);
+  const defaultElapsed = isCurrentReferenceMonth
+    ? countWorkdaysElapsed(referenceYear, referenceMonth, referenceDayNumber)
+    : defaultTotal;
+  const defaultRemaining = isCurrentReferenceMonth
     ? countWorkdaysRemaining(referenceYear, referenceMonth, referenceDayNumber)
     : 0;
 
-  // Meta base: objetivo / días laborables reales del mes
+  let totalWorkdays = defaultTotal;
+  let workdaysElapsed = defaultElapsed;
+  let workdaysRemaining = defaultRemaining;
+
+  if (customWorkdays !== null) {
+    totalWorkdays = customWorkdays;
+    if (isCurrentReferenceMonth) {
+      const ratio = defaultTotal > 0 ? customWorkdays / defaultTotal : 1;
+      workdaysElapsed = Math.min(customWorkdays, Math.max(1, Math.round(defaultElapsed * ratio)));
+      workdaysRemaining = Math.max(0, customWorkdays - workdaysElapsed + 1);
+    } else {
+      workdaysElapsed = customWorkdays;
+      workdaysRemaining = 0;
+    }
+  }
+
+  const actualMonthWorkdays = Math.max(1, totalWorkdays);
+
+  // Meta base: objetivo / días laborables del mes
   const expectedDailyGoal = goal / actualMonthWorkdays;
   // Ritmo actual / media diaria del mes seleccionado
   const currentPace = workdaysElapsed > 0 ? currentMonthSales / workdaysElapsed : 0;
@@ -489,29 +528,151 @@ function renderGoalChart(currentMonthSales, goal) {
   if (typeof Chart === 'undefined') return;
   const ctx = document.getElementById('chart-objetivo').getContext('2d');
   if (chartObjetivo) chartObjetivo.destroy();
-  const remaining = Math.max(0, goal - currentMonthSales);
+
   const palette = chartPalette();
+  const rawPct = goal > 0 ? (currentMonthSales / goal) * 100 : 0;
+
+  // Orden de colores solicitado:
+  // 1. #F5A623 (Principal web: 0% - 100%)
+  // 2. #00E676 (Verde: 100% - 120%)
+  // 3. #00C6FF (Azul: 120% - 140%)
+  // 4. #B27BFF (Morado: 140% - 160%)
+  // 5. #FFD600 (Legendario amarillo: > 160%)
+
+  let currentColor = '#F5A623';
+  let previousColor = palette.grid;
+  let progressInLap = 0;
+  let maxInLap = 1;
+  let currentTierColor = '#F5A623';
+  let tierEmoji = '';
+
+  if (rawPct < 100) {
+    currentColor = '#F5A623';
+    previousColor = palette.grid;
+    progressInLap = currentMonthSales;
+    maxInLap = goal > 0 ? goal : 1;
+    currentTierColor = '#F5A623';
+    tierEmoji = '';
+  } else if (rawPct < 120) {
+    currentColor = '#00E676';
+    previousColor = '#F5A623';
+    progressInLap = currentMonthSales - goal;
+    maxInLap = goal * 0.2; // 20% del objetivo base
+    currentTierColor = '#00E676';
+    tierEmoji = '🎯';
+  } else if (rawPct < 140) {
+    currentColor = '#00C6FF';
+    previousColor = '#00E676';
+    progressInLap = currentMonthSales - (goal * 1.2);
+    maxInLap = goal * 0.2;
+    currentTierColor = '#00C6FF';
+    tierEmoji = '🚀';
+  } else if (rawPct < 160) {
+    currentColor = '#B27BFF';
+    previousColor = '#00C6FF';
+    progressInLap = currentMonthSales - (goal * 1.4);
+    maxInLap = goal * 0.2;
+    currentTierColor = '#B27BFF';
+    tierEmoji = '⚡';
+  } else {
+    currentColor = '#FFD600';
+    previousColor = '#B27BFF';
+    progressInLap = Math.min(goal * 0.2, currentMonthSales - (goal * 1.6));
+    maxInLap = goal * 0.2;
+    currentTierColor = '#FFD600';
+    tierEmoji = '👑';
+  }
+
+  let currentTierName = 'Ventas del mes';
+  let previousTierName = 'Pendiente';
+  let targetTierName = '100%';
+
+  if (rawPct < 100) {
+    currentTierName = 'Ventas del mes';
+    previousTierName = 'Pendiente para meta';
+    targetTierName = '100%';
+  } else if (rawPct < 120) {
+    currentTierName = 'Nivel 120% en curso';
+    previousTierName = 'Meta 100% completada';
+    targetTierName = '120%';
+  } else if (rawPct < 140) {
+    currentTierName = 'Nivel 140% en curso';
+    previousTierName = 'Nivel 120% completado';
+    targetTierName = '140%';
+  } else if (rawPct < 160) {
+    currentTierName = 'Nivel 160% en curso';
+    previousTierName = 'Nivel 140% completado';
+    targetTierName = '160%';
+  } else {
+    currentTierName = 'Nivel Leyenda (+160%)';
+    previousTierName = 'Nivel 160% completado';
+    targetTierName = '+160%';
+  }
+
+  const filled = Math.max(0, Math.min(maxInLap, progressInLap));
+  const remaining = Math.max(0, maxInLap - filled);
+
+  const datasetsData = remaining > 0 ? [filled, remaining] : [filled];
+  const bgColors = remaining > 0 ? [currentColor, previousColor] : [currentColor];
+  
+  // Texto central: % real y emoji del tier
+  const pctText = rawPct.toFixed(1) + '%';
+  const overlay = document.getElementById('goal-ring-overlay');
+  if (overlay) {
+    overlay.innerHTML = `
+      <span class="goal-ring-pct" style="color:${currentTierColor}">${pctText}</span>
+      <span class="goal-ring-tier">${tierEmoji}</span>
+    `;
+  }
+
   chartObjetivo = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: ['Vendido', 'Pendiente'],
+      labels: remaining > 0 ? [currentTierName, previousTierName] : [currentTierName],
       datasets: [{
-        data: [currentMonthSales, remaining],
-        backgroundColor: [palette.accent, palette.grid],
+        data: datasetsData,
+        backgroundColor: bgColors,
         borderWidth: 0,
+        borderRadius: 4,
       }],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      cutout: '72%',
+      cutout: '76%',
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: (ctx2) => `${ctx2.label}: ${fmtEUR(ctx2.parsed)}` } },
+        tooltip: {
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            title: (items) => {
+              if (!items.length) return '';
+              const item = items[0];
+              if (item.dataIndex === 0) {
+                return `${currentTierName} (${pctText})`;
+              }
+              return `${previousTierName} ✅`;
+            },
+            label: (item) => {
+              if (item.dataIndex === 0) {
+                if (rawPct < 100) {
+                  return ` Total vendido: ${fmtEUR(currentMonthSales)}`;
+                }
+                return ` Total vendido: ${fmtEUR(currentMonthSales)} (Faltan ${fmtEUR(remaining)} para el ${targetTierName})`;
+              }
+              if (rawPct < 100) {
+                return ` Falta para el 100%: ${fmtEUR(Math.max(0, goal - currentMonthSales))}`;
+              }
+              return ` Nivel superado con éxito`;
+            },
+          },
+        },
       },
     },
   });
 }
+
 
 function renderGoalPanelTitle(goalMonthKey, goalMonthLabel, goal) {
   const titleEl = document.getElementById('dashboard-goal-title');
@@ -556,15 +717,132 @@ function renderGoalWidget({
     return;
   }
 
-  // Estado visual según si la cuota diaria sube o baja respecto a la meta original
-  const quotaState = missingPerWorkingDay > expectedDailyGoal && expectedDailyGoal > 0 ? 'up' : (missingPerWorkingDay < expectedDailyGoal && expectedDailyGoal > 0 ? 'down' : 'on');
-  const quotaStateColor = quotaState === 'up' ? '#F5A623' : quotaState === 'down' ? '#00E676' : 'var(--accent)';
-const quotaStateLabel =
-    quotaState === 'up'
-        ? '🚀 Has vendido menos de lo previsto, ¡sube la cuota!'
-        : quotaState === 'down'
-            ? '🔥 ¡Vas por delante! Sigue así 💪🏻'
-            : '👍🏻 Vas al ritmo esperado';
+  // ── HITOS: 100 % · 120 % · 140 % · 160 % ──────────────────────────────
+  const rawPct = goal > 0 ? (currentMonthSales / goal) * 100 : 0; // sin cap
+  const MILESTONES = [
+    { pct: 100, label: '100%', color: '#00E676', emoji: '🎯', tier: 1 },
+    { pct: 120, label: '120%', color: '#00C6FF', emoji: '🚀', tier: 2 },
+    { pct: 140, label: '140%', color: '#B27BFF', emoji: '⚡', tier: 3 },
+    { pct: 160, label: '160%', color: '#FFD600', emoji: '👑', tier: 4 },
+  ];
+
+  // Tier actual alcanzado (0 = por debajo del 100%)
+  const currentTier = MILESTONES.filter((m) => rawPct >= m.pct).length;
+
+  // Siguiente hito al que aspirar
+  const nextMilestone = MILESTONES.find((m) => rawPct < m.pct) || null;
+
+  // Mensajes motivadores por estado (estilo corto y directo)
+  const MOTIVATION = {
+    below: [
+      { max: 25,  msg: '🚀 Has vendido menos de lo previsto, ¡sube la cuota!' },
+      { max: 50,  msg: '🚀 Vas a mitad de camino, ¡mantén el ritmo!' },
+      { max: 75,  msg: '🔥 ¡Vas bien! La recta final es tuya 💪🏻' },
+      { max: 100, msg: '🎯 ¡A un paso del objetivo! ¡Último empujón!' },
+    ],
+    tier1: [
+      '🎯 ¡Objetivo cumplido! Ahora a por el 120% 💪🏻',
+      '🎯 ¡Meta base conseguida! ¿Te quedas aquí o vas al 120%?',
+      '🎯 ¡100% cerrado! El siguiente nivel está a tu alcance.',
+    ],
+    tier2: [
+      '🚀 ¡120%! Estás en otra liga. ¡Vas por delante! 💪🏻',
+      '🚀 ¡20% extra sobre el objetivo! Sigue así, el 140% cae solo.',
+      '🚀 ¡Máquina! 120% y subiendo. El 140% te espera.',
+    ],
+    tier3: [
+      '⚡ ¡140%! Eres una bestia. ¿Puedes con el 160% también?',
+      '⚡ ¡Élite total! 140% superado. Muy pocos llegan aquí 🔥',
+      '⚡ ¡140% y contando! El 160% es tu siguiente obra maestra.',
+    ],
+    tier4: [
+      '👑 ¡160%! Leyenda absoluta. Estás rompiendo todos los récords.',
+      '👑 ¡160%! A estas alturas ya no hay hitos, solo historia.',
+      '👑 ¡Mes épico! 160% superado. ¡Imparable! 🔥',
+    ],
+  };
+
+  // Cuánto falta en euros para el siguiente hito
+  const nextAmount = nextMilestone
+    ? Math.max(0, (goal * nextMilestone.pct / 100) - currentMonthSales)
+    : 0;
+  const nextAmountStr = nextMilestone ? ` · Faltan <b>${fmtEUR(nextAmount)}</b> para el ${nextMilestone.label}` : '';
+
+  function getMotivMsg() {
+    if (currentTier === 4) {
+      const pool = MOTIVATION.tier4;
+      return pool[Math.floor(rawPct / 10) % pool.length];
+    }
+    if (currentTier === 3) {
+      const pool = MOTIVATION.tier3;
+      return `${pool[Math.floor(rawPct / 5) % pool.length]}${nextAmountStr}`;
+    }
+    if (currentTier === 2) {
+      const pool = MOTIVATION.tier2;
+      return `${pool[Math.floor(rawPct / 5) % pool.length]}${nextAmountStr}`;
+    }
+    if (currentTier === 1) {
+      const pool = MOTIVATION.tier1;
+      return `${pool[Math.floor(rawPct / 5) % pool.length]}${nextAmountStr}`;
+    }
+    // below 100%
+    const slot = MOTIVATION.below.find((s) => rawPct < s.max) || MOTIVATION.below[MOTIVATION.below.length - 1];
+    const faltaBase = Math.max(0, goal - currentMonthSales);
+    return `${slot.msg} · Faltan <b>${fmtEUR(faltaBase)}</b> para el 100%`;
+  }
+
+  // ── BARRA DE PROGRESO POR TRAMOS (0-160%) ──────────────────────────────
+  const SCALE_MAX = 160;
+  const barFillPct = Math.min(100, (rawPct / SCALE_MAX) * 100);
+
+  let fillGradient = '#F5A623';
+  if (rawPct > 160) {
+    fillGradient = `linear-gradient(90deg, #F5A623 0%, #F5A623 62.5%, #00E676 62.5%, #00E676 75%, #00C6FF 75%, #00C6FF 87.5%, #B27BFF 87.5%, #B27BFF 100%)`;
+  } else if (rawPct > 140) {
+    const s1 = ((100 / rawPct) * 100).toFixed(2);
+    const s2 = ((120 / rawPct) * 100).toFixed(2);
+    const s3 = ((140 / rawPct) * 100).toFixed(2);
+    fillGradient = `linear-gradient(90deg, #F5A623 0%, #F5A623 ${s1}%, #00E676 ${s1}%, #00E676 ${s2}%, #00C6FF ${s2}%, #00C6FF ${s3}%, #B27BFF ${s3}%, #B27BFF 100%)`;
+  } else if (rawPct > 120) {
+    const s1 = ((100 / rawPct) * 100).toFixed(2);
+    const s2 = ((120 / rawPct) * 100).toFixed(2);
+    fillGradient = `linear-gradient(90deg, #F5A623 0%, #F5A623 ${s1}%, #00E676 ${s1}%, #00E676 ${s2}%, #00C6FF ${s2}%, #00C6FF 100%)`;
+  } else if (rawPct > 100) {
+    const s1 = ((100 / rawPct) * 100).toFixed(2);
+    fillGradient = `linear-gradient(90deg, #F5A623 0%, #F5A623 ${s1}%, #00E676 ${s1}%, #00E676 100%)`;
+  } else {
+    fillGradient = '#F5A623';
+  }
+
+  const milestonesHtml = MILESTONES.map((m) => {
+    const pos = (m.pct / SCALE_MAX) * 100;
+    const reached = rawPct >= m.pct;
+    return `<div class="goal-milestone-marker ${reached ? 'reached' : ''}" style="left:${pos}%; --mc:${m.color};" title="${m.label}">
+      <div class="goal-milestone-label">${m.emoji} ${m.label}</div>
+      <div class="goal-milestone-dot"></div>
+    </div>`;
+  }).join('');
+
+  const motivMsg = getMotivMsg();
+  const motivColor = currentTier > 0 ? MILESTONES[currentTier - 1].color : '#F5A623';
+
+  const row3Label = nextMilestone
+    ? `Falta para el ${nextMilestone.label}`
+    : `✅ Superado 160% en`;
+
+  const row3Value = nextMilestone
+    ? fmtEUR(Math.max(0, (goal * nextMilestone.pct / 100) - currentMonthSales))
+    : '+' + fmtEUR(currentMonthSales - (goal * 1.6));
+
+  const row3Color = nextMilestone ? nextMilestone.color : '#FFD600';
+
+  const nextHintHtml = nextMilestone
+    ? `<div class="goal-next-hint" style="--nc:${nextMilestone.color};">
+         <span class="goal-next-emoji">${nextMilestone.emoji}</span>
+         <span>Próximo hito: <b>${nextMilestone.label}</b> · faltan <b>${fmtEUR(Math.max(0, (goal * nextMilestone.pct / 100) - currentMonthSales))}</b></span>
+       </div>`
+    : `<div class="goal-next-hint" style="--nc:#FFD600;">👑 ¡Has superado todos los hitos! Eres una leyenda.</div>`;
+
   document.getElementById('goal-widget').innerHTML = `
     <div class="goal-summary">
       <div class="goal-summary-row">
@@ -576,18 +854,35 @@ const quotaStateLabel =
         <b>${fmtEUR(currentMonthSales)}</b>
       </div>
       <div class="goal-summary-row">
-        <span>Lo que falta</span>
-        <b class="goal-remaining">${fmtEUR(goalRemaining)}</b>
+        <span>${row3Label}</span>
+        <b class="goal-remaining" style="color:${row3Color} !important;">${row3Value}</b>
       </div>
-      <div class="goal-progress-bar">
-        <div class="goal-progress-fill" style="width:${percentage}%"></div>
+
+      <!-- Barra de hitos tramo por tramo -->
+      <div class="goal-milestone-track-wrap">
+        <div class="goal-milestone-track">
+          <div class="goal-milestone-fill" style="width:${barFillPct}%; background:${fillGradient};"></div>
+          ${milestonesHtml}
+        </div>
       </div>
-      <div class="goal-progress-meta">${percentage.toFixed(1)}% completado</div>
+      <div class="goal-progress-meta" style="color:${motivColor}; font-weight: 600;">${rawPct.toFixed(1)}% del objetivo base ${currentTier > 0 ? '· ' + MILESTONES[currentTier-1].emoji + ' Hito ' + currentTier + ' alcanzado' : ''}</div>
+
+      <!-- Píldoras de hitos -->
+      <div class="goal-milestone-pills">
+        ${MILESTONES.map((m) => `
+          <div class="goal-milestone-pill ${rawPct >= m.pct ? 'pill-active' : ''}" style="--mc:${m.color};">
+            ${m.emoji} ${m.label}
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- Siguiente hito -->
+      ${nextHintHtml}
 
       <div class="goal-mini-grid">
-        <div class="goal-mini-card goal-mini-card-primary">
+        <div class="goal-mini-card goal-mini-card-primary" style="${currentTier > 0 ? `background:${motivColor}12; border-color:${motivColor}44;` : ''}">
           <span>Cuota / día restante</span>
-          <b>${fmtEUR(missingPerWorkingDay)}</b>
+          <b style="${currentTier > 0 ? `color:${motivColor};` : ''}">${fmtEUR(missingPerWorkingDay)}</b>
         </div>
         <div class="goal-mini-card">
           <span>Días que faltan</span>
@@ -603,8 +898,9 @@ const quotaStateLabel =
         </div>
       </div>
 
-      <div class="goal-status-note" style="background:${quotaStateColor}14; color:${quotaStateColor}; border-color:${quotaStateColor}33;">
-        ${quotaStateLabel}
+      <!-- Mensaje motivador -->
+      <div class="goal-status-note goal-motiv-note" style="background:${motivColor}14; color:${motivColor}; border-color:${motivColor}44;">
+        ${motivMsg}
       </div>
     </div>
   `;
@@ -797,38 +1093,59 @@ function renderRankingParques(ventas) {
 function renderProfileGoalPreview(monthKey) {
   const goal = getMonthlyGoalForMonth(monthKey);
   const monthSales = getMonthSales(monthKey);
+  const customWorkdays = getCustomWorkdaysForMonth(monthKey);
+  const effectiveDays = getEffectiveWorkdaysCount(monthKey);
+  const [year, month] = String(monthKey || '').split('-').map(Number);
+  const autoDays = year && month ? countWorkdaysInMonth(year, month - 1) : 22;
   const progressPct = goal > 0 ? Math.min(100, Math.round((monthSales / goal) * 100)) : 0;
   const monthLabel = formatMonthLabel(monthKey);
+  const expectedDaily = goal > 0 ? goal / effectiveDays : 0;
 
   const preview = document.getElementById('profile-goal-preview');
   const goalInput = document.getElementById('profile-goal');
-  const barWrap = document.getElementById('profile-goal-bar-wrap');
+  const workdaysInput = document.getElementById('profile-goal-workdays');
   const heroMonth = document.getElementById('profile-hero-month');
   const heroProgress = document.getElementById('profile-hero-progress-label');
   const heroBar = document.querySelector('.profile-progress-fill');
 
-  if (goalInput) {
+  if (goalInput && document.activeElement !== goalInput) {
     goalInput.value = goal || '';
   }
 
-  if (preview) {
-    preview.innerHTML = `
-      <span>${escapeHtml(monthLabel)}</span>
-      <strong>${fmtEUR(monthSales)}</strong>
-      <small>${goal ? `${progressPct}% de tu meta` : 'Sin meta guardada para este mes'}</small>
-    `;
+  if (workdaysInput && document.activeElement !== workdaysInput) {
+    workdaysInput.value = customWorkdays !== null ? customWorkdays : '';
+    workdaysInput.placeholder = `Auto: ${autoDays}d`;
   }
 
-  if (barWrap) {
-    barWrap.innerHTML = goal ? `
-      <div class="profile-goal-bar">
-        <div class="profile-goal-bar-fill" style="width:${progressPct}%"></div>
+  const isCompleted = goal > 0 && monthSales >= goal;
+  const badgeHtml = goal > 0 
+    ? (isCompleted 
+        ? `<div class="goal-preview-pill pill-success">🔥 Meta 100% superada</div>`
+        : `<div class="goal-preview-pill pill-progress">⚡ ${fmtEUR(goal - monthSales)} restantes</div>`)
+    : `<div class="goal-preview-pill pill-none">Sin meta definida</div>`;
+
+  if (preview) {
+    preview.innerHTML = `
+      <div class="goal-card-header">
+        <div class="goal-card-main">
+          <span class="goal-card-month">${escapeHtml(monthLabel)}</span>
+          <div class="goal-card-amount">${fmtEUR(monthSales)}</div>
+          <div class="goal-card-meta">
+            ${goal ? `<b>${progressPct}% de tu meta</b> · Cuota estimada: <b>${fmtEUR(expectedDaily)}/día</b> (${customWorkdays !== null ? `personalizado: ${effectiveDays}d` : `auto: ${effectiveDays}d`})` : 'Sin meta guardada para este mes'}
+          </div>
+        </div>
+        ${badgeHtml}
       </div>
-      <div class="profile-goal-bar-labels">
-        <span>${fmtEUR(monthSales)}</span>
-        <span>${fmtEUR(goal)}</span>
-      </div>
-    ` : '';
+      ${goal ? `
+        <div class="goal-card-track">
+          <div class="goal-card-track-fill" style="width:${Math.min(100, progressPct)}%; background: ${isCompleted ? 'linear-gradient(90deg, #F5A623, #00E676)' : 'linear-gradient(90deg, #F5A623, #FFD166)'};"></div>
+        </div>
+        <div class="goal-card-track-labels">
+          <span>Vendido: <b>${fmtEUR(monthSales)}</b></span>
+          <span>Objetivo: <b>${fmtEUR(goal)}</b></span>
+        </div>
+      ` : ''}
+    `;
   }
 
   if (heroMonth) heroMonth.textContent = monthLabel;
@@ -859,10 +1176,11 @@ function renderGoalHistoryHtml(activeMonthKey) {
         const sales = getMonthSales(entry.mes);
         const goal = Number(entry.importe) || 0;
         const pct = goal > 0 ? Math.min(100, Math.round((sales / goal) * 100)) : 0;
+        const effectiveDays = getEffectiveWorkdaysCount(entry.mes);
         return `
           <button type="button" class="profile-goal-history-row ${entry.mes === activeMonthKey ? 'is-active' : ''}" data-month="${escapeHtml(entry.mes)}">
             <span class="profile-goal-history-month">${escapeHtml(formatMonthLabel(entry.mes))}</span>
-            <span class="profile-goal-history-meta">${fmtEUR(sales)} / ${fmtEUR(goal)} · ${pct}%</span>
+            <span class="profile-goal-history-meta">${fmtEUR(sales)} / ${fmtEUR(goal)} · ${pct}% <small style="opacity:0.75;">(${effectiveDays}d)</small></span>
           </button>
         `;
       }).join('')}
@@ -877,8 +1195,13 @@ function openProfileSettings(initialMonthKey = null) {
     : toMonthInputValue(now);
   const goal = getMonthlyGoalForMonth(selectedMonthKey);
   const monthSales = getMonthSales(selectedMonthKey);
+  const customWorkdays = getCustomWorkdaysForMonth(selectedMonthKey);
+  const effectiveDays = getEffectiveWorkdaysCount(selectedMonthKey);
+  const [selectedYear, selectedMonth] = selectedMonthKey.split('-').map(Number);
+  const autoDays = countWorkdaysInMonth(selectedYear, selectedMonth - 1);
   const progressPct = goal > 0 ? Math.min(100, Math.round((monthSales / goal) * 100)) : 0;
   const selectedMonthLabel = formatMonthLabel(selectedMonthKey);
+  const expectedDaily = goal > 0 ? goal / effectiveDays : 0;
   const user = STATE.currentUser || {};
   const rawUserEmail = user.email || '';
   const userEmail = escapeHtml(rawUserEmail || 'Sin correo');
@@ -886,6 +1209,13 @@ function openProfileSettings(initialMonthKey = null) {
   const progressLabel = goal > 0
     ? `${fmtEUR(monthSales)} de ${fmtEUR(goal)} · ${progressPct}%`
     : `${fmtEUR(monthSales)} · sin meta`;
+
+  const isCompleted = goal > 0 && monthSales >= goal;
+  const badgeHtml = goal > 0 
+    ? (isCompleted 
+        ? `<div class="goal-preview-pill pill-success">🔥 Meta 100% superada</div>`
+        : `<div class="goal-preview-pill pill-progress">⚡ ${fmtEUR(goal - monthSales)} restantes</div>`)
+    : `<div class="goal-preview-pill pill-none">Sin meta definida</div>`;
 
   const bodyHtml = `
     <div class="profile-panel profile-panel--wide">
@@ -915,7 +1245,7 @@ function openProfileSettings(initialMonthKey = null) {
             Objetivo mensual
           </span>
           <p class="profile-section-desc">Define la meta del mes seleccionado. El dashboard la usará al filtrar por ese periodo.</p>
-          <div class="profile-fields profile-fields--goal">
+          <div class="profile-goal-inputs-grid">
             <label class="profile-field">
               <span>Mes</span>
               <input type="month" id="profile-goal-month" value="${selectedMonthKey}">
@@ -927,20 +1257,31 @@ function openProfileSettings(initialMonthKey = null) {
                 <input type="number" id="profile-goal" min="0" step="100" value="${goal || ''}" placeholder="Ej. 20000">
               </div>
             </label>
-            <div class="profile-goal-preview" id="profile-goal-preview">
-              <span>${escapeHtml(selectedMonthLabel)}</span>
-              <strong>${fmtEUR(monthSales)}</strong>
-              <small>${goal ? `${progressPct}% de tu meta` : 'Sin meta guardada'}</small>
-            </div>
-          </div>
-          <div id="profile-goal-bar-wrap">
-            ${goal ? `
-              <div class="profile-goal-bar">
-                <div class="profile-goal-bar-fill" style="width:${progressPct}%"></div>
+            <label class="profile-field profile-field--goal-workdays">
+              <span>Días de trabajo (opcional)</span>
+              <div class="profile-input-wrap">
+                <input type="number" id="profile-goal-workdays" min="1" max="31" step="1" value="${customWorkdays || ''}" placeholder="Auto: ${autoDays}d">
               </div>
-              <div class="profile-goal-bar-labels">
-                <span>${fmtEUR(monthSales)}</span>
-                <span>${fmtEUR(goal)}</span>
+            </label>
+          </div>
+          <div class="profile-goal-card" id="profile-goal-preview">
+            <div class="goal-card-header">
+              <div class="goal-card-main">
+                <span class="goal-card-month">${escapeHtml(selectedMonthLabel)}</span>
+                <div class="goal-card-amount">${fmtEUR(monthSales)}</div>
+                <div class="goal-card-meta">
+                  ${goal ? `<b>${progressPct}% de tu meta</b> · Cuota estimada: <b>${fmtEUR(expectedDaily)}/día</b> (${customWorkdays !== null ? `personalizado: ${effectiveDays}d` : `auto: ${effectiveDays}d`})` : 'Sin meta guardada para este mes'}
+                </div>
+              </div>
+              ${badgeHtml}
+            </div>
+            ${goal ? `
+              <div class="goal-card-track">
+                <div class="goal-card-track-fill" style="width:${Math.min(100, progressPct)}%; background: ${isCompleted ? 'linear-gradient(90deg, #F5A623, #00E676)' : 'linear-gradient(90deg, #F5A623, #FFD166)'};"></div>
+              </div>
+              <div class="goal-card-track-labels">
+                <span>Vendido: <b>${fmtEUR(monthSales)}</b></span>
+                <span>Objetivo: <b>${fmtEUR(goal)}</b></span>
               </div>
             ` : ''}
           </div>
@@ -1023,25 +1364,63 @@ function openProfileSettings(initialMonthKey = null) {
 
   const monthInput = document.getElementById('profile-goal-month');
   const goalInput = document.getElementById('profile-goal');
+  const workdaysInput = document.getElementById('profile-goal-workdays');
   const historyWrap = document.getElementById('profile-goal-history-wrap');
 
   monthInput?.addEventListener('change', () => {
     renderProfileGoalPreview(monthInput.value);
   });
-  goalInput?.addEventListener('input', () => {
+
+  const updateLivePreview = () => {
     const monthKey = monthInput?.value || selectedMonthKey;
-    const draftGoal = Math.max(0, Number(goalInput.value) || 0);
+    const draftGoal = Math.max(0, Number(goalInput?.value) || 0);
+    const draftWorkdaysVal = workdaysInput?.value;
+    const [y, m] = monthKey.split('-').map(Number);
+    const autoD = y && m ? countWorkdaysInMonth(y, m - 1) : 22;
+    const draftDays = (draftWorkdaysVal !== '' && draftWorkdaysVal !== undefined)
+      ? Math.max(1, Math.min(31, Number(draftWorkdaysVal) || 0))
+      : autoD;
+
     const monthSales = getMonthSales(monthKey);
     const progressPct = draftGoal > 0 ? Math.min(100, Math.round((monthSales / draftGoal) * 100)) : 0;
+    const expectedD = draftGoal > 0 ? draftGoal / draftDays : 0;
+
     const preview = document.getElementById('profile-goal-preview');
+    const isCompleted = draftGoal > 0 && monthSales >= draftGoal;
+    const badgeHtml = draftGoal > 0 
+      ? (isCompleted 
+          ? `<div class="goal-preview-pill pill-success">🔥 Meta 100% superada</div>`
+          : `<div class="goal-preview-pill pill-progress">⚡ ${fmtEUR(draftGoal - monthSales)} restantes</div>`)
+      : `<div class="goal-preview-pill pill-none">Sin meta definida</div>`;
+
     if (preview) {
       preview.innerHTML = `
-        <span>${escapeHtml(formatMonthLabel(monthKey))}</span>
-        <strong>${fmtEUR(monthSales)}</strong>
-        <small>${draftGoal ? `${progressPct}% de tu meta` : 'Sin meta guardada para este mes'}</small>
+        <div class="goal-card-header">
+          <div class="goal-card-main">
+            <span class="goal-card-month">${escapeHtml(formatMonthLabel(monthKey))}</span>
+            <div class="goal-card-amount">${fmtEUR(monthSales)}</div>
+            <div class="goal-card-meta">
+              ${draftGoal ? `<b>${progressPct}% de tu meta</b> · Cuota estimada: <b>${fmtEUR(expectedD)}/día</b> (${draftWorkdaysVal ? `personalizado: ${draftDays}d` : `auto: ${draftDays}d`})` : 'Sin meta guardada para este mes'}
+            </div>
+          </div>
+          ${badgeHtml}
+        </div>
+        ${draftGoal ? `
+          <div class="goal-card-track">
+            <div class="goal-card-track-fill" style="width:${Math.min(100, progressPct)}%; background: ${isCompleted ? 'linear-gradient(90deg, #F5A623, #00E676)' : 'linear-gradient(90deg, #F5A623, #FFD166)'};"></div>
+          </div>
+          <div class="goal-card-track-labels">
+            <span>Vendido: <b>${fmtEUR(monthSales)}</b></span>
+            <span>Objetivo: <b>${fmtEUR(draftGoal)}</b></span>
+          </div>
+        ` : ''}
       `;
     }
-  });
+  };
+
+  goalInput?.addEventListener('input', updateLivePreview);
+  workdaysInput?.addEventListener('input', updateLivePreview);
+
   historyWrap?.addEventListener('click', (event) => {
     const row = event.target.closest('.profile-goal-history-row');
     if (!row?.dataset.month || !monthInput) return;
@@ -1088,10 +1467,12 @@ function openProfileSettings(initialMonthKey = null) {
 
   document.getElementById('profile-save-btn').addEventListener('click', async () => {
     const monthKey = document.getElementById('profile-goal-month').value;
+    const goalVal = document.getElementById('profile-goal').value;
+    const workdaysVal = document.getElementById('profile-goal-workdays').value;
     const saveBtn = document.getElementById('profile-save-btn');
     saveBtn.disabled = true;
     try {
-      await saveMonthlyGoalForMonth(monthKey, document.getElementById('profile-goal').value);
+      await saveMonthlyGoalForMonth(monthKey, goalVal, workdaysVal);
       const historyWrapEl = document.getElementById('profile-goal-history-wrap');
       if (historyWrapEl) historyWrapEl.innerHTML = renderGoalHistoryHtml(monthKey);
       closeModal();
