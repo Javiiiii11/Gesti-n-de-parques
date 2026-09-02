@@ -18,8 +18,7 @@ const HIST_STATE = {
 };
 
 function getBonoNombre(bonoId) {
-  const bono = STATE.tipos_bono.find(b => b.id === bonoId);
-  return bono ? bono.nombre : '—';
+  return bonoNombre(bonoId);
 }
 
 function initHistorialView() {

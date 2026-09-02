@@ -231,7 +231,7 @@ function daysBetweenInclusive(from, to) {
 function getSalesByPark() {
   const grouped = {};
   STATE.ventas.forEach((venta) => {
-    const name = parqueNombre(venta.parque_id);
+    const name = getVentaItemNombre(venta);
     if (!grouped[name]) grouped[name] = { ventas: 0, total: 0 };
     grouped[name].ventas += 1;
     grouped[name].total += Number(venta.importe_total) || 0;
@@ -289,7 +289,7 @@ function renderDashboard() {
   // Get sales by park from filtered data
   const filteredSalesByPark = {};
   filtradas.forEach((venta) => {
-    const name = parqueNombre(venta.parque_id);
+    const name = getVentaItemNombre(venta);
     if (!filteredSalesByPark[name]) filteredSalesByPark[name] = { ventas: 0, total: 0 };
     filteredSalesByPark[name].ventas += 1;
     filteredSalesByPark[name].total += Number(venta.importe_total) || 0;
@@ -583,31 +583,13 @@ function renderGoalChart(currentMonthSales, goal) {
     tierEmoji = '👑';
   }
 
-  let currentTierName = 'Ventas del mes';
-  let previousTierName = 'Pendiente';
-  let targetTierName = '100%';
-
-  if (rawPct < 100) {
-    currentTierName = 'Ventas del mes';
-    previousTierName = 'Pendiente para meta';
-    targetTierName = '100%';
-  } else if (rawPct < 120) {
-    currentTierName = 'Nivel 120% en curso';
-    previousTierName = 'Meta 100% completada';
-    targetTierName = '120%';
-  } else if (rawPct < 140) {
-    currentTierName = 'Nivel 140% en curso';
-    previousTierName = 'Nivel 120% completado';
-    targetTierName = '140%';
-  } else if (rawPct < 160) {
-    currentTierName = 'Nivel 160% en curso';
-    previousTierName = 'Nivel 140% completado';
-    targetTierName = '160%';
-  } else {
-    currentTierName = 'Nivel Leyenda (+160%)';
-    previousTierName = 'Nivel 160% completado';
-    targetTierName = '+160%';
-  }
+  // Etiquetas simples para el tooltip
+  let tierLabel = '100%';
+  if (rawPct < 100) tierLabel = '100%';
+  else if (rawPct < 120) tierLabel = '120%';
+  else if (rawPct < 140) tierLabel = '140%';
+  else if (rawPct < 160) tierLabel = '160%';
+  else tierLabel = '+160%';
 
   const filled = Math.max(0, Math.min(maxInLap, progressInLap));
   const remaining = Math.max(0, maxInLap - filled);
@@ -628,7 +610,7 @@ function renderGoalChart(currentMonthSales, goal) {
   chartObjetivo = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: remaining > 0 ? [currentTierName, previousTierName] : [currentTierName],
+      labels: remaining > 0 ? ['Progreso', 'Restante'] : ['Progreso'],
       datasets: [{
         data: datasetsData,
         backgroundColor: bgColors,
@@ -646,25 +628,15 @@ function renderGoalChart(currentMonthSales, goal) {
           padding: 10,
           cornerRadius: 8,
           callbacks: {
-            title: (items) => {
-              if (!items.length) return '';
-              const item = items[0];
-              if (item.dataIndex === 0) {
-                return `${currentTierName} (${pctText})`;
-              }
-              return `${previousTierName} ✅`;
-            },
+            title: () => `${tierLabel} · Llevas ${fmtEUR(currentMonthSales)}`,
             label: (item) => {
               if (item.dataIndex === 0) {
                 if (rawPct < 100) {
-                  return ` Total vendido: ${fmtEUR(currentMonthSales)}`;
+                  return ` Faltan ${fmtEUR(Math.max(0, goal - currentMonthSales))} para la meta`;
                 }
-                return ` Total vendido: ${fmtEUR(currentMonthSales)} (Faltan ${fmtEUR(remaining)} para el ${targetTierName})`;
+                return ` Faltan ${fmtEUR(remaining)} para el ${tierLabel}`;
               }
-              if (rawPct < 100) {
-                return ` Falta para el 100%: ${fmtEUR(Math.max(0, goal - currentMonthSales))}`;
-              }
-              return ` Nivel superado con éxito`;
+              return ` Nivel anterior completado ✅`;
             },
           },
         },
@@ -1054,7 +1026,7 @@ function renderParqueChart(ventas) {
 function renderRankingParques(ventas) {
   const grouped = {};
   ventas.forEach((venta) => {
-    const name = parqueNombre(venta.parque_id);
+    const name = getVentaItemNombre(venta);
     if (!grouped[name]) grouped[name] = { ventas: 0, total: 0 };
     grouped[name].ventas += 1;
     grouped[name].total += Number(venta.importe_total) || 0;

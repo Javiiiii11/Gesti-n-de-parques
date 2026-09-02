@@ -205,13 +205,45 @@ const STATE = {
 };
 
 function parqueNombre(parqueId) {
+  if (!parqueId) return '—';
   const p = STATE.parques.find((x) => x.id === parqueId);
   return p ? p.nombre : '—';
 }
 
 function bonoNombre(bonoId) {
+  if (!bonoId) return 'Bono Parques';
   const b = STATE.tipos_bono.find((x) => x.id === bonoId);
-  return b ? b.nombre : '—';
+  return b ? b.nombre : 'Bono Parques';
+}
+
+function getVentaItemNombre(venta) {
+  if (!venta) return '—';
+
+  // Si es tipo bono o tiene bono_id
+  if (venta.tipo === 'bono' || (!venta.parque_id && venta.bono_id)) {
+    if (venta.bono_id) {
+      const b = STATE.tipos_bono.find((x) => x.id === venta.bono_id);
+      if (b && b.nombre && b.nombre !== '—') return b.nombre;
+    }
+    if (venta.bono_nombre && venta.bono_nombre !== '—') return venta.bono_nombre;
+    if (venta.parque_nombre && venta.parque_nombre !== '—') return venta.parque_nombre;
+    if (venta.item_nombre && venta.item_nombre !== '—') return venta.item_nombre;
+    return 'Bono Parques';
+  }
+
+  // Si tiene parque_id
+  if (venta.parque_id) {
+    const p = STATE.parques.find((x) => x.id === venta.parque_id);
+    if (p && p.nombre && p.nombre !== '—') return p.nombre;
+  }
+
+  // Nombres directos en propiedades
+  if (venta.parque_nombre && venta.parque_nombre !== '—') return venta.parque_nombre;
+  if (venta.bono_nombre && venta.bono_nombre !== '—') return venta.bono_nombre;
+  if (venta.item_nombre && venta.item_nombre !== '—') return venta.item_nombre;
+
+  if (venta.tipo === 'bono') return 'Bono Parques';
+  return 'Otros / Sin especificar';
 }
 
 function isMismoDia(iso, ref) {
