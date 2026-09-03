@@ -19,7 +19,7 @@ const CUAD_SHIFTS = {
   TM2: { work: true, kind: 'work', label: 'Media mañana', hours: '10:00–18:00', start: '10:00', end: '18:00', hoursNum: 8 },
   TT1: { work: true, kind: 'work', label: 'Tarde', hours: '12:00–20:00', start: '12:00', end: '20:00', hoursNum: 8 },
   TFS: { work: true, kind: 'weekend-work', label: 'Finde', hours: '10:00–18:00', start: '10:00', end: '18:00', hoursNum: 8 },
-  L: { work: false, kind: 'off', label: 'Libre', hours: '', start: null, end: null, hoursNum: 0 },
+  L: { work: false, kind: 'off', label: 'Entre semana libre', hours: '', start: null, end: null, hoursNum: 0 },
   V: { work: false, kind: 'vac', label: 'Vacaciones', hours: '', start: null, end: null, hoursNum: 0 },
   0: { work: false, kind: 'weekend-off', label: 'Finde libre', hours: '', start: null, end: null, hoursNum: 0 },
 };
@@ -966,7 +966,7 @@ function renderWeekStrip(person) {
       <button type="button" class="cuad-week-day${isToday ? ' is-today' : ''}${code ? ` code-${code}` : ''}" data-iso="${iso}" data-code="${escapeHtml(code)}">
         <span class="cuad-week-dow">${date.toLocaleDateString('es-ES', { weekday: 'short' })}</span>
         <span class="cuad-week-num">${date.getDate()}</span>
-        <span class="cuad-week-code">${code ? escapeHtml(code === '0' ? 'Libre' : code) : '—'}</span>
+        <span class="cuad-week-code">${code ? escapeHtml(code === '0' || code === 'L' ? 'Libre' : code) : '—'}</span>
         <span class="cuad-week-hours">${meta?.hours ? escapeHtml(meta.hours) : (meta ? escapeHtml(meta.label) : '')}</span>
       </button>`);
   }
@@ -1038,7 +1038,7 @@ function renderCalendar(person, hasData) {
 
     const hours = meta?.hours ? `<span class="cuad-day-hours">${escapeHtml(meta.hours)}</span>` : '';
     const label = displayCode
-      ? `<span class="cuad-day-code">${escapeHtml(displayCode === '0' ? 'Libre' : displayCode)}</span>`
+      ? `<span class="cuad-day-code">${escapeHtml(displayCode === '0' || displayCode === 'L' ? 'Libre' : displayCode)}</span>`
       : '<span class="cuad-day-code is-muted">—</span>';
     const hol = holiday ? '<span class="cuad-day-hol">Festivo</span>' : '';
 

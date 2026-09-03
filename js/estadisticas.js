@@ -12,10 +12,11 @@ function initEstadisticasView() {
 
 function getVentasPeriodo() {
   const val = document.getElementById('stats-periodo').value;
-  if (val === 'all') return STATE.ventas;
+  const isEfectiva = (v) => (typeof isVentaEfectiva === 'function' ? isVentaEfectiva(v) : true);
+  if (val === 'all') return STATE.ventas.filter(isEfectiva);
   const days = Number(val);
   const limite = new Date(); limite.setDate(limite.getDate() - days);
-  return STATE.ventas.filter((v) => new Date(v.fecha) >= limite);
+  return STATE.ventas.filter((v) => new Date(v.fecha) >= limite && isEfectiva(v));
 }
 
 function toggleChartEmptyState(canvasId, isEmpty, message = 'No hay datos de ventas en este periodo') {
@@ -67,7 +68,8 @@ function renderChartMensual() {
     const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i);
     meses.push(d);
   }
-  const ingresos = meses.map((m) => STATE.ventas.filter((v) => isMismoMes(v.fecha, m)).reduce((a, v) => a + Number(v.importe_total), 0));
+  const isEfectiva = (v) => (typeof isVentaEfectiva === 'function' ? isVentaEfectiva(v) : true);
+  const ingresos = meses.map((m) => STATE.ventas.filter((v) => isMismoMes(v.fecha, m) && isEfectiva(v)).reduce((a, v) => a + Number(v.importe_total), 0));
   const labels = meses.map((m) => m.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' }));
 
   const totalIngresos = ingresos.reduce((a, b) => a + b, 0);
@@ -205,8 +207,9 @@ function renderComparativaMensual() {
     const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i);
     meses.push(d);
   }
+  const isEfectiva = (v) => (typeof isVentaEfectiva === 'function' ? isVentaEfectiva(v) : true);
   const filas = meses.map((m, idx) => {
-    const ventasMes = STATE.ventas.filter((v) => isMismoMes(v.fecha, m));
+    const ventasMes = STATE.ventas.filter((v) => isMismoMes(v.fecha, m) && isEfectiva(v));
     const ingresos = ventasMes.reduce((a, v) => a + Number(v.importe_total), 0);
     const ventasCount = ventasMes.length;
     const media = ventasCount ? ingresos / ventasCount : 0;

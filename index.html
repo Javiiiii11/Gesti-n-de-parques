@@ -469,6 +469,7 @@
           </div>
 
           <div class="dashboard-main-grid">
+            <!-- Panel 1: Meta mensual -->
             <div class="card dashboard-panel">
               <div class="panel-head">
                 <div>
@@ -485,14 +486,21 @@
               </div>
             </div>
 
+            <!-- Panel 2: Distribución por Estado -->
             <div class="card dashboard-panel">
               <div class="panel-head">
                 <div>
-                  <h3>Parques más vendidos</h3>
-                  <p class="chart-sub">Ordenados por entradas vendidas.</p>
+                  <h3 id="dashboard-estado-title">Distribución por Estado</h3>
+                  <p class="chart-sub" id="dashboard-estado-sub">Desglose de estados y acceso directo a ventas en el filtro.</p>
                 </div>
               </div>
-              <div class="ranking-list" id="ranking-parques"></div>
+              <div class="goal-layout">
+                <div class="goal-chart-wrap">
+                  <canvas id="chart-estados-anillo"></canvas>
+                  <div id="estado-ring-overlay" class="goal-ring-overlay"></div>
+                </div>
+                <div id="estado-widget"></div>
+              </div>
             </div>
           </div>
         </section>
@@ -517,7 +525,7 @@
               </div>
               <div class="qp-body">
                 <textarea id="venta-quick-parse" class="qp-textarea"
-                  placeholder="Pega aquí la línea de la tabla&#10;Ej: usuario    21280354    Cliente    00,00 €    2026/01/01 00:00:00    correo@gmail.com    +34 123456789    Estado del pago"
+                  placeholder="Pega aquí la línea de la tabla&#10;Ej: usuario    21280354    Cliente    00,00 €    2026/01/01 00:00:00    correo@gmail.com    +34 123456789    Scalapay    Completado"
                   rows="3"></textarea>
                 <div class="qp-actions">
                   <button type="button" class="btn btn-secondary" id="btn-quick-parse">
@@ -589,6 +597,16 @@
                     <option value="llamada">📞 Llamada</option>
                     <option value="correo">✉️ Correo</option>
                     <option value="chat">💬 Chat</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label for="v-estado">Estado de la venta</label>
+                  <select id="v-estado" class="estado-select">
+                    <option value="completado" selected>✅ Completado</option>
+                    <option value="enviado">📤 Enviado</option>
+                    <option value="pendiente">⏳ Pendiente de pago</option>
+                    <option value="incompleto">❌ Incompleto</option>
+                    <option value="no_enviado">⏸️ No enviado</option>
                   </select>
                 </div>
               </div>
@@ -692,6 +710,7 @@
               <div class="tp-row" id="tp-row-correo" style="display:none"><span>Correo</span><b id="tp-correo">—</b>
               </div>
               <div class="tp-row"><span>Localizador</span><b id="tp-localizador">Sin localizador</b></div>
+              <div class="tp-row" id="tp-row-estado"><span>Estado</span><b id="tp-estado"><span class="badge" style="background:rgba(0,138,0,0.18); color:#00E676; border:1px solid #008A00; font-weight:700; font-size:11px; padding:2px 8px; border-radius:999px;">✅ Completado</span></b></div>
               <div class="tp-row" id="tp-row-telefono" style="display:none"><span>Teléfono</span><b
                   id="tp-telefono">—</b></div>
               <div class="tp-row" id="tp-row-cantidad" style="display:none"><span>Cantidad</span><b
@@ -924,12 +943,12 @@
               <input type="text" id="contactos-search" placeholder="Buscar por nombre, correo, teléfono...">
             </div>
             <select class="filter-select" id="contactos-filtro-tipo">
-              <option value="">Todos los tipos</option>
+              <option value="">Todos</option>
               <option value="entrada">Entradas</option>
               <option value="bono">Bonos</option>
             </select>
             <select class="filter-select" id="contactos-filtro-via">
-              <option value="">Todas las vías</option>
+              <option value="">Todas</option>
               <option value="llamada">📞 Llamada</option>
               <option value="correo">✉️ Correo</option>
               <option value="chat">💬 Chat</option>
@@ -1354,45 +1373,93 @@
           <div class="view-header">
             <div>
               <h2>Historial de ventas</h2>
-              <p class="desc">Consulta, filtra y edita todas tus ventas por parque y cliente</p>
+              <p class="desc">Consulta, filtra por estado y edita todas tus ventas en tiempo real</p>
             </div>
           </div>
-          <div class="table-toolbar">
-            <div class="search-box" style="margin-left:0;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <circle cx="11" cy="11" r="7" />
-                <path d="M21 21l-4.3-4.3" />
-              </svg>
-              <input type="text" id="hist-search" placeholder="Buscar cliente, parque o bono…">
+
+          <!-- Barra de filtros moderna y píldoras interactivas de estado -->
+          <div class="historial-filter-card card card-pad">
+            <div class="hist-status-pills-bar">
+              <button type="button" class="hist-status-pill active" data-status="">
+                <span class="pill-dot" style="background:var(--accent);"></span>
+                <span class="pill-label">Todas</span>
+                <span class="pill-badge" id="pill-count-all">0</span>
+              </button>
+              <button type="button" class="hist-status-pill" data-status="completado" style="--pill-color:#008A00; --pill-text:#00E676;">
+                <span class="pill-dot" style="background:#008A00;"></span>
+                <span class="pill-label">Completadas</span>
+                <span class="pill-badge" id="pill-count-completado">0</span>
+              </button>
+              <button type="button" class="hist-status-pill" data-status="enviado" style="--pill-color:#EAB308; --pill-text:#FDE047;">
+                <span class="pill-dot" style="background:#EAB308;"></span>
+                <span class="pill-label">Enviadas</span>
+                <span class="pill-badge" id="pill-count-enviado">0</span>
+              </button>
+              <button type="button" class="hist-status-pill" data-status="pendiente" style="--pill-color:#F97316; --pill-text:#FB923C;">
+                <span class="pill-dot" style="background:#F97316;"></span>
+                <span class="pill-label">Pendientes</span>
+                <span class="pill-badge" id="pill-count-pendiente">0</span>
+              </button>
+              <button type="button" class="hist-status-pill" data-status="incompleto" style="--pill-color:#9E0038; --pill-text:#FF6B8B;">
+                <span class="pill-dot" style="background:#9E0038;"></span>
+                <span class="pill-label">Incompletas</span>
+                <span class="pill-badge" id="pill-count-incompleto">0</span>
+              </button>
+              <button type="button" class="hist-status-pill" data-status="no_enviado" style="--pill-color:#64748B; --pill-text:#94A3B8;">
+                <span class="pill-dot" style="background:#64748B;"></span>
+                <span class="pill-label">No enviadas</span>
+                <span class="pill-badge" id="pill-count-no_enviado">0</span>
+              </button>
             </div>
-            <select class="filter-select" id="hist-filtro-tipo-venta">
-              <option value="">Todos los tipos</option>
-              <option value="entrada">Entradas</option>
-              <option value="bono">Bonos</option>
-            </select>
-            <select class="filter-select" id="hist-filtro-via">
-              <option value="">Todas las vías</option>
-              <option value="llamada">📞 Llamada</option>
-              <option value="correo">✉️ Correo</option>
-              <option value="chat">💬 Chat</option>
-            </select>
-            <select class="filter-select" id="hist-filtro-parque">
-              <option value="">Todos los parques</option>
-            </select>
-            <select class="filter-select" id="hist-filtro-bono">
-              <option value="">Todos los bonos</option>
-            </select>
-            <input type="date" class="filter-select" id="hist-filtro-desde">
-            <input type="date" class="filter-select" id="hist-filtro-hasta">
-            <button class="btn btn-ghost btn-sm" id="hist-filtro-clear">Limpiar filtros</button>
-            <button class="btn btn-danger btn-sm" id="hist-batch-delete" style="display:none; margin-left:auto;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                style="width:14px;height:14px;margin-right:4px;">
-                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
-              Eliminar (<span id="hist-batch-count">0</span>)
-            </button>
+
+            <div class="hist-controls-bar">
+              <div class="search-box hist-search-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="M21 21l-4.3-4.3" />
+                </svg>
+                <input type="text" id="hist-search" placeholder="Buscar cliente, parque, localizador…">
+              </div>
+              <select class="filter-select" id="hist-filtro-tipo-venta">
+                <option value="">Entradas y Bonos</option>
+                <option value="entrada">Entradas</option>
+                <option value="bono">Bonos</option>
+              </select>
+              <select class="filter-select" id="hist-filtro-via">
+                <option value="">Todas las vias</option>
+                <option value="llamada">📞 Llamada</option>
+                <option value="correo">✉️ Correo</option>
+                <option value="chat">💬 Chat</option>
+              </select>
+              <select class="filter-select" id="hist-filtro-parque">
+                <option value="">Todos los parques</option>
+              </select>
+              <select class="filter-select" id="hist-filtro-bono">
+                <option value="">Todos los bonos</option>
+              </select>
+              <div class="hist-date-inputs">
+                <span class="hist-date-label">Desde</span>
+                <input type="date" class="filter-select hist-date-field" id="hist-filtro-desde">
+                <span class="hist-date-label">Hasta</span>
+                <input type="date" class="filter-select hist-date-field" id="hist-filtro-hasta">
+              </div>
+              <button class="btn btn-ghost btn-sm" id="hist-filtro-clear" title="Restablecer todos los filtros">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-right:4px;">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                  <path d="M3 3v5h5"/>
+                </svg>
+                Limpiar
+              </button>
+              <button class="btn btn-danger btn-sm" id="hist-batch-delete" style="display:none; margin-left:auto;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  style="width:14px;height:14px;margin-right:4px;">
+                  <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+                Eliminar (<span id="hist-batch-count">0</span>)
+              </button>
+            </div>
           </div>
+
           <div class="table-scroll">
             <table class="data-table" id="historial-table">
               <thead>
@@ -1405,6 +1472,7 @@
                   <th data-sort="parque">Detalle <span class="sort-arrow"></span></th>
                   <th data-sort="cliente_nombre">Cliente <span class="sort-arrow"></span></th>
                   <th data-sort="localizador">Localizador <span class="sort-arrow"></span></th>
+                  <th data-sort="estado">Estado <span class="sort-arrow"></span></th>
                   <th data-sort="importe_total">Importe (€) <span class="sort-arrow"></span></th>
                   <th style="text-align:right;">Acciones</th>
                 </tr>
@@ -2142,7 +2210,7 @@
 
 
   <script src="js/supabase-client.js?v=11"></script>
-  <script src="js/utils.js?v=4"></script>
+  <script src="js/utils.js?v=5"></script>
   <script src="js/auth.js?v=5"></script>
   <script src="js/parques.js?v=4"></script>
   <script src="js/ventas.js?v=3"></script>
@@ -2155,7 +2223,7 @@
   <script src="js/notas.js?v=3"></script>
   <script src="js/llamadas.js?v=3"></script>
   <script src="js/horarios.js?v=3"></script>
-  <script src="js/cuadrante.js?v=24"></script>
+  <script src="js/cuadrante.js?v=25"></script>
   <script src="js/pomodoro.js?v=3"></script>
   <script src="js/music.js?v=3"></script>
   <script src="js/calculator.js?v=3"></script>

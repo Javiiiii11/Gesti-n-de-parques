@@ -14,6 +14,7 @@ const HIST_STATE = {
   bonoId: '',
   desde: '',
   hasta: '',
+  estado: '',
   selectedVentas: new Set(),
 };
 
@@ -58,6 +59,27 @@ function initHistorialView() {
     HIST_STATE.page = 1;
     renderHistorial();
   });
+
+  const estadoSelect = document.getElementById('hist-filtro-estado');
+  if (estadoSelect) {
+    estadoSelect.addEventListener('change', (e) => {
+      HIST_STATE.estado = e.target.value;
+      HIST_STATE.page = 1;
+      renderHistorial();
+    });
+  }
+
+  // Píldoras interactivas de filtro por estado
+  document.querySelectorAll('.hist-status-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const targetStatus = pill.dataset.status || '';
+      HIST_STATE.estado = targetStatus;
+      HIST_STATE.page = 1;
+      if (estadoSelect) estadoSelect.value = targetStatus;
+      renderHistorial();
+    });
+  });
+
   document.getElementById('hist-filtro-clear').addEventListener('click', () => {
     HIST_STATE.search = '';
     HIST_STATE.tipoVenta = '';
@@ -66,6 +88,7 @@ function initHistorialView() {
     HIST_STATE.bonoId = '';
     HIST_STATE.desde = '';
     HIST_STATE.hasta = '';
+    HIST_STATE.estado = '';
     HIST_STATE.page = 1;
     document.getElementById('hist-search').value = '';
     document.getElementById('hist-filtro-tipo-venta').value = '';
@@ -74,6 +97,7 @@ function initHistorialView() {
     document.getElementById('hist-filtro-bono').value = '';
     document.getElementById('hist-filtro-desde').value = '';
     document.getElementById('hist-filtro-hasta').value = '';
+    if (estadoSelect) estadoSelect.value = '';
     renderHistorial();
   });
 
@@ -108,7 +132,6 @@ function initHistorialView() {
       danger: true,
       onConfirm: async () => {
         try {
-          // Delete one by one since we don't have a bulkDelete in supabase-client
           const arr = Array.from(HIST_STATE.selectedVentas);
           for (const id of arr) {
             await DB.deleteVenta(id);
@@ -163,11 +186,42 @@ function fillBonoFiltro() {
   sel.value = current;
 }
 
+function updateHistStatusPillsCounts() {
+  const counts = {
+    all: STATE.ventas.length,
+    completado: 0,
+    enviado: 0,
+    pendiente: 0,
+    incompleto: 0,
+    no_enviado: 0,
+  };
+
+  STATE.ventas.forEach((v) => {
+    const estado = typeof normalizeEstadoVenta === 'function' ? normalizeEstadoVenta(v.estado) : 'completado';
+    if (counts[estado] !== undefined) counts[estado]++;
+    else counts.completado++;
+  });
+
+  document.querySelectorAll('.hist-status-pill').forEach(pill => {
+    const st = pill.dataset.status || '';
+    const key = st || 'all';
+    const badge = pill.querySelector('.pill-badge');
+    if (badge) badge.textContent = fmtNum(counts[key] || 0);
+
+    if (st === HIST_STATE.estado) {
+      pill.classList.add('active');
+    } else {
+      pill.classList.remove('active');
+    }
+  });
+}
+
 function getFilteredSortedVentas() {
   let rows = STATE.ventas.map((v) => ({ 
     ...v, 
     parqueNombreCache: parqueNombre(v.parque_id),
-    bonoNombreCache: getBonoNombre(v.bono_id)
+    bonoNombreCache: getBonoNombre(v.bono_id),
+    estadoNorm: typeof normalizeEstadoVenta === 'function' ? normalizeEstadoVenta(v.estado) : (v.estado || 'completado')
   }));
 
   if (HIST_STATE.search) {
@@ -184,6 +238,7 @@ function getFilteredSortedVentas() {
   if (HIST_STATE.bonoId) rows = rows.filter((v) => v.bono_id === HIST_STATE.bonoId);
   if (HIST_STATE.desde) rows = rows.filter((v) => new Date(v.fecha) >= new Date(HIST_STATE.desde));
   if (HIST_STATE.hasta) rows = rows.filter((v) => new Date(v.fecha) <= new Date(HIST_STATE.hasta + 'T23:59:59'));
+  if (HIST_STATE.estado) rows = rows.filter((v) => v.estadoNorm === HIST_STATE.estado);
 
   const dir = HIST_STATE.sortDir === 'asc' ? 1 : -1;
   const key = HIST_STATE.sortBy;
@@ -198,6 +253,9 @@ function getFilteredSortedVentas() {
     } else if (key === 'via') {
       va = a.via || 'llamada';
       vb = b.via || 'llamada';
+    } else if (key === 'estado') {
+      va = a.estadoNorm || 'completado';
+      vb = b.estadoNorm || 'completado';
     } else if (key === 'fecha') {
       va = new Date(a[key]).getTime();
       vb = new Date(b[key]).getTime();
@@ -218,6 +276,7 @@ function getFilteredSortedVentas() {
 function renderHistorial() {
   fillParqueFiltro();
   fillBonoFiltro();
+  updateHistStatusPillsCounts();
   
   const allRows = getFilteredSortedVentas();
   const totalPages = Math.max(1, Math.ceil(allRows.length / HIST_STATE.pageSize));
@@ -227,13 +286,15 @@ function renderHistorial() {
 
   document.querySelectorAll('#historial-table thead th[data-sort]').forEach((th) => {
     const arrow = th.querySelector('.sort-arrow');
-    if (th.dataset.sort === HIST_STATE.sortBy) arrow.textContent = HIST_STATE.sortDir === 'asc' ? '▲' : '▼';
-    else arrow.textContent = '';
+    if (arrow) {
+      if (th.dataset.sort === HIST_STATE.sortBy) arrow.textContent = HIST_STATE.sortDir === 'asc' ? '▲' : '▼';
+      else arrow.textContent = '';
+    }
   });
 
   const tbody = document.getElementById('historial-tbody');
   if (!pageRows.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state">
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       No se han encontrado ventas con estos filtros.</div></td></tr>`;
   } else {
@@ -246,6 +307,9 @@ function renderHistorial() {
       const detalle = tipo === 'entrada' ? v.parqueNombreCache : v.bonoNombreCache;
       const loc = v.localizador || '—';
       const checked = HIST_STATE.selectedVentas.has(v.id) ? 'checked' : '';
+      const estadoNorm = v.estadoNorm || 'completado';
+      const badgeInfo = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(estadoNorm) : { label: estadoNorm, colorBg: 'rgba(0,138,0,0.18)', textColor: '#00E676', colorBorder: '#008A00' };
+
       return `
         <tr>
           <td style="text-align:center;"><input type="checkbox" class="hist-row-cb" data-id="${v.id}" ${checked}></td>
@@ -255,13 +319,24 @@ function renderHistorial() {
           <td>${escapeHtml(detalle)}</td>
           <td>${escapeHtml(v.cliente_nombre || '—')}</td>
           <td>${escapeHtml(loc)}</td>
+          <td>
+            <div class="hist-quick-status-wrap">
+              <select class="hist-quick-status-select" data-venta-id="${v.id}" title="Cambiar estado rápidamente" style="background:${badgeInfo.colorBg}; color:${badgeInfo.textColor}; border: 1px solid ${badgeInfo.colorBorder};">
+                <option value="completado" ${estadoNorm === 'completado' ? 'selected' : ''}>✅ Completado</option>
+                <option value="enviado" ${estadoNorm === 'enviado' ? 'selected' : ''}>📤 Enviado</option>
+                <option value="pendiente" ${estadoNorm === 'pendiente' ? 'selected' : ''}>⏳ Pendiente de pago</option>
+                <option value="incompleto" ${estadoNorm === 'incompleto' ? 'selected' : ''}>❌ Incompleto</option>
+                <option value="no_enviado" ${estadoNorm === 'no_enviado' ? 'selected' : ''}>⏸️ No enviado</option>
+              </select>
+            </div>
+          </td>
           <td class="amount">${fmtEUR(v.importe_total)}</td>
           <td>
             <div class="row-actions" style="justify-content:flex-end;">
-              <button class="icon-btn-sm" title="Editar" data-edit-venta="${v.id}">
+              <button class="icon-btn-sm" title="Editar venta" data-edit-venta="${v.id}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
               </button>
-              <button class="icon-btn-sm danger" title="Eliminar" data-delete-venta="${v.id}">
+              <button class="icon-btn-sm danger" title="Eliminar venta" data-delete-venta="${v.id}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
               </button>
             </div>
@@ -278,6 +353,15 @@ function renderHistorial() {
   tbody.querySelectorAll('[data-edit-venta]').forEach((btn) => btn.addEventListener('click', () => openEditVenta(btn.dataset.editVenta)));
   tbody.querySelectorAll('[data-delete-venta]').forEach((btn) => btn.addEventListener('click', () => deleteVentaFlow(btn.dataset.deleteVenta)));
   
+  // Quick change status listener
+  tbody.querySelectorAll('.hist-quick-status-select').forEach((sel) => {
+    sel.addEventListener('change', async (e) => {
+      const vId = e.target.dataset.ventaId;
+      const nextEstado = e.target.value;
+      await quickChangeVentaEstado(vId, nextEstado);
+    });
+  });
+
   tbody.querySelectorAll('.hist-row-cb').forEach((cb) => {
     cb.addEventListener('change', (e) => {
       if (e.target.checked) HIST_STATE.selectedVentas.add(e.target.dataset.id);
@@ -287,6 +371,39 @@ function renderHistorial() {
   });
   
   updateHistBatchUI();
+}
+
+async function quickChangeVentaEstado(id, newEstado) {
+  const v = STATE.ventas.find(x => x.id === id);
+  if (!v) return;
+  const prevEstado = v.estado || 'completado';
+  if (prevEstado === newEstado) return;
+
+  try {
+    await DB.updateVenta(id, { estado: newEstado });
+
+    // Mapear estado_pago para contacto vinculado
+    let estadoPagoContacto = 'pagado';
+    if (newEstado === 'pendiente') estadoPagoContacto = 'pendiente';
+    else if (newEstado === 'incompleto') estadoPagoContacto = 'Incompleto';
+    else if (newEstado === 'enviado') estadoPagoContacto = 'Enviado';
+    else if (newEstado === 'no_enviado') estadoPagoContacto = 'No enviado';
+
+    const linked = findContactoForVenta(v);
+    if (linked?.id) {
+      await DB.updateContacto(linked.id, { estado_pago: estadoPagoContacto });
+    }
+
+    STATE.ventas = await DB.getVentas();
+    STATE.contactos = await DB.getContactos();
+
+    const info = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(newEstado) : { label: newEstado };
+    toast(`Estado cambiado a ${info.label}`, 'success');
+    refreshAllViewsAfterDataChange();
+  } catch (err) {
+    toast('Error al actualizar estado: ' + err.message, 'error');
+    renderHistorial();
+  }
 }
 
 function findContactoForVenta(venta) {
@@ -348,6 +465,8 @@ function openEditVenta(id) {
     ? String(contacto.fecha_nacimiento).slice(0, 10)
     : '';
 
+  const estadoActual = v.estado || 'completado';
+
   openModal({
     title: 'Editar venta',
     width: '640px',
@@ -392,6 +511,16 @@ function openEditVenta(id) {
             <option value="llamada" ${(v.via || 'llamada') === 'llamada' ? 'selected' : ''}>📞 Llamada</option>
             <option value="correo" ${v.via === 'correo' ? 'selected' : ''}>✉️ Correo</option>
             <option value="chat" ${v.via === 'chat' ? 'selected' : ''}>💬 Chat</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="ev-estado">Estado de la venta</label>
+          <select id="ev-estado">
+            <option value="completado" ${estadoActual === 'completado' ? 'selected' : ''}>✅ Completado</option>
+            <option value="enviado" ${estadoActual === 'enviado' ? 'selected' : ''}>📤 Enviado</option>
+            <option value="pendiente" ${estadoActual === 'pendiente' ? 'selected' : ''}>⏳ Pendiente de pago</option>
+            <option value="incompleto" ${estadoActual === 'incompleto' ? 'selected' : ''}>❌ Incompleto</option>
+            <option value="no_enviado" ${estadoActual === 'no_enviado' ? 'selected' : ''}>⏸️ No enviado</option>
           </select>
         </div>
       </div>
@@ -497,6 +626,7 @@ function openEditVenta(id) {
     const importeTotal = Number(document.getElementById('ev-importe').value);
     const localizador = document.getElementById('ev-localizador')?.value.trim() || null;
     const via = document.getElementById('ev-via').value;
+    const nextEstado = document.getElementById('ev-estado')?.value || 'completado';
     const anotaciones = nextTipo === 'entrada'
       ? (document.getElementById('ev-anotaciones')?.value.trim() || '')
       : (document.getElementById('ev-anotaciones-bono')?.value.trim() || '');
@@ -517,6 +647,7 @@ function openEditVenta(id) {
       cliente_nombre: clienteNombre,
       importe_total: importeTotal,
       localizador,
+      estado: nextEstado,
     };
 
     let itemId = null;
@@ -532,12 +663,18 @@ function openEditVenta(id) {
       changes.parque_id = null;
     }
 
+    let estadoPagoContacto = 'pagado';
+    if (nextEstado === 'pendiente') estadoPagoContacto = 'pendiente';
+    else if (nextEstado === 'incompleto') estadoPagoContacto = 'Incompleto';
+    else if (nextEstado === 'enviado') estadoPagoContacto = 'Enviado';
+    else if (nextEstado === 'no_enviado') estadoPagoContacto = 'No enviado';
+
     const contactoPayload = {
       tipo: nextTipo,
       nombre_apellidos: clienteNombre,
       correo: document.getElementById('ev-correo')?.value.trim() || '',
       importe_total: importeTotal,
-      estado_pago: 'pagado',
+      estado_pago: estadoPagoContacto,
       anotaciones,
       localizador,
       via,

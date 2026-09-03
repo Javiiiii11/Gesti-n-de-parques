@@ -7,14 +7,14 @@
 
 function getResumen(tipo, itemId) {
   if (tipo === 'entrada') {
-    const ventasParque = STATE.ventas.filter((v) => v.tipo === 'entrada' && v.parque_id === itemId);
+    const ventasParque = STATE.ventas.filter((v) => v.tipo === 'entrada' && v.parque_id === itemId && isVentaEfectiva(v));
     const importeTotal = ventasParque.reduce((acc, v) => acc + Number(v.importe_total || 0), 0);
     const ventasTotales = ventasParque.length;
     const mediaVenta = ventasTotales ? importeTotal / ventasTotales : 0;
     const item = STATE.parques.find(p => p.id === itemId);
     return { ventasTotales, importeTotal, mediaVenta, itemNombre: item ? item.nombre : 'Sin parque' };
   } else {
-    const ventasBono = STATE.ventas.filter((v) => v.tipo === 'bono' && v.bono_id === itemId);
+    const ventasBono = STATE.ventas.filter((v) => v.tipo === 'bono' && v.bono_id === itemId && isVentaEfectiva(v));
     const importeTotal = ventasBono.reduce((acc, v) => acc + Number(v.importe_total || 0), 0);
     const ventasTotales = ventasBono.length;
     const mediaVenta = ventasTotales ? importeTotal / ventasTotales : 0;
@@ -77,7 +77,8 @@ function initVentaForm() {
     'v-parque', 'v-bono', 'v-cliente', 'v-correo', 'v-importe',
     'v-telefono', 'v-cantidad-entradas', 'v-extras',
     'v-num-bono', 'v-dni', 'v-nacimiento', 'v-cantidad-bonos',
-    'v-anotaciones', 'v-anotaciones-bono', 'v-localizador'
+    'v-anotaciones', 'v-anotaciones-bono', 'v-localizador',
+    'v-via', 'v-estado'
   ];
   liveFields.forEach((id) => {
     const el = document.getElementById(id);
@@ -145,14 +146,23 @@ function updateTicketPreview() {
   const clienteEl = document.getElementById('v-cliente');
   const correoEl = document.getElementById('v-correo');
   const importeEl = document.getElementById('v-importe');
+  const estadoEl = document.getElementById('v-estado');
   
   const cliente = clienteEl ? clienteEl.value.trim() : '';
   const correo = correoEl ? correoEl.value.trim() : '';
   const importe = importeEl ? (Number(importeEl.value) || 0) : 0;
+  const estadoVal = estadoEl ? estadoEl.value : 'completado';
 
   // Header
   setPreviewText('tp-park', itemNombre);
   setPreviewText('tp-type', `Cliente: ${cliente || '—'}`);
+
+  // Estado badge preview
+  const badgeInfo = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(estadoVal) : { label: estadoVal, colorBg: '#34D39922', textColor: '#34D399', colorBorder: '#34D399', icon: '✅' };
+  const tpEstadoEl = document.getElementById('tp-estado');
+  if (tpEstadoEl) {
+    tpEstadoEl.innerHTML = `<span class="badge" style="background:${badgeInfo.colorBg}; color:${badgeInfo.textColor}; border: 1px solid ${badgeInfo.colorBorder}; font-weight:700; font-size:11px; padding:2px 8px; border-radius:999px;">${badgeInfo.icon} ${badgeInfo.label}</span>`;
+  }
 
   // Common fields
   const rowCorreo = document.getElementById('tp-row-correo');
@@ -208,10 +218,19 @@ function updateTicketPreview() {
 /* ============================================================================
    PARSER RÁPIDO — Pega una línea desde una tabla y rellena el formulario
    Formato esperado para entradas:
-   username    localizador    nombre_cliente    precio    fecha_hora    correo    teléfono    método_pago
-   Ejemplo:
-   jrodriguezj    21280354    JUAN AMADOR HERNANDEZ    179,70 €    2026/07/23 18:55:27    paolavazkez20@gmail.com    +34613218953    Scalapay
+   username    localizador    nombre_cliente    precio    fecha_hora    correo    teléfono    método_pago    estado
    ============================================================================ */
+function detectEstadoFromRaw(text) {
+  if (!text) return 'completado';
+  const str = String(text).toLowerCase();
+  if (str.includes('incomplet')) return 'incompleto';
+  if (str.includes('no enviado') || str.includes('no_enviado')) return 'no_enviado';
+  if (str.includes('pago accesible') || str.includes('pendiente')) return 'pendiente';
+  if (str.includes('enviad')) return 'enviado';
+  if (str.includes('completad') || str.includes('pagad')) return 'completado';
+  return 'completado';
+}
+
 function wireQuickParse() {
   const textarea = document.getElementById('venta-quick-parse');
   if (!textarea || textarea.dataset.wired === '1') return;
@@ -241,15 +260,6 @@ function wireQuickParse() {
     // Detectar si es formato separado por saltos de línea (cada campo en una línea)
     const lines = trimmed.split('\n').filter(l => l.trim().length > 0);
     if (lines.length >= 5) {
-      // Formato línea por línea:
-      //   0: username (ignorado)
-      //   1: localizador
-      //   2: nombre_cliente
-      //   3: precio (179,70 €)
-      //   4: fecha_hora (ignorada)
-      //   5: correo
-      //   6: teléfono
-      //   7+: ignorado
       const localizador = lines[1]?.trim() || '';
       const nombreCliente = lines[2]?.trim() || '';
       const precioStr = (lines[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
@@ -258,11 +268,23 @@ function wireQuickParse() {
       let telefono = (lines[6] || '').replace(/\s/g, '');
       if (telefono.startsWith('+34')) telefono = telefono.substring(3);
 
-      return { localizador, nombreCliente, precio, correo, telefono };
+      // Buscar estado en las líneas siguientes o en todo el bloque
+      let estado = 'completado';
+      for (let i = 7; i < lines.length; i++) {
+        const detected = detectEstadoFromRaw(lines[i]);
+        if (detected !== 'completado' || /completad|pagad/i.test(lines[i])) {
+          estado = detected;
+          break;
+        }
+      }
+      if (estado === 'completado') {
+        estado = detectEstadoFromRaw(trimmed);
+      }
+
+      return { localizador, nombreCliente, precio, correo, telefono, estado };
     }
 
     // Formato clásico: separado por tabs o espacios múltiples (una línea)
-    //   username(0)  localizador(1)  nombre(2)  precio(3)  fecha(4)  correo(5)  tlf(6)  metodo(7)
     const parts = trimmed.split(/\t+|  +/).filter(p => p.length > 0);
     if (parts.length < 5) return null;
 
@@ -274,7 +296,24 @@ function wireQuickParse() {
     let telefono = (parts[6] || '').replace(/\s/g, '');
     if (telefono.startsWith('+34')) telefono = telefono.substring(3);
 
-    return { localizador, nombreCliente, precio, correo, telefono };
+    // Buscar estado en partes posteriores o en la cadena completa
+    let estado = 'completado';
+    if (parts[10]) {
+      estado = detectEstadoFromRaw(parts[10]);
+    } else {
+      for (let i = 7; i < parts.length; i++) {
+        const detected = detectEstadoFromRaw(parts[i]);
+        if (detected !== 'completado' || /completad|pagad/i.test(parts[i])) {
+          estado = detected;
+          break;
+        }
+      }
+    }
+    if (estado === 'completado') {
+      estado = detectEstadoFromRaw(trimmed);
+    }
+
+    return { localizador, nombreCliente, precio, correo, telefono, estado };
   }
 
   function fillForm(data) {
@@ -303,16 +342,19 @@ function wireQuickParse() {
     setVal('v-importe', data.precio);
     setVal('v-correo', data.correo);
     setVal('v-telefono', data.telefono);
+    if (data.estado) setVal('v-estado', data.estado);
     
     // Actualizar preview
     updateTicketPreview();
   }
 
   function showPreview(data) {
+    const badgeInfo = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(data.estado) : { label: data.estado || 'Completado', colorBg: '#34D39922', textColor: '#34D399', colorBorder: '#34D399', icon: '✅' };
     if (preview) {
       preview.innerHTML = `
         <div class="qp-card">
           <div class="qp-head">📋 Vista previa de datos detectados</div>
+          <div class="qp-row"><span>Estado</span><strong style="color:${badgeInfo.textColor}; font-weight:700;">${badgeInfo.icon} ${badgeInfo.label}</strong></div>
           <div class="qp-row"><span>Localizador</span><strong>${escapeHtml(data.localizador) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
           <div class="qp-row"><span>Cliente</span><strong>${escapeHtml(data.nombreCliente) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
           <div class="qp-row"><span>Importe</span><strong>${typeof fmtEUR === 'function' ? fmtEUR(data.precio) : data.precio.toFixed(2) + ' €'}</strong></div>
@@ -382,6 +424,7 @@ async function guardarVenta({ keepOpen }) {
     ? (document.getElementById('v-anotaciones')?.value.trim() || '')
     : (document.getElementById('v-anotaciones-bono')?.value.trim() || '');
   const localizador = document.getElementById('v-localizador')?.value.trim() || '';
+  const estado = document.getElementById('v-estado')?.value || 'completado';
   
   let itemId;
   if (tipo === 'entrada') {
@@ -408,13 +451,20 @@ async function guardarVenta({ keepOpen }) {
     return; 
   }
 
-  // Build contacto (apunte) payload — always "pagado" since this is a sale
+  // Mapear estado_pago para contacto
+  let estadoPagoContacto = 'pagado';
+  if (estado === 'pendiente') estadoPagoContacto = 'pendiente';
+  else if (estado === 'incompleto') estadoPagoContacto = 'Incompleto';
+  else if (estado === 'enviado') estadoPagoContacto = 'Enviado';
+  else if (estado === 'no_enviado') estadoPagoContacto = 'No enviado';
+
+  // Build contacto (apunte) payload
   const contactoPayload = {
     tipo,
     nombre_apellidos: clienteNombre,
     correo,
     importe_total: importeTotal,
-    estado_pago: 'pagado',
+    estado_pago: estadoPagoContacto,
     anotaciones,
     localizador: localizador || null
   };
@@ -437,7 +487,7 @@ async function guardarVenta({ keepOpen }) {
 
   const via = document.getElementById('v-via')?.value || 'llamada';
 
-  // Build venta payload
+  // Build venta payload con estado
   const ventaPayload = {
     fecha: new Date().toISOString(),
     tipo,
@@ -445,6 +495,7 @@ async function guardarVenta({ keepOpen }) {
     cliente_nombre: clienteNombre,
     importe_total: importeTotal,
     localizador: localizador || null,
+    estado: estado,
   };
   
   if (tipo === 'entrada') {
@@ -467,7 +518,8 @@ async function guardarVenta({ keepOpen }) {
     STATE.contactos = await DB.getContactos();
     refreshAllViewsAfterDataChange();
 
-    toast('Venta registrada y apunte creado', 'success');
+    const estadoInfo = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(estado) : { label: estado };
+    toast(`Venta registrada (${estadoInfo.label}) y apunte creado`, 'success');
 
     if (keepOpen) {
       // Clear client-specific fields, keep tipo and parque/bono selection

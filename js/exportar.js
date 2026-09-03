@@ -554,9 +554,9 @@ async function handleImportCSVFiles(fileList) {
             const correo = row[5];
             const telefono = row[6].replace(/\s/g, '').replace(/^\+34/, '');
             const metodoPago = row[7];
-            const estado = row[10];
+            const estadoRaw = row[10] || 'Completado';
+            const estadoNorm = typeof normalizeEstadoVenta === 'function' ? normalizeEstadoVenta(estadoRaw) : 'completado';
 
-            if (estado !== 'Completado') continue;
             if (localizador && localizadoresExistentes.has(localizador)) {
               fileDuplicadas++;
               continue;
@@ -586,13 +586,20 @@ async function handleImportCSVFiles(fileList) {
               bono_id: tipoImport === 'bono' ? bonoId : null,
               cliente_nombre,
               importe_total,
-              localizador
+              localizador,
+              estado: estadoNorm,
             });
+
+            let estadoPagoContacto = 'pagado';
+            if (estadoNorm === 'pendiente') estadoPagoContacto = 'pendiente';
+            else if (estadoNorm === 'incompleto') estadoPagoContacto = 'Incompleto';
+            else if (estadoNorm === 'enviado') estadoPagoContacto = 'Enviado';
+            else if (estadoNorm === 'no_enviado') estadoPagoContacto = 'No enviado';
 
             fileNuevosApuntes.push({
               tipo: tipoImport,
               via: 'llamada',
-              estado_pago: 'pagado',
+              estado_pago: estadoPagoContacto,
               nombre_apellidos: cliente_nombre,
               correo: correo || null,
               importe_total: importe_total,

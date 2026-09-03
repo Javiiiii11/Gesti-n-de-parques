@@ -272,3 +272,81 @@ function chartColors() {
     palette: ['#F5A623', '#60A5FA', '#34D399', '#F87171', '#A78BFA', '#F472B6', '#38BDF8', '#FBBF24'],
   };
 }
+
+/* -------------------------- ESTADOS DE VENTA --------------------------- */
+const ESTADOS_VENTA = {
+  completado: {
+    id: 'completado',
+    label: 'Completado',
+    color: '#2EB872',
+    colorBg: 'rgba(46, 184, 114, 0.10)',
+    colorBorder: 'rgba(46, 184, 114, 0.28)',
+    textColor: '#34D399',
+    icon: '✅',
+    esEfectivo: true,
+  },
+  enviado: {
+    id: 'enviado',
+    label: 'Enviado',
+    color: '#5B9EF5',
+    colorBg: 'rgba(91, 158, 245, 0.09)',
+    colorBorder: 'rgba(91, 158, 245, 0.25)',
+    textColor: '#7FB0F5',
+    icon: '📤',
+    esEfectivo: false,
+  },
+  pendiente: {
+    id: 'pendiente',
+    label: 'Pendiente de pago',
+    color: '#F5A623',
+    colorBg: 'rgba(245, 166, 35, 0.09)',
+    colorBorder: 'rgba(245, 166, 35, 0.28)',
+    textColor: '#F5A623',
+    icon: '⏳',
+    esEfectivo: false,
+  },
+  incompleto: {
+    id: 'incompleto',
+    label: 'Incompleto',
+    color: '#E85D75',
+    colorBg: 'rgba(232, 93, 117, 0.09)',
+    colorBorder: 'rgba(232, 93, 117, 0.25)',
+    textColor: '#E88A9A',
+    icon: '❌',
+    esEfectivo: false,
+  },
+  no_enviado: {
+    id: 'no_enviado',
+    label: 'No enviado',
+    color: '#7A869A',
+    colorBg: 'rgba(122, 134, 154, 0.09)',
+    colorBorder: 'rgba(122, 134, 154, 0.25)',
+    textColor: '#94A3B8',
+    icon: '⏸️',
+    esEfectivo: false,
+  },
+};
+
+function normalizeEstadoVenta(val) {
+  if (!val) return 'completado';
+  const str = String(val).trim().toLowerCase();
+  if (str === 'completado' || str === 'pagado' || str === 'completada' || str === 'completed') return 'completado';
+  if (str === 'enviado' || str === 'enviada' || str === 'sent') return 'enviado';
+  if (str === 'incompleto' || str === 'incompleta' || str === 'fallido' || str === 'error' || str === 'incomplete') return 'incompleto';
+  if (str === 'no enviado' || str === 'no_enviado' || str === 'no-enviado' || str === 'sin enviar') return 'no_enviado';
+  if (str === 'pago accesible' || str === 'pago_accesible' || str === 'pendiente' || str === 'pendiente de pago' || str === 'pendiente_pago' || str === 'pending') return 'pendiente';
+  return 'completado';
+}
+
+function getEstadoBadgeInfo(val) {
+  const norm = normalizeEstadoVenta(val);
+  return ESTADOS_VENTA[norm] || ESTADOS_VENTA.completado;
+}
+
+function isVentaEfectiva(venta) {
+  if (!venta) return false;
+  // Solo se suman a ventas los que estén como completados
+  const norm = normalizeEstadoVenta(venta.estado);
+  return norm === 'completado';
+}
+

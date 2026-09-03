@@ -1,10 +1,11 @@
-/* ============================================================================
+﻿/* ============================================================================
    dashboard.js — vista "Dashboard"
 ============================================================================ */
 
 let chartPeriodo = null;
 let chartParques = null;
 let chartObjetivo = null;
+let chartEstados = null;
 let dashboardControlsWired = false;
 
 const MONTHLY_GOAL_LEGACY_KEY = 'parksales_objetivo_mensual';
@@ -38,7 +39,7 @@ function getMonthSales(monthKey) {
   if (!year || !month) return 0;
   const ref = new Date(year, month - 1, 1);
   return STATE.ventas
-    .filter((venta) => isMismoMes(venta.fecha, ref))
+    .filter((venta) => isMismoMes(venta.fecha, ref) && (typeof isVentaEfectiva === 'function' ? isVentaEfectiva(venta) : true))
     .reduce((acc, venta) => acc + Number(venta.importe_total || 0), 0);
 }
 
@@ -231,6 +232,7 @@ function daysBetweenInclusive(from, to) {
 function getSalesByPark() {
   const grouped = {};
   STATE.ventas.forEach((venta) => {
+    if (typeof isVentaEfectiva === 'function' && !isVentaEfectiva(venta)) return;
     const name = getVentaItemNombre(venta);
     if (!grouped[name]) grouped[name] = { ventas: 0, total: 0 };
     grouped[name].ventas += 1;
@@ -276,19 +278,20 @@ function renderDashboard() {
   const now = new Date();
   const referenceDate = getDashboardReferenceDate(filters);
   const filtradas = getFilteredVentas(filters);
+  const filtradasEfectivas = filtradas.filter(v => (typeof isVentaEfectiva === 'function' ? isVentaEfectiva(v) : true));
   const goalMonthKey = getGoalMonthKeyFromFilters(filters, referenceDate);
   const goal = getMonthlyGoalForMonth(goalMonthKey);
   const goalMonthLabel = formatMonthLabel(goalMonthKey);
 
   const sum = (arr, key) => arr.reduce((acc, venta) => acc + Number(venta[key] || 0), 0);
 
-  // Calculate stats from filtered data
-  const filteredTotal = sum(filtradas, 'importe_total');
-  const filteredCount = filtradas.length;
+  // Calculate stats from filtered data (solo efectivas para facturación)
+  const filteredTotal = sum(filtradasEfectivas, 'importe_total');
+  const filteredCount = filtradasEfectivas.length;
 
-  // Get sales by park from filtered data
+  // Get sales by park from filtered effective data
   const filteredSalesByPark = {};
-  filtradas.forEach((venta) => {
+  filtradasEfectivas.forEach((venta) => {
     const name = getVentaItemNombre(venta);
     if (!filteredSalesByPark[name]) filteredSalesByPark[name] = { ventas: 0, total: 0 };
     filteredSalesByPark[name].ventas += 1;
@@ -300,25 +303,16 @@ function renderDashboard() {
   const topParkEntries = topParkEntry ? topParkEntry[1].ventas : 0;
   const topParkRevenue = topParkEntry ? topParkEntry[1].total : 0;
 
-  // Calculate average per sale in filtered data
-  const averagePerSale = filteredCount ? filteredTotal / filteredCount : 0;
-
-  // Ventas del día de referencia dentro del periodo seleccionado
+  // Ventas del día de referencia dentro del periodo seleccionado (solo efectivas)
   const referenceDay = toDateInputValue(referenceDate);
-  const ventasHoy = STATE.ventas.filter((venta) => isSameLocalDay(venta.fecha, referenceDay));
+  const ventasHoy = STATE.ventas.filter((venta) => isSameLocalDay(venta.fecha, referenceDay) && (typeof isVentaEfectiva === 'function' ? isVentaEfectiva(venta) : true));
   const totalHoy = sum(ventasHoy, 'importe_total');
   const countHoy = ventasHoy.length;
 
-  // Get first and last sale in filtered data
-  const firstFilteredSale = filtradas.length ? filtradas.reduce((min, venta) => new Date(venta.fecha) < new Date(min.fecha) ? venta : min, filtradas[0]) : null;
-  const lastFilteredSale = filtradas.length ? filtradas.reduce((max, venta) => new Date(venta.fecha) > new Date(max.fecha) ? venta : max, filtradas[0]) : null;
-  const daysInFilter = firstFilteredSale && lastFilteredSale ? daysBetweenInclusive(firstFilteredSale.fecha, lastFilteredSale.fecha) : 0;
-  const dailyAverageFiltered = daysInFilter ? filteredTotal / daysInFilter : 0;
+  const filteredSummary = buildDashboardFilterSummary(filters, filtradas.length, filtradasEfectivas.length);
 
-  const filteredSummary = buildDashboardFilterSummary(filters, filtradas.length);
-
-  // Meta y métricas calculadas sobre el mes del periodo seleccionado
-  const mesReferencia = STATE.ventas.filter((venta) => isMismoMes(venta.fecha, referenceDate));
+  // Meta y métricas calculadas sobre el mes del periodo seleccionado (solo efectivas)
+  const mesReferencia = STATE.ventas.filter((venta) => isMismoMes(venta.fecha, referenceDate) && (typeof isVentaEfectiva === 'function' ? isVentaEfectiva(venta) : true));
   const currentMonthSales = sum(mesReferencia, 'importe_total');
   const goalRemaining = Math.max(0, goal - currentMonthSales);
   const goalProgress = goal > 0 ? Math.min(100, (currentMonthSales / goal) * 100) : 0;
@@ -366,7 +360,7 @@ function renderDashboard() {
   const workdaysLeft = workdaysRemaining;
   const workdaysTotal = actualMonthWorkdays;
 
-  // Ventas de la semana de la fecha de referencia
+  // Ventas de la semana de la fecha de referencia (solo efectivas)
   const inicioSemana = new Date(referenceDate);
   inicioSemana.setDate(referenceDate.getDate() - (referenceDate.getDay() || 7) + 1);
   inicioSemana.setHours(0, 0, 0, 0);
@@ -374,7 +368,7 @@ function renderDashboard() {
   finSemana.setDate(inicioSemana.getDate() + 7);
   const ventasSemana = STATE.ventas.filter((venta) => {
     const fechaVenta = new Date(venta.fecha);
-    return fechaVenta >= inicioSemana && fechaVenta < finSemana;
+    return fechaVenta >= inicioSemana && fechaVenta < finSemana && (typeof isVentaEfectiva === 'function' ? isVentaEfectiva(venta) : true);
   });
   const totalSemana = sum(ventasSemana, 'importe_total');
   const countSemana = ventasSemana.length;
@@ -382,7 +376,7 @@ function renderDashboard() {
   document.getElementById('dashboard-filter-summary').textContent = filteredSummary;
 
   const stats = [
-    { label: 'Total en filtro', value: fmtEUR(filteredTotal), sub: `${fmtNum(filteredCount)} entradas`, icon: 'M12 8v8M8 12h8' },
+    { label: 'Total en filtro', value: fmtEUR(filteredTotal), sub: `${fmtNum(filteredCount)} completadas de ${fmtNum(filtradas.length)} totales`, icon: 'M12 8v8M8 12h8' },
     { label: 'Parque más vendido', value: topParkName, sub: topParkEntry ? `${fmtNum(topParkEntries)} entradas · ${fmtEUR(topParkRevenue)}` : 'Sin ventas en el filtro', icon: 'M3 21l7-14 4 8 3-5 4 11H3z' },
     { label: 'Media diaria del mes', value: fmtEUR(averageDailyMonthSales), sub: workdaysElapsed ? `${fmtNum(workdaysElapsed)} días laborables calculados` : 'Sin días laborables en el periodo', icon: 'M3 13h4l3 7 4-14 3 7h4' },
     { label: 'Cuota / día restante', value: goal > 0 ? fmtEUR(dailyGoalRemaining) : '—', sub: goal > 0 ? (isCurrentReferenceMonth ? `Te quedan ${fmtNum(workdaysRemaining)} días laborables de ${fmtNum(actualMonthWorkdays)} este mes` : `Mes cerrado · ${fmtNum(actualMonthWorkdays)} días laborables`) : `Sin meta para ${goalMonthLabel}`, icon: 'M4 19h16M6 16V9M12 16V5M18 16v-4' },
@@ -415,13 +409,14 @@ function renderDashboard() {
     countSemana,
   });
   renderGoalPanelTitle(goalMonthKey, goalMonthLabel, goal);
-  renderRankingParques(filtradas);
+  renderEstadoRingChart(filtradas);
+  renderRankingParques(filtradasEfectivas);
 }
 
-function buildDashboardFilterSummary(filters, totalFiltered) {
+function buildDashboardFilterSummary(filters, totalFiltered, totalEffective) {
   const periodLabel = filters.period === 'day' ? `Día ${filters.value}` : filters.period === 'month' ? `Mes ${filters.value}` : filters.period === 'year' ? `Año ${filters.year}` : 'Todo el histórico';
   const parkLabel = filters.parqueId === 'all' ? 'Todos los parques' : parqueNombre(filters.parqueId);
-  return `${periodLabel} · ${parkLabel} · ${fmtNum(totalFiltered)} ventas en el filtro`;
+  return `${periodLabel} · ${parkLabel} · ${fmtNum(totalFiltered)} registros (${fmtNum(totalEffective ?? totalFiltered)} efectivas)`;
 }
 
 function ensureDashboardControlsWired() {
@@ -583,13 +578,32 @@ function renderGoalChart(currentMonthSales, goal) {
     tierEmoji = '👑';
   }
 
-  // Etiquetas simples para el tooltip
-  let tierLabel = '100%';
-  if (rawPct < 100) tierLabel = '100%';
-  else if (rawPct < 120) tierLabel = '120%';
-  else if (rawPct < 140) tierLabel = '140%';
-  else if (rawPct < 160) tierLabel = '160%';
-  else tierLabel = '+160%';
+  // Título y cálculo simplificado para el tooltip según el rango actual
+  let tierTargetPct = 100;
+  let targetAmount = goal;
+  let tierTitle = '';
+
+  if (rawPct < 100) {
+    tierTargetPct = 100;
+    targetAmount = goal;
+    tierTitle = `🎯 Del 100% llevas ${rawPct.toFixed(1)}%`;
+  } else if (rawPct < 120) {
+    tierTargetPct = 120;
+    targetAmount = goal * 1.2;
+    tierTitle = `🚀 Del 120% llevas ${rawPct.toFixed(1)}%`;
+  } else if (rawPct < 140) {
+    tierTargetPct = 140;
+    targetAmount = goal * 1.4;
+    tierTitle = `⚡ Del 140% llevas ${rawPct.toFixed(1)}%`;
+  } else if (rawPct < 160) {
+    tierTargetPct = 160;
+    targetAmount = goal * 1.6;
+    tierTitle = `👑 Del 160% llevas ${rawPct.toFixed(1)}%`;
+  } else {
+    tierTargetPct = 160;
+    targetAmount = goal * 1.6;
+    tierTitle = `👑 ¡Superado el 160%! (Llevas ${rawPct.toFixed(1)}%)`;
+  }
 
   const filled = Math.max(0, Math.min(maxInLap, progressInLap));
   const remaining = Math.max(0, maxInLap - filled);
@@ -625,18 +639,22 @@ function renderGoalChart(currentMonthSales, goal) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          padding: 10,
-          cornerRadius: 8,
+          padding: 8,
+          cornerRadius: 6,
+          displayColors: false,
           callbacks: {
-            title: () => `${tierLabel} · Llevas ${fmtEUR(currentMonthSales)}`,
+            title: () => '',
             label: (item) => {
-              if (item.dataIndex === 0) {
-                if (rawPct < 100) {
-                  return ` Faltan ${fmtEUR(Math.max(0, goal - currentMonthSales))} para la meta`;
-                }
-                return ` Faltan ${fmtEUR(remaining)} para el ${tierLabel}`;
+              if (rawPct >= 160) {
+                const extra = Math.max(0, currentMonthSales - targetAmount);
+                return ` Vendido: ${fmtEUR(currentMonthSales)} (+${fmtEUR(extra)})`;
               }
-              return ` Nivel anterior completado ✅`;
+              if (item.dataIndex === 0 && filled > 0) {
+                return ` Llevas: ${fmtEUR(currentMonthSales)} (${rawPct.toFixed(1)}%)`;
+              }
+              const faltaEUR = Math.max(0, targetAmount - currentMonthSales);
+              const faltaPct = Math.max(0, tierTargetPct - rawPct).toFixed(1);
+              return ` Falta: ${fmtEUR(faltaEUR)} (${faltaPct}%)`;
             },
           },
         },
@@ -1023,7 +1041,237 @@ function renderParqueChart(ventas) {
   });
 }
 
+function goToHistorialWithEstado(estadoKey) {
+  if (typeof HIST_STATE !== 'undefined') {
+    HIST_STATE.estado = estadoKey || '';
+    HIST_STATE.page = 1;
+    const sel = document.getElementById('hist-filtro-estado');
+    if (sel) sel.value = estadoKey || '';
+  }
+  if (typeof switchView === 'function') {
+    switchView('historial');
+  }
+  if (typeof renderHistorial === 'function') {
+    renderHistorial();
+  }
+}
+window.goToHistorialWithEstado = goToHistorialWithEstado;
+
+function renderEstadoRingChart(ventas) {
+  if (typeof Chart === 'undefined') return;
+  const canvas = document.getElementById('chart-estados-anillo');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (chartEstados) chartEstados.destroy();
+
+  // Contar registros e importes por cada estado
+  const counts = {
+    completado: 0,
+    enviado: 0,
+    pendiente: 0,
+    incompleto: 0,
+    no_enviado: 0,
+  };
+  const totals = {
+    completado: 0,
+    enviado: 0,
+    pendiente: 0,
+    incompleto: 0,
+    no_enviado: 0,
+  };
+
+  ventas.forEach((v) => {
+    const estado = typeof normalizeEstadoVenta === 'function' ? normalizeEstadoVenta(v.estado) : 'completado';
+    if (counts[estado] !== undefined) {
+      counts[estado]++;
+      totals[estado] += Number(v.importe_total || 0);
+    } else {
+      counts.completado++;
+      totals.completado += Number(v.importe_total || 0);
+    }
+  });
+
+  const totalVentas = ventas.length;
+
+  // Paleta ParkSales desaturada (encaja con navy)
+  const estadoOrder = ['completado', 'enviado', 'pendiente', 'incompleto', 'no_enviado'];
+  const activeKeys = [];
+  const labels = [];
+  const data = [];
+  const bgColors = [];
+
+  estadoOrder.forEach((key) => {
+    const info = (typeof ESTADOS_VENTA !== 'undefined' && ESTADOS_VENTA[key]) ? ESTADOS_VENTA[key] : {
+      completado: { label: 'Completado', color: '#2EB872' },
+      enviado: { label: 'Enviado', color: '#5B9EF5' },
+      pendiente: { label: 'Pendiente de pago', color: '#F5A623' },
+      incompleto: { label: 'Incompleto', color: '#E85D75' },
+      no_enviado: { label: 'No enviado', color: '#7A869A' },
+    }[key];
+    const count = counts[key];
+    if (count > 0 || totalVentas === 0) {
+      activeKeys.push(key);
+      labels.push(info.label);
+      data.push(count);
+      bgColors.push(info.color);
+    }
+  });
+
+  // Si no hay ventas en absoluto, mostrar placeholder
+  const emptyPlaceholder = totalVentas === 0;
+  const chartData = emptyPlaceholder ? [1] : data;
+  const chartColors = emptyPlaceholder ? ['rgba(100, 116, 139, 0.2)'] : bgColors;
+  const chartLabels = emptyPlaceholder ? ['Sin ventas en el filtro'] : labels;
+
+  const pctCompletadas = totalVentas > 0 ? ((counts.completado / totalVentas) * 100).toFixed(1) : '0.0';
+  const totalEfectivo = totals.completado;
+  const noEfectivoCount = totalVentas - counts.completado;
+
+  // Centro del anillo: número total de registros y porcentaje de completadas
+  const overlay = document.getElementById('estado-ring-overlay');
+  if (overlay) {
+    if (totalVentas === 0) {
+      overlay.innerHTML = `
+        <span class="goal-ring-pct" style="color:var(--text-muted); font-size:26px;">0</span>
+        <span class="goal-ring-tier" style="font-size:12px; color:var(--text-muted); font-weight:700;">Sin ventas</span>
+      `;
+    } else {
+      overlay.innerHTML = `
+        <span class="goal-ring-pct" style="color:#00E676; font-size:26px;">${fmtNum(totalVentas)}</span>
+        <span class="goal-ring-tier" style="font-size:12px; color:var(--text-muted); font-weight:700;">${pctCompletadas}% completadas</span>
+      `;
+    }
+  }
+
+  // Chart sin tooltip molesto encima del aro y con clic interactivo para filtrar
+  chartEstados = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: chartLabels,
+      datasets: [{
+        data: chartData,
+        backgroundColor: chartColors,
+        borderWidth: 0,
+        borderRadius: totalVentas <= 1 ? 0 : 2,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '76%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false }, // Desactivado para que no tape el centro del aro
+      },
+      onClick: (evt, activeEls) => {
+        if (activeEls && activeEls.length > 0) {
+          const idx = activeEls[0].index;
+          const key = activeKeys[idx];
+          if (key) goToHistorialWithEstado(key);
+        }
+      },
+    },
+  });
+
+  // Barra segmentada — paleta ParkSales desaturada (encaja con navy + acento)
+  let trackGradient = '#2EB872';
+  if (totalVentas > 0) {
+    let pComp = ((counts.completado / totalVentas) * 100).toFixed(2);
+    let pEnv = (((counts.completado + counts.enviado) / totalVentas) * 100).toFixed(2);
+    let pPend = (((counts.completado + counts.enviado + counts.pendiente) / totalVentas) * 100).toFixed(2);
+    let pInc = (((counts.completado + counts.enviado + counts.pendiente + counts.incompleto) / totalVentas) * 100).toFixed(2);
+    trackGradient = `linear-gradient(90deg, #2EB872 0%, #2EB872 ${pComp}%, #5B9EF5 ${pComp}%, #5B9EF5 ${pEnv}%, #F5A623 ${pEnv}%, #F5A623 ${pPend}%, #E85D75 ${pPend}%, #E85D75 ${pInc}%, #7A869A ${pInc}%, #7A869A 100%)`;
+  }
+
+  // Renderizar el widget simétrico a goal-widget
+  const widgetContainer = document.getElementById('estado-widget');
+  if (widgetContainer) {
+    widgetContainer.innerHTML = `
+      <div class="goal-summary">
+        <div class="goal-summary-row">
+          <span>Ventas totales en filtro</span>
+          <b>${fmtNum(totalVentas)} registros</b>
+        </div>
+        <div class="goal-summary-row">
+          <span>Facturación efectiva (Completadas)</span>
+          <b style="color:var(--success) !important;">${fmtEUR(totalEfectivo)}</b>
+        </div>
+        <div class="goal-summary-row">
+          <span>Tasa de ventas completadas</span>
+          <b class="goal-remaining" style="color:var(--success) !important;">${pctCompletadas}%</b>
+        </div>
+
+        <!-- Barra de distribución segmentada -->
+        <div class="goal-milestone-track-wrap">
+          <div class="goal-milestone-track">
+            <div class="goal-milestone-fill" style="width:100%; background:${trackGradient};"></div>
+          </div>
+        </div>
+        <div class="goal-progress-meta" style="color:var(--success); font-weight: 600;">
+          ${fmtNum(counts.completado)} completadas (${pctCompletadas}%) · ${fmtNum(noEfectivoCount)} en otros estados
+        </div>
+
+        <!-- Píldoras de filtro interactivo que van al Historial -->
+        <div class="goal-milestone-pills estado-interactive-pills">
+          <div class="goal-milestone-pill pill-active" onclick="goToHistorialWithEstado('')" style="--mc:var(--accent); cursor:pointer;" title="Ver todas en Historial">
+            📋 Todas (${fmtNum(totalVentas)})
+          </div>
+          <div class="goal-milestone-pill ${counts.completado > 0 ? 'pill-active' : ''}" onclick="goToHistorialWithEstado('completado')" style="--mc:#2EB872; cursor:pointer;" title="Filtrar completadas en Historial">
+            ✅ ${fmtNum(counts.completado)}
+          </div>
+          <div class="goal-milestone-pill ${counts.enviado > 0 ? 'pill-active' : ''}" onclick="goToHistorialWithEstado('enviado')" style="--mc:#5B9EF5; cursor:pointer;" title="Filtrar enviadas en Historial">
+            📤 ${fmtNum(counts.enviado)}
+          </div>
+          <div class="goal-milestone-pill ${counts.pendiente > 0 ? 'pill-active' : ''}" onclick="goToHistorialWithEstado('pendiente')" style="--mc:#F5A623; cursor:pointer;" title="Filtrar pendientes en Historial">
+            ⏳ ${fmtNum(counts.pendiente)}
+          </div>
+          <div class="goal-milestone-pill ${counts.incompleto > 0 ? 'pill-active' : ''}" onclick="goToHistorialWithEstado('incompleto')" style="--mc:#E85D75; cursor:pointer;" title="Filtrar incompletas en Historial">
+            ❌ ${fmtNum(counts.incompleto)}
+          </div>
+          <div class="goal-milestone-pill ${counts.no_enviado > 0 ? 'pill-active' : ''}" onclick="goToHistorialWithEstado('no_enviado')" style="--mc:#7A869A; cursor:pointer;" title="Filtrar no enviadas en Historial">
+            ⏸️ ${fmtNum(counts.no_enviado)}
+          </div>
+        </div>
+
+        <!-- Hint Banner interactivo -->
+        <div class="goal-next-hint" onclick="goToHistorialWithEstado('')" style="--nc:var(--success); cursor:pointer;" title="Haz clic para abrir el Historial">
+          <span class="goal-next-emoji">🔍</span>
+          <span>Haz clic en cualquier tarjeta o píldora para <b>abrir el Historial filtrado →</b></span>
+        </div>
+
+        <!-- Mini Grid de 4 tarjetas simétricas al panel de metas -->
+        <div class="goal-mini-grid">
+          <div class="goal-mini-card goal-mini-card-primary" onclick="goToHistorialWithEstado('completado')" style="background:rgba(46,184,114,0.10); border-color:rgba(46,184,114,0.28); cursor:pointer;" title="Ver completadas en Historial">
+            <span>✅ Completadas · ${pctCompletadas}%</span>
+            <b style="color:var(--success);">${fmtNum(counts.completado)} (${fmtEUR(totals.completado)})</b>
+          </div>
+          <div class="goal-mini-card" onclick="goToHistorialWithEstado('enviado')" style="background:rgba(91,158,245,0.08); border-color:rgba(91,158,245,0.25); cursor:pointer;" title="Ver enviadas en Historial">
+            <span>📤 Enviadas</span>
+            <b style="color:#7FB0F5;">${fmtNum(counts.enviado)} (${fmtEUR(totals.enviado)})</b>
+          </div>
+          <div class="goal-mini-card" onclick="goToHistorialWithEstado('pendiente')" style="background:rgba(245,166,35,0.08); border-color:rgba(245,166,35,0.28); cursor:pointer;" title="Ver pendientes en Historial">
+            <span>⏳ Pendientes de pago</span>
+            <b style="color:var(--accent);">${fmtNum(counts.pendiente)} (${fmtEUR(totals.pendiente)})</b>
+          </div>
+          <div class="goal-mini-card" onclick="goToHistorialWithEstado('incompleto')" style="background:rgba(232,93,117,0.08); border-color:rgba(232,93,117,0.25); cursor:pointer;" title="Ver incompletas y no enviadas en Historial">
+            <span>❌ Incompletas / ⏸️ No env.</span>
+            <b style="color:#E88A9A;">${fmtNum(counts.incompleto + counts.no_enviado)} (${fmtEUR(totals.incompleto + totals.no_enviado)})</b>
+          </div>
+        </div>
+
+        <!-- Mensaje / regla en el pie del widget -->
+        <div class="goal-next-hint" style="--nc:var(--success); font-size:11.5px; opacity:0.9;">
+          💡 <b>Regla de ventas:</b> Solo las ventas completadas suman para llegar a los objetivos.
+        </div>
+      </div>
+    `;
+  }
+}
+
 function renderRankingParques(ventas) {
+  const container = document.getElementById('ranking-parques');
+  if (!container) return;
+
   const grouped = {};
   ventas.forEach((venta) => {
     const name = getVentaItemNombre(venta);
@@ -1042,7 +1290,6 @@ function renderRankingParques(ventas) {
     .sort((a, b) => b.ventas - a.ventas)
     .slice(0, 6);
 
-  const container = document.getElementById('ranking-parques');
   if (!rows.length) {
     container.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">Aún no hay ventas en este filtro.</p>';
     return;

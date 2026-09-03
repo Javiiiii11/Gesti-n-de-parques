@@ -241,6 +241,7 @@ function sanitizeParque(parque) {
 function normalizeVenta(venta) {
   const cliente_nombre = venta?.cliente_nombre || venta?.nombre_cliente || venta?.tipo_entrada || 'Cliente';
   const importe_total = Number(venta?.importe_total ?? (Number(venta?.cantidad || 0) * Number(venta?.precio_unitario || 0))) || 0;
+  const estado = typeof normalizeEstadoVenta === 'function' ? normalizeEstadoVenta(venta?.estado) : (venta?.estado || 'completado');
   const row = {
     fecha: venta?.fecha,
     tipo: venta?.tipo || 'entrada',
@@ -249,6 +250,7 @@ function normalizeVenta(venta) {
     bono_id: venta?.bono_id || null,
     cliente_nombre,
     importe_total,
+    estado,
   };
   // localizador es opcional: schemas antiguos de ventas pueden no tenerla
   if (venta?.localizador && !knownMissingColumns.has('ventas.localizador')) {
