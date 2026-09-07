@@ -43,19 +43,63 @@
   --transition: 160ms cubic-bezier(.4, 0, .2, 1);
 }
 
-/* Modo claro (opcional, activable con .light-mode en <body>) */
+/* Modo claro — tonos diferenciados */
 body.light-mode {
-  --bg: #F4F6FB;
-  --bg-elevated: #FFFFFF;
+  --bg: #EDF0F7;
+  --bg-elevated: #F8FAFF;
   --bg-card: #FFFFFF;
-  --bg-hover: #EEF1F8;
-  --border: #E1E5F0;
-  --border-soft: #EAEDF6;
-  --text-primary: #131B2E;
-  --text-secondary: #5C6785;
-  --text-muted: #8B95AC;
-  --shadow-card: 0 1px 2px rgba(20, 30, 60, 0.06), 0 8px 24px -12px rgba(20, 30, 60, 0.12);
+  --bg-hover: #E9EDF5;
+  --border: #DCE2F0;
+  --border-soft: #E8ECF6;
+  --text-primary: #1A2338;
+  --text-secondary: #5A6685;
+  --text-muted: #8A96B0;
+  --shadow-card: 0 1px 3px rgba(16, 24, 64, 0.07), 0 8px 24px -10px rgba(16, 24, 64, 0.10);
 }
+body.light-mode #app {
+  background: linear-gradient(180deg, #EDF0F7 0%, #E9EDF5 100%);
+}
+body.light-mode .sidebar {
+  background: #F8FAFF;
+  border-right: 1px solid #DCE2F0;
+  box-shadow: 2px 0 12px rgba(16, 24, 64, 0.04);
+}
+body.light-mode .topbar {
+  background: rgba(248, 250, 255, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #DCE2F0;
+}
+body.light-mode .card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F5;
+  box-shadow: 0 1px 3px rgba(16, 24, 64, 0.05), 0 4px 12px rgba(16, 24, 64, 0.04);
+}
+body.light-mode .card:hover {
+  border-color: #D0D8EA;
+  box-shadow: 0 2px 8px rgba(16, 24, 64, 0.07);
+}
+/* Light: cuadrante y horarios con más contraste */
+body.light-mode .cuad-day { background: #F0F4FF; border-color: #D6DEEF; }
+body.light-mode .cuad-day.is-weekend { background: #F8F0FF; }
+body.light-mode .cuad-day.code-TM1 { background: #E0F2FE; border-color: #7DD3FC; color: #0C4A6E; }
+body.light-mode .cuad-day.code-TM2 { background: #DCFCE7; border-color: #6EE7B7; color: #065F46; }
+body.light-mode .cuad-day.code-TT1 { background: #FEF3C7; border-color: #FCD34D; color: #92400E; }
+body.light-mode .cuad-day.code-TFS { background: #EDE9FE; border-color: #C4B5FD; color: #5B21B6; }
+body.light-mode .cuad-day.code-L, body.light-mode .cuad-day.code-0 { background: #F1F5F9; border-color: #CBD5E1; color: #475569; }
+body.light-mode .cuad-chip { background: #FFFFFF; border-color: #DCE2F0; color: #334155; }
+body.light-mode .cuad-chip.code-TM1 { background: #E0F2FE; border-color: #7DD3FC; color: #0C4A6E; }
+body.light-mode .cuad-chip.code-TM2 { background: #DCFCE7; border-color: #6EE7B7; color: #065F46; }
+body.light-mode .cuad-chip.code-TT1 { background: #FEF3C7; border-color: #FCD34D; color: #92400E; }
+body.light-mode .cuad-chip.code-TFS { background: #EDE9FE; border-color: #C4B5FD; color: #5B21B6; }
+body.light-mode .cuad-day-num { color: #1E293B; }
+body.light-mode .cuad-day-code { color: inherit; }
+body.light-mode .cuad-day-hours { color: #475569; }
+body.light-mode .cuad-dow { color: #64748B; }
+body.light-mode .cuad-dow.is-weekend { color: #7C3AED; }
+body.light-mode .park-card { border: 1px solid #E2E8F5; }
+body.light-mode .park-card-header { filter: saturate(1.05); }
+body.light-mode .park-action-btn { background: #FFFFFF; border-color: #DCE2F0; color: #334155; }
+body.light-mode .park-action-btn.primary { background: #FFF7ED; border-color: #FDBA74; color: #9A3412; }
 
 * {
   box-sizing: border-box;

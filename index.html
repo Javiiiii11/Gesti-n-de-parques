@@ -25,7 +25,7 @@
   <meta name="description" content="Registra y analiza tus ventas de entradas a parques de ocio">
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 34 34%22><defs><linearGradient id=%22l%22 x1=%220%22 y1=%220%22 x2=%2234%22 y2=%2234%22><stop offset=%220%%22 stop-color=%22%23FF9A44%22/><stop offset=%22100%%22 stop-color=%22%23FC6076%22/></linearGradient></defs><rect width=%2234%22 height=%2234%22 rx=%2210%22 fill=%22url(%23l)%22/><circle cx=%2217%22 cy=%2217%22 r=%227%22 stroke=%22white%22 stroke-width=%222%22 stroke-dasharray=%223 3%22/><circle cx=%2217%22 cy=%2217%22 r=%223%22 fill=%22white%22/><path d=%22M17 17 L22 27 M17 17 L12 27%22 stroke=%22white%22 stroke-width=%222%22 stroke-linecap=%22round%22/></svg>">
-  <link rel="stylesheet" href="css/style.css?v=25">
+  <link rel="stylesheet" href="css/style.css?v=27">
 
   <!-- Chart.js para gráficos interactivos (con fallback de CDN secundario) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
@@ -224,6 +224,8 @@
 
         <div class="nav-separator"><span>GESTIÓN</span></div>
 
+        <!-- Parques/Bonos y Estadísticas ocultos de la barra lateral, solo en menú perfil -->
+        <!--
         <div class="nav-item" data-view="parques">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
@@ -231,6 +233,7 @@
           </svg>
           Parques / Bonos
         </div>
+        -->
         <div class="nav-item" data-view="cuadrante">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
@@ -240,6 +243,7 @@
           </svg>
           Mi Cuadrante
         </div>
+        <!--
         <div class="nav-item" data-view="estadisticas">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
@@ -248,6 +252,7 @@
           </svg>
           Estadísticas
         </div>
+        -->
         <div class="nav-item" data-view="exportar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
@@ -387,6 +392,7 @@
               </svg>
               Ajustes perfil
             </button>
+            <div class="tbm-separator"><span>GESTIÓN</span></div>
             <button class="tbm-item" id="tbm-cuadrante-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                 stroke-linejoin="round">
@@ -395,6 +401,14 @@
                 <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
               </svg>
               Mi cuadrante
+            </button>
+            <button class="tbm-item" id="tbm-parques-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l7-14 4 8 3-5 4 11H3z" /></svg>
+              Parques / Bonos
+            </button>
+            <button class="tbm-item" id="tbm-estadisticas-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18" /><path d="M7 15l4-5 3 3 5-7" /></svg>
+              Estadísticas
             </button>
             <div class="tbm-separator"><span>BACKUP</span></div>
             <button class="tbm-item backup-toggle-btn">
@@ -2224,7 +2238,7 @@
   <script src="js/ventas.js?v=3"></script>
   <script src="js/historial.js?v=5"></script>
   <script src="js/contactos.js?v=3"></script>
-  <script src="js/dashboard.js?v=7"></script>
+  <script src="js/dashboard.js?v=8"></script>
   <script src="js/estadisticas.js?v=3"></script>
   <script src="js/exportar.js?v=6"></script>
   <script src="js/backup-auto.js?v=3"></script>

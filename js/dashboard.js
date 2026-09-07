@@ -1758,6 +1758,24 @@ function wireTopbarUserMenu() {
       if (typeof switchView === 'function') switchView('cuadrante');
     });
   }
+  const parquesBtn = document.getElementById('tbm-parques-btn');
+  if (parquesBtn && parquesBtn.dataset.wired !== '1') {
+    parquesBtn.dataset.wired = '1';
+    parquesBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleTopbarUserMenu(false);
+      if (typeof switchView === 'function') switchView('parques');
+    });
+  }
+  const estBtn = document.getElementById('tbm-estadisticas-btn');
+  if (estBtn && estBtn.dataset.wired !== '1') {
+    estBtn.dataset.wired = '1';
+    estBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleTopbarUserMenu(false);
+      if (typeof switchView === 'function') switchView('estadisticas');
+    });
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
