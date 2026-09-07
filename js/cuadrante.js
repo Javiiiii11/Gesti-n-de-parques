@@ -33,6 +33,8 @@ let cuadSelectedIso = null;
 let cuadBound = false;
 let cuadAdmin = false;
 let cuadRemoteOk = true;
+let cuadEditorMode = false;
+let cuadPendingEdits = []; // para el resumen al desactivar
 
 function pad2(n) {
   return String(n).padStart(2, '0');
@@ -1043,7 +1045,7 @@ function renderCalendar(person, hasData) {
     const hol = holiday ? '<span class="cuad-day-hol">Festivo</span>' : '';
 
     cells.push(`
-      <button type="button" class="${classes}" data-iso="${iso}" data-code="${escapeHtml(displayCode)}" title="${escapeHtml(weekdayLong(date) + ' · ' + shiftTitle(displayCode, date))}">
+      <div class="${classes}" data-iso="${iso}" data-code="${escapeHtml(displayCode)}" title="${escapeHtml(weekdayLong(date) + ' · ' + shiftTitle(displayCode, date))}" role="button" tabindex="0">
         <span class="cuad-day-top">
           <span class="cuad-day-num">${d}</span>
           ${iso === todayIso ? '<span class="cuad-day-today">Hoy</span>' : ''}
@@ -1051,7 +1053,8 @@ function renderCalendar(person, hasData) {
         ${label}
         ${hours}
         ${hol}
-      </button>`);
+        <span class="cuad-edit-btn" data-edit-iso="${iso}" title="Editar turno"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>
+      </div>`);
   }
 
   if (!hasData) {
@@ -1061,11 +1064,30 @@ function renderCalendar(person, hasData) {
   }
 
   cal.innerHTML = head + cells.join('');
-  cal.querySelectorAll('.cuad-day[data-iso]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      cuadSelectedIso = btn.getAttribute('data-iso');
+  // aplicar modo editor
+  const viewEl = document.getElementById('view-cuadrante');
+  if (viewEl && cuadEditorMode) viewEl.classList.add('view-cuad-editor');
+  else viewEl?.classList.remove('view-cuad-editor');
+  cal.querySelectorAll('.cuad-day[data-iso]').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.cuad-edit-btn')) return;
+      cuadSelectedIso = el.getAttribute('data-iso');
       renderCuad();
       document.getElementById('cuad-day-detail')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+    });
+  });
+  cal.querySelectorAll('.cuad-edit-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const iso = btn.getAttribute('data-edit-iso');
+      if (!cuadEditorMode) {
+        toast('Activa primero el Modo editor arriba', 'info');
+        return;
+      }
+      openEditTurnoModal(iso);
     });
   });
 }
@@ -1271,6 +1293,114 @@ function openSwapModal(iso) {
     footHtml: `<button class="btn btn-ghost" type="button" id="cuad-swap-close">Cerrar</button>`
   });
   document.getElementById('cuad-swap-close')?.addEventListener('click', closeModal);
+}
+
+function toggleCuadEditor() {
+  cuadEditorMode = !cuadEditorMode;
+  const btn = document.getElementById('cuad-editor-toggle');
+  const label = document.getElementById('cuad-editor-label');
+  const view = document.getElementById('view-cuadrante');
+  if (btn) btn.classList.toggle('is-on', cuadEditorMode);
+  if (label) label.textContent = cuadEditorMode ? 'Modo editor: ON' : 'Modo editor: OFF';
+  if (view) view.classList.toggle('view-cuad-editor', cuadEditorMode);
+  if (cuadEditorMode) {
+    toast('Modo editor activado — pulsa el lápiz de cada día para cambiar el turno', 'info');
+  } else {
+    if (cuadPendingEdits.length) {
+      const summary = cuadPendingEdits.map(e => `• ${e.iso} (${escapeHtml(e.person)}): ${escapeHtml(e.from || '—')} → ${escapeHtml(e.to)} — ${escapeHtml(e.when)}`).join('<br>');
+      openModal({
+        title: 'Cambios realizados',
+        width: '520px',
+        bodyHtml: `<p class="desc">Has hecho <strong>${cuadPendingEdits.length} cambios</strong> en esta sesión:</p><div style="margin:10px 0;padding:10px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;font-size:12px;line-height:1.6">${summary}</div><p class="desc">Están guardados en la BD y los verán todos al recargar. Se ha leído el CSV + BD y aplicado.</p>`,
+        footHtml: `<button class="btn btn-primary" type="button" id="cuad-editor-summary-ok">Entendido</button>`
+      });
+      document.getElementById('cuad-editor-summary-ok')?.addEventListener('click', closeModal);
+      cuadPendingEdits = [];
+    }
+    toast('Modo editor desactivado', 'info');
+  }
+  renderCuad();
+}
+
+function openEditTurnoModal(iso) {
+  const me = currentPerson();
+  if (!me) { toast('No te he identificado en el cuadrante', 'error'); return; }
+  const date = new Date(iso + 'T12:00:00');
+  const currentCode = codeOn(me, iso) || '';
+  const currentLabel = currentCode ? `${currentCode} · ${shiftTitle(currentCode, date)}` : 'Sin asignar (—)';
+  const options = ['TM1','TM2','TT1','TFS','L','V','0',''].map(code => {
+    const meta = code ? shiftMeta(code, date) : null;
+    const label = !code ? '— Borrar / Sin turno' : `${code === '0' ? 'Libre' : code} · ${meta ? meta.label : ''} ${meta?.hours ? meta.hours : ''}`;
+    const selected = code === currentCode ? 'selected' : '';
+    return `<option value="${escapeHtml(code)}" ${selected}>${escapeHtml(label)}</option>`;
+  }).join('');
+  const whenNow = new Date().toLocaleString('es-ES');
+  openModal({
+    title: `Editar turno · ${weekdayLong(date)}`,
+    width: '420px',
+    bodyHtml: `
+      <p class="desc" style="margin-bottom:10px;">Cambiando el turno de <strong>${escapeHtml(me.orig)}</strong> el <strong>${escapeHtml(iso)}</strong>.</p>
+      <p class="desc" style="margin-bottom:8px;">Actual: <strong>${escapeHtml(currentLabel)}</strong></p>
+      <div class="form-field">
+        <label for="cuad-edit-select">Nuevo turno</label>
+        <select id="cuad-edit-select">${options}</select>
+      </div>
+      <p class="desc" style="margin-top:10px;font-size:11px;opacity:.7">Se guardará en la BD y lo verán todos. Quedará registrado con fecha/hora.</p>
+    `,
+    footHtml: `
+      <button class="btn btn-ghost" type="button" id="cuad-edit-cancel">Cancelar</button>
+      <button class="btn btn-primary" type="button" id="cuad-edit-save">Guardar</button>
+    `
+  });
+  document.getElementById('cuad-edit-cancel')?.addEventListener('click', closeModal);
+  document.getElementById('cuad-edit-save')?.addEventListener('click', async () => {
+    const sel = document.getElementById('cuad-edit-select');
+    const newCode = sel ? sel.value : '';
+    if (newCode === currentCode) { closeModal(); return; }
+    const confirmHtml = `Vas a cambiar <strong>${escapeHtml(iso)}</strong> de <strong>${escapeHtml(currentCode || '—')}</strong> a <strong>${escapeHtml(newCode || '—')}</strong> para <strong>${escapeHtml(me.orig)}</strong> el <strong>${escapeHtml(whenNow)}</strong>.<br><br>¿Seguro?`;
+    closeModal();
+    confirmDialog({
+      title: 'Confirmar cambio',
+      message: confirmHtml,
+      isHtmlMessage: true,
+      confirmLabel: 'Sí, guardar',
+      danger: false,
+      onConfirm: async () => {
+        try {
+          await cuadSaveTurnoEdit(iso, newCode);
+          cuadPendingEdits.push({ iso, person: me.orig, from: currentCode, to: newCode || '—', when: whenNow });
+          toast(`Turno del ${iso} actualizado a ${newCode || '—'}`, 'success');
+          await loadMonth();
+        } catch (err) {
+          toast(err.message || 'No se pudo guardar', 'error');
+        }
+      }
+    });
+  });
+}
+
+async function cuadSaveTurnoEdit(iso, newCode) {
+  const me = currentPerson();
+  if (!me) throw new Error('No identificado');
+  const mesKey = iso.slice(0,7);
+  let data = await DB.getCuadrante(mesKey);
+  if (!data) {
+    data = { users: {}, holidays: [], range: { from: iso, to: iso } };
+  }
+  if (!data.range) data.range = { from: iso, to: iso };
+  if (iso < data.range.from) data.range.from = iso;
+  if (iso > data.range.to) data.range.to = iso;
+  const key = normalizePerson(me.orig);
+  if (!data.users[key]) data.users[key] = { orig: me.orig, days: {} };
+  if (!newCode) delete data.users[key].days[iso];
+  else data.users[key].days[iso] = newCode;
+  await DB.saveCuadrante(mesKey, data, { nombreArchivo: data.nombreArchivo || 'edición manual' });
+  if (!cuadBundle.users[key]) cuadBundle.users[key] = { orig: me.orig, days: {} };
+  if (!newCode) delete cuadBundle.users[key].days[iso];
+  else cuadBundle.users[key].days[iso] = newCode;
+  if (!cuadBundle.range) cuadBundle.range = { from: iso, to: iso };
+  if (iso < cuadBundle.range.from) cuadBundle.range.from = iso;
+  if (iso > cuadBundle.range.to) cuadBundle.range.to = iso;
 }
 
 /* ---------------------------------- data ----------------------------------- */
@@ -1572,6 +1702,7 @@ function cuadBind() {
     loadMonth();
   });
   document.getElementById('cuad-btn-upload')?.addEventListener('click', openUploadModal);
+  document.getElementById('cuad-editor-toggle')?.addEventListener('click', toggleCuadEditor);
   document.addEventListener('keydown', (e) => {
     const view = document.getElementById('view-cuadrante');
     if (!view?.classList.contains('active')) return;
