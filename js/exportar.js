@@ -3,16 +3,8 @@
 ============================================================================ */
 
 function initExportView() {
-  document.getElementById('btn-export-ventas').addEventListener('click', exportVentasCSV);
-  document.getElementById('btn-export-parques').addEventListener('click', exportParquesCSV);
-  document.getElementById('btn-export-bonos').addEventListener('click', exportBonosCSV);
-  document.getElementById('btn-export-contactos').addEventListener('click', exportContactosCSV);
-
   document.getElementById('btn-export-xlsx').addEventListener('click', exportXLSX);
   document.getElementById('btn-export-json').addEventListener('click', exportBackupJSON);
-
-  document.getElementById('btn-add-all-parks').addEventListener('click', addAllPredefinedParks);
-  document.getElementById('btn-add-all-bonos').addEventListener('click', addAllPredefinedBonos);
 
   const drop = document.getElementById('import-drop');
   const fileInput = document.getElementById('import-file');
@@ -277,6 +269,45 @@ function exportBackupJSON() {
 
 /* --- IMPORTACIÓN DE BACKUP --- */
 
+function backupIsoKey(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value).slice(0, 19);
+  return d.toISOString().slice(0, 19);
+}
+
+function ventaDupKey(v) {
+  const loc = String(v.localizador || '').trim().toLowerCase();
+  if (loc) return `loc|${v.tipo || 'entrada'}|${loc}`;
+  return [
+    'fp',
+    backupIsoKey(v.fecha),
+    v.tipo || 'entrada',
+    v.parque_id || '',
+    v.bono_id || '',
+    Number(v.importe_total) || 0,
+    String(v.cliente_nombre || '').trim().toLowerCase(),
+    v.via || '',
+    v.estado || 'completado',
+  ].join('|');
+}
+
+function contactoDupKey(c) {
+  const loc = String(c.localizador || c.localizador_bono || '').trim().toLowerCase();
+  if (loc) return `loc|${c.tipo || 'entrada'}|${loc}`;
+  return [
+    'fp',
+    backupIsoKey(c.created_at),
+    c.tipo || 'entrada',
+    c.parque_id || '',
+    c.bono_id || '',
+    Number(c.importe_total) || 0,
+    String(c.nombre_apellidos || '').trim().toLowerCase(),
+    String(c.telefono || '').replace(/\s/g, ''),
+    String(c.correo || '').trim().toLowerCase(),
+  ].join('|');
+}
+
 function handleImportFile(file) {
   if (!file.name.endsWith('.json')) { toast('Solo se admiten archivos .json de backup', 'error'); return; }
   const reader = new FileReader();
@@ -325,6 +356,7 @@ function handleImportFile(file) {
             };
 
             // 3. Ventas
+            const existingVentaKeys = new Set(STATE.ventas.map(ventaDupKey));
             const ventasParaInsertar = data.ventas.map(({ id, created_at, parque_id, bono_id, ...rest }) => {
               const cliente_nombre = rest.cliente_nombre || 'Cliente';
               const importe_total = Number(rest.importe_total) || 0;
@@ -337,8 +369,10 @@ function handleImportFile(file) {
                 cliente_nombre,
                 importe_total,
                 localizador: rest.localizador || null,
+                estado: rest.estado || 'completado',
               };
-            }).filter(v => (v.tipo === 'entrada' && v.parque_id) || (v.tipo === 'bono' && v.bono_id));
+            }).filter(v => (v.tipo === 'entrada' && v.parque_id) || (v.tipo === 'bono' && v.bono_id))
+              .filter(v => !existingVentaKeys.has(ventaDupKey(v)));
 
             if (ventasParaInsertar.length) {
               await DB.bulkInsertVentas(ventasParaInsertar);
@@ -347,6 +381,7 @@ function handleImportFile(file) {
 
             // 4. Apuntes (Contactos)
             if (data.contactos && data.contactos.length) {
+              const existingContactoKeys = new Set(STATE.contactos.map(contactoDupKey));
               const apuntesParaInsertar = data.contactos.map(({ id, created_at, parque_id, bono_id, ...rest }) => {
                 return {
                   tipo: rest.tipo,
@@ -371,7 +406,7 @@ function handleImportFile(file) {
                   fecha_maxima: rest.fecha_maxima || null,
                   created_at: created_at || new Date().toISOString()
                 };
-              });
+              }).filter(c => !existingContactoKeys.has(contactoDupKey(c)));
 
               for (const apunte of apuntesParaInsertar) {
                 await DB.addContacto(apunte);

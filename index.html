@@ -595,9 +595,10 @@
                   <label for="v-bono">Tipo de bono</label>
                   <select id="v-bono"></select>
                 </div>
-                <div class="form-field">
+                <!-- Nombre cliente oculto - se ignora -->
+                <div class="form-field" style="display:none">
                   <label for="v-cliente">Nombre del cliente</label>
-                  <input type="text" id="v-cliente" placeholder="Ej. Marta López" required>
+                  <input type="text" id="v-cliente" placeholder="Ej. Marta López">
                 </div>
                 <div class="form-field">
                   <label for="v-importe">Importe total (€)</label>
@@ -1441,7 +1442,7 @@
                   <circle cx="11" cy="11" r="7" />
                   <path d="M21 21l-4.3-4.3" />
                 </svg>
-                <input type="text" id="hist-search" placeholder="Buscar cliente, parque, localizador…">
+                <input type="text" id="hist-search" placeholder="Buscar parque, localizador…">
               </div>
               <select class="filter-select" id="hist-filtro-tipo-venta">
                 <option value="">Entradas y Bonos</option>
@@ -1492,7 +1493,6 @@
                   <th data-sort="tipo">Tipo <span class="sort-arrow"></span></th>
                   <th data-sort="via">Vía <span class="sort-arrow"></span></th>
                   <th data-sort="parque">Detalle <span class="sort-arrow"></span></th>
-                  <th data-sort="cliente_nombre">Cliente <span class="sort-arrow"></span></th>
                   <th data-sort="localizador">Localizador <span class="sort-arrow"></span></th>
                   <th data-sort="estado">Estado <span class="sort-arrow"></span></th>
                   <th data-sort="importe_total">Importe (€) <span class="sort-arrow"></span></th>
@@ -1964,8 +1964,7 @@
                   </svg></div>
                 <h4 class="ex-title">Restaurar Datos</h4>
               </div>
-              <p class="ex-desc">Restaura un backup .json generado previamente. <strong
-                  style="color:var(--text-primary)">Cuidado:</strong> reemplazará los datos actuales.</p>
+              <p class="ex-desc">Restaura un backup .json generado previamente. Los registros que ya existan se omiten y no se duplican.</p>
               <div class="ex-file-drop" id="import-drop">Haz clic o arrastra un archivo .json aquí</div>
               <input type="file" id="import-file" accept="application/json" style="display:none;">
             </div>
@@ -1983,34 +1982,14 @@
                   </svg></div>
                 <h4 class="ex-title">Informe Completo (Excel)</h4>
               </div>
-              <p class="ex-desc">Genera un archivo .xlsx perfecto para contabilidad, con pestañas ordenadas para Ventas,
+              <p class="ex-desc">Genera un archivo .xlsx perfecto para guardar, con pestañas ordenadas para Ventas,
                 Parques, Bonos y Apuntes.</p>
               <div class="ex-actions">
                 <button class="btn btn-primary" id="btn-export-xlsx">Descargar Excel (.xlsx)</button>
               </div>
             </div>
 
-            <!-- CSV Individuales -->
-            <div class="ex-card accent-orange">
-              <div class="ex-header">
-                <div class="ex-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                    <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" />
-                  </svg></div>
-                <h4 class="ex-title">Exportar tablas (CSV)</h4>
-              </div>
-              <p class="ex-desc">Descarga tablas individuales en formato plano CSV si necesitas procesarlas en otras
-                herramientas o sistemas.</p>
-              <div class="ex-actions">
-                <button class="btn btn-secondary btn-sm" id="btn-export-ventas">Ventas</button>
-                <button class="btn btn-secondary btn-sm" id="btn-export-parques">Parques</button>
-                <button class="btn btn-secondary btn-sm" id="btn-export-bonos">Bonos</button>
-                <button class="btn btn-secondary btn-sm" id="btn-export-contactos">Apuntes</button>
-              </div>
-            </div>
-
-            <!-- Importar CSV Telemarketing -->
+            <!-- Importar CSV de vector -->
             <div class="ex-card accent-purple">
               <div class="ex-header">
                 <div class="ex-icon-wrap">
@@ -2022,29 +2001,12 @@
                     <line x1="9" y1="15" x2="15" y2="15" />
                   </svg>
                 </div>
-                <h4 class="ex-title">Importar CSV Telemarketing</h4>
+                <h4 class="ex-title">Importar CSV de Vector</h4>
               </div>
               <p class="ex-desc">Sube el informe en CSV. <strong>Multipark</strong> solo sale en bonos y se guarda como
                 <em>Sin especificar · Bono</em>. Los parques sí traen su nombre.</p>
               <div class="ex-file-drop" id="import-csv-drop">Haz clic o arrastra uno o varios archivos .csv aquí</div>
               <input type="file" id="import-csv-file" accept=".csv" style="display:none;" multiple>
-            </div>
-
-            <!-- Predefinidos -->
-            <div class="ex-card accent-blue">
-              <div class="ex-header">
-                <div class="ex-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 21l7-14 4 8 3-5 4 11H3z" />
-                  </svg></div>
-                <h4 class="ex-title">Asistente de llenado</h4>
-              </div>
-              <p class="ex-desc">Si has borrado los datos o acabas de instalar la app, añade los parques y bonos
-                oficiales en un solo clic.</p>
-              <div class="ex-actions">
-                <button class="btn btn-secondary btn-sm" id="btn-add-all-parks">Añadir parques</button>
-                <button class="btn btn-secondary btn-sm" id="btn-add-all-bonos">Añadir bonos</button>
-              </div>
             </div>
           </div>
         </section>
@@ -2054,8 +2016,7 @@
           <div class="view-header">
             <div>
               <h2>Asistente de correos</h2>
-              <p class="desc">Redacta respuestas rápidas usando tus propios apuntes, sin conectarte a ninguna IA externa
-                y compatible con GitHub Pages.</p>
+              <p class="desc">Redacta respuestas rápidas usando tus propios apuntes, sin conectarte a ninguna IA externa</p>
             </div>
           </div>
 
@@ -2231,16 +2192,16 @@
   <div id="toast-stack"></div>
 
 
-  <script src="js/supabase-client.js?v=11"></script>
+  <script src="js/supabase-client.js?v=12"></script>
   <script src="js/utils.js?v=5"></script>
   <script src="js/auth.js?v=5"></script>
   <script src="js/parques.js?v=4"></script>
   <script src="js/ventas.js?v=3"></script>
-  <script src="js/historial.js?v=5"></script>
+  <script src="js/historial.js?v=6"></script>
   <script src="js/contactos.js?v=3"></script>
   <script src="js/dashboard.js?v=8"></script>
   <script src="js/estadisticas.js?v=3"></script>
-  <script src="js/exportar.js?v=6"></script>
+  <script src="js/exportar.js?v=7"></script>
   <script src="js/backup-auto.js?v=3"></script>
   <script src="js/notas.js?v=3"></script>
   <script src="js/llamadas.js?v=3"></script>

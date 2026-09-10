@@ -259,9 +259,6 @@ function getFilteredSortedVentas() {
     } else if (key === 'fecha') {
       va = new Date(a[key]).getTime();
       vb = new Date(b[key]).getTime();
-    } else if (key === 'cliente_nombre') {
-      va = a.cliente_nombre || '';
-      vb = b.cliente_nombre || '';
     } else {
       va = a[key];
       vb = b[key];
@@ -317,7 +314,6 @@ function renderHistorial() {
           <td><span class="badge ${tipo === 'entrada' ? 'badge-primary' : 'badge-success'}">${tipo === 'entrada' ? 'Entrada' : 'Bono'}</span></td>
           <td><span class="badge ${viaClasses[via] || 'badge-via-llamada'}">${viaLabels[via] || '📞 Llamada'}</span></td>
           <td>${escapeHtml(detalle)}</td>
-          <td>${escapeHtml(v.cliente_nombre || '—')}</td>
           <td>${escapeHtml(loc)}</td>
           <td>
             <div class="hist-quick-status-wrap">

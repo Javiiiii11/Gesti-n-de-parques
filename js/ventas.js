@@ -261,14 +261,9 @@ function wireQuickParse() {
     const lines = trimmed.split('\n').filter(l => l.trim().length > 0);
     if (lines.length >= 5) {
       const localizador = lines[1]?.trim() || '';
-      const nombreCliente = lines[2]?.trim() || '';
+      // Ignorados por petición: nombre, correo, teléfono
       const precioStr = (lines[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
       const precio = parseFloat(precioStr) || 0;
-      const correo = lines[5]?.trim() || '';
-      let telefono = (lines[6] || '').replace(/\s/g, '');
-      if (telefono.startsWith('+34')) telefono = telefono.substring(3);
-
-      // Buscar estado en las líneas siguientes o en todo el bloque
       let estado = 'completado';
       for (let i = 7; i < lines.length; i++) {
         const detected = detectEstadoFromRaw(lines[i]);
@@ -281,7 +276,7 @@ function wireQuickParse() {
         estado = detectEstadoFromRaw(trimmed);
       }
 
-      return { localizador, nombreCliente, precio, correo, telefono, estado };
+      return { localizador, precio, estado };
     }
 
     // Formato clásico: separado por tabs o espacios múltiples (una línea)
@@ -289,14 +284,9 @@ function wireQuickParse() {
     if (parts.length < 5) return null;
 
     const localizador = parts[1] || '';
-    const nombreCliente = parts[2] || '';
+    // Ignorados: nombre, correo, teléfono
     const precioStr = (parts[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
     const precio = parseFloat(precioStr) || 0;
-    const correo = parts[5] || '';
-    let telefono = (parts[6] || '').replace(/\s/g, '');
-    if (telefono.startsWith('+34')) telefono = telefono.substring(3);
-
-    // Buscar estado en partes posteriores o en la cadena completa
     let estado = 'completado';
     if (parts[10]) {
       estado = detectEstadoFromRaw(parts[10]);
@@ -313,7 +303,7 @@ function wireQuickParse() {
       estado = detectEstadoFromRaw(trimmed);
     }
 
-    return { localizador, nombreCliente, precio, correo, telefono, estado };
+    return { localizador, precio, estado };
   }
 
   function fillForm(data) {

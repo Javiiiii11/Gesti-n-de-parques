@@ -564,7 +564,11 @@ const DB = {
 
   async addContacto(contacto) {
     const list = readLocal(LOCAL_KEYS.contactos);
-    const nuevo = { id: uid(), created_at: new Date().toISOString(), ...normalizeContacto(contacto) };
+    const nuevo = {
+      id: contacto?.id || uid(),
+      created_at: contacto?.created_at || new Date().toISOString(),
+      ...normalizeContacto(contacto),
+    };
     list.push(nuevo);
     writeLocal(LOCAL_KEYS.contactos, list);
     return nuevo;
