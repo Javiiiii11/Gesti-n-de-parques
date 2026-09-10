@@ -42,28 +42,6 @@ function updateVentaFormVisibility() {
   const secBonos = document.getElementById('v-seccion-bonos');
   if (secEntradas) secEntradas.style.display = tipo === 'entrada' ? 'grid' : 'none';
   if (secBonos) secBonos.style.display = tipo === 'bono' ? 'grid' : 'none';
-
-  // Toggle entrada/bono extra sections (only if extras container is visible)
-  const extrasContainer = document.getElementById('v-section-extras');
-  if (extrasContainer && extrasContainer.style.display !== 'none') {
-    const secEntradasExtra = document.getElementById('v-seccion-entradas-extra');
-    const secBonosExtra = document.getElementById('v-seccion-bonos-extra');
-    if (secEntradasExtra) secEntradasExtra.style.display = tipo === 'entrada' ? 'grid' : 'none';
-    if (secBonosExtra) secBonosExtra.style.display = tipo === 'bono' ? 'grid' : 'none';
-  }
-
-  // Toggle preview rows for entrada vs bono
-  const showHide = (id, show) => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = show ? '' : 'none';
-  };
-  showHide('tp-row-telefono', tipo === 'entrada');
-  showHide('tp-row-extras', tipo === 'entrada');
-  showHide('tp-row-cantidad', true);
-  showHide('tp-row-dni', tipo === 'bono');
-  // Nº de bono solo se muestra cuando los extras están visibles y es tipo bono
-  const extrasVisible = extrasContainer && extrasContainer.style.display !== 'none';
-  showHide('tp-row-num-bono', tipo === 'bono' && extrasVisible);
   
   updateTicketPreview();
 }
@@ -74,9 +52,7 @@ function initVentaForm() {
   
   // Listener para TODOS los campos para que la vista previa se actualice en vivo
   const liveFields = [
-    'v-parque', 'v-bono', 'v-cliente', 'v-correo', 'v-importe',
-    'v-telefono', 'v-cantidad-entradas', 'v-extras',
-    'v-num-bono', 'v-dni', 'v-nacimiento', 'v-cantidad-bonos',
+    'v-parque', 'v-bono', 'v-importe',
     'v-anotaciones', 'v-anotaciones-bono', 'v-localizador',
     'v-via', 'v-estado'
   ];
@@ -104,19 +80,7 @@ function initVentaForm() {
   const btnClear = document.getElementById('btn-clear-form');
   if (btnClear) btnClear.addEventListener('click', resetVentaForm);
 
-  // Toggle extra fields
-  const toggleBtn = document.getElementById('v-toggle-extras');
-  if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
-      const extras = document.getElementById('v-section-extras');
-      const text = document.getElementById('v-toggle-extras-text');
-      if (extras) {
-        const isHidden = extras.style.display === 'none';
-        extras.style.display = isHidden ? 'block' : 'none';
-        if (text) text.textContent = isHidden ? 'Ocultar campos extra' : 'Mostrar más campos';
-      }
-    });
-  }
+
 
   // Cablear el parseo rápido
   wireQuickParse();
@@ -143,19 +107,15 @@ function updateTicketPreview() {
     itemNombre = bono ? bono.nombre : 'Selecciona un bono';
   }
   
-  const clienteEl = document.getElementById('v-cliente');
-  const correoEl = document.getElementById('v-correo');
   const importeEl = document.getElementById('v-importe');
   const estadoEl = document.getElementById('v-estado');
   
-  const cliente = clienteEl ? clienteEl.value.trim() : '';
-  const correo = correoEl ? correoEl.value.trim() : '';
   const importe = importeEl ? (Number(importeEl.value) || 0) : 0;
   const estadoVal = estadoEl ? estadoEl.value : 'completado';
 
   // Header
   setPreviewText('tp-park', itemNombre);
-  setPreviewText('tp-type', `Cliente: ${cliente || '—'}`);
+  setPreviewText('tp-type', '');
 
   // Estado badge preview
   const badgeInfo = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(estadoVal) : { label: estadoVal, colorBg: '#34D39922', textColor: '#34D399', colorBorder: '#34D399', icon: '✅' };
@@ -165,39 +125,12 @@ function updateTicketPreview() {
   }
 
   // Common fields
-  const rowCorreo = document.getElementById('tp-row-correo');
-  if (rowCorreo) {
-    if (correo) {
-      rowCorreo.style.display = '';
-      setPreviewText('tp-correo', correo);
-    } else {
-      rowCorreo.style.display = 'none';
-    }
-  }
   const localizadorEl = document.getElementById('v-localizador');
   const locValue = localizadorEl ? localizadorEl.value.trim() : '';
   setPreviewText('tp-localizador', locValue || 'Sin localizador');
   setPreviewText('tp-total', typeof fmtEUR === 'function' ? fmtEUR(importe) : importe.toFixed(2) + ' €');
 
-  // Entrada-specific preview
-  if (tipo === 'entrada') {
-    const telefonoEl = document.getElementById('v-telefono');
-    const cantidadEl = document.getElementById('v-cantidad-entradas');
-    const extrasEl = document.getElementById('v-extras');
-    
-    setPreviewText('tp-telefono', (telefonoEl && telefonoEl.value.trim()) || '—');
-    setPreviewText('tp-cantidad', (cantidadEl && cantidadEl.value) || '—');
-    setPreviewText('tp-extras-preview', (extrasEl && extrasEl.value.trim()) || '—');
-  } else {
-    // Bono-specific preview
-    const numBonoEl = document.getElementById('v-num-bono');
-    const dniEl = document.getElementById('v-dni');
-    const cantidadEl = document.getElementById('v-cantidad-bonos');
-    
-    setPreviewText('tp-num-bono', (numBonoEl && numBonoEl.value.trim()) || '—');
-    setPreviewText('tp-dni-preview', (dniEl && dniEl.value.trim()) || '—');
-    setPreviewText('tp-cantidad', (cantidadEl && cantidadEl.value) || '—');
-  }
+
 
   // Anotaciones preview — show row only if there's text
   const anotacionesEl = document.getElementById('v-anotaciones');
@@ -314,24 +247,13 @@ function wireQuickParse() {
     if (radioEntrada) radioEntrada.checked = true;
     updateVentaFormVisibility();
     
-    // Mostrar campos extra si es necesario (teléfono)
-    const extras = document.getElementById('v-section-extras');
-    const toggleText = document.getElementById('v-toggle-extras-text');
-    if (extras && extras.style.display === 'none') {
-      extras.style.display = 'block';
-      if (toggleText) toggleText.textContent = 'Ocultar campos extra';
-    }
-    
     // Rellenar campos
     const setVal = (id, val) => {
       const el = document.getElementById(id);
       if (el) el.value = val;
     };
     setVal('v-localizador', data.localizador);
-    setVal('v-cliente', data.nombreCliente);
     setVal('v-importe', data.precio);
-    setVal('v-correo', data.correo);
-    setVal('v-telefono', data.telefono);
     if (data.estado) setVal('v-estado', data.estado);
     
     // Actualizar preview
@@ -346,10 +268,7 @@ function wireQuickParse() {
           <div class="qp-head">📋 Vista previa de datos detectados</div>
           <div class="qp-row"><span>Estado</span><strong style="color:${badgeInfo.textColor}; font-weight:700;">${badgeInfo.icon} ${badgeInfo.label}</strong></div>
           <div class="qp-row"><span>Localizador</span><strong>${escapeHtml(data.localizador) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
-          <div class="qp-row"><span>Cliente</span><strong>${escapeHtml(data.nombreCliente) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
           <div class="qp-row"><span>Importe</span><strong>${typeof fmtEUR === 'function' ? fmtEUR(data.precio) : data.precio.toFixed(2) + ' €'}</strong></div>
-          <div class="qp-row"><span>Correo</span><strong>${escapeHtml(data.correo) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
-          <div class="qp-row"><span>Teléfono</span><strong>${escapeHtml(data.telefono) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
         </div>
       `;
       preview.style.display = 'block';
@@ -407,8 +326,6 @@ function wireQuickParse() {
 
 async function guardarVenta({ keepOpen }) {
   const tipo = document.querySelector('input[name="v-tipo"]:checked')?.value || 'entrada';
-  const clienteNombre = document.getElementById('v-cliente')?.value.trim() || '';
-  const correo = document.getElementById('v-correo')?.value.trim() || '';
   const importeTotal = Number(document.getElementById('v-importe')?.value);
   const anotaciones = tipo === 'entrada'
     ? (document.getElementById('v-anotaciones')?.value.trim() || '')
@@ -431,11 +348,6 @@ async function guardarVenta({ keepOpen }) {
     }
   }
   
-  if (!clienteNombre) { 
-    toast('Indica el nombre del cliente', 'error'); 
-    return; 
-  }
-  
   if (importeTotal === null || isNaN(importeTotal) || importeTotal < 0) { 
     toast('Indica un importe válido', 'error'); 
     return; 
@@ -451,8 +363,8 @@ async function guardarVenta({ keepOpen }) {
   // Build contacto (apunte) payload
   const contactoPayload = {
     tipo,
-    nombre_apellidos: clienteNombre,
-    correo,
+    nombre_apellidos: '',
+    correo: '',
     importe_total: importeTotal,
     estado_pago: estadoPagoContacto,
     anotaciones,
@@ -460,19 +372,10 @@ async function guardarVenta({ keepOpen }) {
   };
 
   if (tipo === 'entrada') {
-    contactoPayload.telefono = document.getElementById('v-telefono')?.value.trim() || '';
+    contactoPayload.telefono = '';
     contactoPayload.parque_id = itemId;
-    const cantVal = document.getElementById('v-cantidad-entradas')?.value;
-    contactoPayload.cantidad_entradas = cantVal ? Number(cantVal) : null;
-    contactoPayload.extras = document.getElementById('v-extras')?.value.trim() || '';
   } else {
-    contactoPayload.num_bono = document.getElementById('v-num-bono')?.value.trim() || '';
-    contactoPayload.dni = document.getElementById('v-dni')?.value.trim() || '';
-    const fechaNac = document.getElementById('v-nacimiento')?.value;
-    contactoPayload.fecha_nacimiento = fechaNac || null;
     contactoPayload.bono_id = itemId;
-    const cantVal = document.getElementById('v-cantidad-bonos')?.value;
-    contactoPayload.cantidad_bonos = cantVal ? Number(cantVal) : null;
   }
 
   const via = document.getElementById('v-via')?.value || 'llamada';
@@ -482,7 +385,7 @@ async function guardarVenta({ keepOpen }) {
     fecha: new Date().toISOString(),
     tipo,
     via,
-    cliente_nombre: clienteNombre,
+    cliente_nombre: '',
     importe_total: importeTotal,
     localizador: localizador || null,
     estado: estado,
@@ -514,17 +417,15 @@ async function guardarVenta({ keepOpen }) {
     if (keepOpen) {
       // Clear client-specific fields, keep tipo and parque/bono selection
       const fieldsToClear = [
-        'v-cliente', 'v-correo', 'v-importe', 'v-anotaciones', 'v-localizador',
-        'v-telefono', 'v-extras', 'v-num-bono', 'v-dni', 'v-nacimiento',
-        'v-cantidad-entradas', 'v-cantidad-bonos'
+        'v-importe', 'v-anotaciones', 'v-localizador'
       ];
       fieldsToClear.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
       });
       updateTicketPreview();
-      const clienteField = document.getElementById('v-cliente');
-      if (clienteField) clienteField.focus();
+      const importeField = document.getElementById('v-importe');
+      if (importeField) importeField.focus();
     } else {
       resetVentaForm();
     }

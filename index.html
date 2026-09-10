@@ -526,8 +526,7 @@
           <div class="view-header">
             <div>
               <h2>Registrar venta</h2>
-              <p class="desc">Registra parque, cliente e importe en segundos. También crea un apunte con todos los
-                datos.</p>
+              <p class="desc">Registra parque, estado e importe en segundos.</p>
             </div>
           </div>
 
@@ -646,62 +645,7 @@
                 </div>
               </div>
 
-              <!-- Botón para mostrar/ocultar campos extra -->
-              <div style="margin-top:12px; text-align:center;">
-                <button type="button" class="btn btn-ghost btn-sm" id="v-toggle-extras">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    style="width:14px;height:14px;vertical-align:middle;margin-right:4px;">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                  <span id="v-toggle-extras-text">Mostrar más campos</span>
-                </button>
-              </div>
 
-              <!-- Campos extras (ocultos por defecto) -->
-              <div id="v-section-extras"
-                style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
-                <div class="form-grid">
-                  <div class="form-field full">
-                    <label for="v-correo">Correo electrónico</label>
-                    <input type="email" id="v-correo" placeholder="cliente@ejemplo.com">
-                  </div>
-                </div>
-                <!-- Campos extra para Entradas -->
-                <div id="v-seccion-entradas-extra" class="form-grid" style="margin-top:12px;">
-                  <div class="form-field">
-                    <label for="v-telefono">Teléfono</label>
-                    <input type="text" id="v-telefono" placeholder="Ej. 612 345 678">
-                  </div>
-                  <div class="form-field">
-                    <label for="v-cantidad-entradas">Cantidad de entradas</label>
-                    <input type="number" min="1" id="v-cantidad-entradas" placeholder="Opcional" value="1">
-                  </div>
-                  <div class="form-field full">
-                    <label for="v-extras">Extras (ej. Comida, pase rápido...)</label>
-                    <input type="text" id="v-extras" placeholder="Sin extras">
-                  </div>
-                </div>
-
-                <!-- Campos extra para Bonos -->
-                <div id="v-seccion-bonos-extra" class="form-grid" style="margin-top:12px; display:none;">
-                  <div class="form-field">
-                    <label for="v-num-bono">Nº de bono</label>
-                    <input type="text" id="v-num-bono">
-                  </div>
-                  <div class="form-field">
-                    <label for="v-dni">DNI</label>
-                    <input type="text" id="v-dni">
-                  </div>
-                  <div class="form-field">
-                    <label for="v-nacimiento">Fecha de nacimiento</label>
-                    <input type="date" id="v-nacimiento">
-                  </div>
-                  <div class="form-field">
-                    <label for="v-cantidad-bonos">Cantidad de bonos</label>
-                    <input type="number" min="1" id="v-cantidad-bonos" placeholder="Opcional" value="1">
-                  </div>
-                </div>
-              </div>
 
               <div class="btn-row">
                 <button type="submit" class="btn btn-primary">
@@ -724,20 +668,11 @@
                 </div>
                 <div class="tp-badge">VISTA PREVIA</div>
               </div>
-              <div class="tp-row" id="tp-row-correo" style="display:none"><span>Correo</span><b id="tp-correo">—</b>
-              </div>
+
               <div class="tp-row"><span>Localizador</span><b id="tp-localizador">Sin localizador</b></div>
               <div class="tp-row" id="tp-row-estado"><span>Estado</span><b id="tp-estado"><span class="badge" style="background:rgba(0,138,0,0.18); color:#00E676; border:1px solid #008A00; font-weight:700; font-size:11px; padding:2px 8px; border-radius:999px;">✅ Completado</span></b></div>
-              <div class="tp-row" id="tp-row-telefono" style="display:none"><span>Teléfono</span><b
-                  id="tp-telefono">—</b></div>
-              <div class="tp-row" id="tp-row-cantidad" style="display:none"><span>Cantidad</span><b
-                  id="tp-cantidad">—</b></div>
-              <div class="tp-row" id="tp-row-extras" style="display:none"><span>Extras</span><b
-                  id="tp-extras-preview">—</b></div>
-              <div class="tp-row" id="tp-row-num-bono" style="display:none"><span>Nº Bono</span><b
-                  id="tp-num-bono">—</b></div>
-              <div class="tp-row" id="tp-row-dni" style="display:none"><span>DNI</span><b id="tp-dni-preview">—</b>
-              </div>
+
+
               <div class="tp-row" id="tp-row-notas" style="display:none"><span>Notas</span><b id="tp-notas"
                   style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">—</b></div>
               <div class="tp-total"><span class="lbl">Importe:</span><span class="val" id="tp-total">0,00 €</span>
@@ -2020,55 +1955,36 @@
             </div>
           </div>
 
-          <div class="chat-ia-tabs">
-            <button class="chat-ia-tab active" data-tab="asistente">✉️ Redactor</button>
-            <button class="chat-ia-tab" data-tab="frases">🧩 Frases útiles</button>
-          </div>
+          <div class="chat-ia-local-badge">Modo local · Sin APIs externas</div>
 
-          <div class="chat-ia-panel active" id="chat-ia-panel-asistente">
-            <div class="chat-ia-local-badge">Modo local · Sin APIs externas</div>
-
-            <div class="chat-ia-editor-layout">
-              <div class="card card-pad chat-ia-side-card">
-                <div class="chat-ia-simple-form">
-                  <div class="form-field">
-                    <label for="chat-ia-park">Parque / producto</label>
-                    <select id="chat-ia-park"></select>
-                  </div>
-                  <div id="chat-ia-knowledge-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
-                  <div class="form-field full">
-                    <label for="chat-ia-input">Pega aquí el correo o la consulta</label>
-                    <textarea id="chat-ia-input" rows="14"
-                      placeholder="Pega aquí directamente lo que te ha escrito el cliente..."></textarea>
-                  </div>
+          <div class="chat-ia-editor-layout">
+            <div class="card card-pad chat-ia-side-card">
+              <div class="chat-ia-simple-form">
+                <div class="form-field">
+                  <label for="chat-ia-park">Parque / producto</label>
+                  <select id="chat-ia-park"></select>
                 </div>
-
-                <div class="chat-ia-actions-row">
-                  <button type="button" class="btn btn-ghost btn-sm" id="chat-ia-clear-btn">Limpiar</button>
-                  <button type="submit" form="chat-ia-form" class="btn btn-primary">Generar correo</button>
-                </div>
-
-                <form id="chat-ia-form" class="chat-ia-hidden-form"></form>
-              </div>
-
-              <div class="card chat-ia-card">
-                <div class="chat-ia-mensajes" id="chat-ia-mensajes"></div>
-                <div class="chat-ia-output-actions">
-                  <button type="button" class="btn btn-secondary" id="chat-ia-copy-btn">Copiar correo</button>
+                <div class="form-field full">
+                  <label for="chat-ia-input">Pega aquí el correo o la consulta</label>
+                  <textarea id="chat-ia-input" rows="14"
+                    placeholder="Pega aquí directamente lo que te ha escrito el cliente..."></textarea>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <!-- ---- PANEL: FRASES PARA EMAIL ---- -->
-          <div class="chat-ia-panel" id="chat-ia-panel-frases">
-            <div class="card card-pad">
-              <input type="text" id="chat-ia-frases-buscador"
-                placeholder="Buscar frase o categoría (ej: disculpa, cierre, recordatorio...)"
-                style="margin-bottom:16px;">
-              <div id="chat-ia-frases-list"></div>
+              <div class="chat-ia-actions-row">
+                <button type="button" class="btn btn-ghost btn-sm" id="chat-ia-clear-btn">Limpiar</button>
+                <button type="submit" form="chat-ia-form" class="btn btn-primary">Generar correo</button>
+              </div>
+
+              <form id="chat-ia-form" class="chat-ia-hidden-form"></form>
             </div>
-          </div>
+
+            <div class="card chat-ia-card">
+              <div class="chat-ia-mensajes" id="chat-ia-mensajes"></div>
+              <div class="chat-ia-output-actions">
+                <button type="button" class="btn btn-secondary" id="chat-ia-copy-btn">Copiar correo</button>
+              </div>
+</div>
         </section>
 
       </div>

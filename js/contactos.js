@@ -150,18 +150,15 @@ function wireContactoQuickParse(updateFormVisibility) {
       //   2: nombre_cliente
       //   3: precio (179,70 €)
       //   4: fecha_hora (ignorada)
-      //   5: correo
-      //   6: teléfono
+      //   5: correo (ignorado)
+      //   6: teléfono (ignorado)
       //   7+: ignorado
       const localizador = lines[1]?.trim() || '';
       const nombreCliente = lines[2]?.trim() || '';
       const precioStr = (lines[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
       const precio = parseFloat(precioStr) || 0;
-      const correo = lines[5]?.trim() || '';
-      let telefono = (lines[6] || '').replace(/\s/g, '');
-      if (telefono.startsWith('+34')) telefono = telefono.substring(3);
 
-      return { localizador, nombreCliente, precio, correo, telefono };
+      return { localizador, nombreCliente, precio };
     }
 
     // Formato clásico: separado por tabs o espacios múltiples (una línea)
@@ -173,11 +170,8 @@ function wireContactoQuickParse(updateFormVisibility) {
     const nombreCliente = parts[2] || '';
     const precioStr = (parts[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
     const precio = parseFloat(precioStr) || 0;
-    const correo = parts[5] || '';
-    let telefono = (parts[6] || '').replace(/\s/g, '');
-    if (telefono.startsWith('+34')) telefono = telefono.substring(3);
 
-    return { localizador, nombreCliente, precio, correo, telefono };
+    return { localizador, nombreCliente, precio };
   }
 
   function fillContactoForm(data) {
@@ -188,25 +182,13 @@ function wireContactoQuickParse(updateFormVisibility) {
     if (radioEntrada) radioEntrada.checked = true;
     if (typeof updateFormVisibility === 'function') updateFormVisibility();
 
-    // Mostrar campos extra si es necesario (teléfono, correo)
-    const extras = document.getElementById('cf-section-extras');
-    const toggleText = document.getElementById('cf-toggle-extras-text');
-    if (extras && extras.style.display === 'none') {
-      extras.style.display = 'block';
-      if (toggleText) toggleText.textContent = 'Ocultar campos extra';
-      if (typeof updateFormVisibility === 'function') updateFormVisibility();
-    }
-
     // Rellenar campos
     const setVal = (id, val) => {
       const el = document.getElementById(id);
       if (el) el.value = val;
     };
     setVal('cf-localizador', data.localizador);
-    setVal('cf-nombre', data.nombreCliente);
     setVal('cf-importe', data.precio);
-    setVal('cf-correo', data.correo);
-    setVal('cf-telefono', data.telefono);
   }
 
   function showPreview(data) {
@@ -215,10 +197,7 @@ function wireContactoQuickParse(updateFormVisibility) {
         <div class="qp-card">
           <div class="qp-head">📋 Vista previa de datos detectados</div>
           <div class="qp-row"><span>Localizador</span><strong>${escapeHtml(data.localizador) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
-          <div class="qp-row"><span>Cliente</span><strong>${escapeHtml(data.nombreCliente) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
           <div class="qp-row"><span>Importe</span><strong>${typeof fmtEUR === 'function' ? fmtEUR(data.precio) : data.precio.toFixed(2) + ' €'}</strong></div>
-          <div class="qp-row"><span>Correo</span><strong>${escapeHtml(data.correo) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
-          <div class="qp-row"><span>Teléfono</span><strong>${escapeHtml(data.telefono) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
         </div>
       `;
       preview.style.display = 'block';
@@ -260,7 +239,7 @@ function wireContactoQuickParse(updateFormVisibility) {
     if (!line) { toast('Pega el texto de la tabla primero', 'error'); return; }
     parsedData = parseLineContacto(line);
     if (!parsedData) {
-      toast('No se pudo interpretar el formato. Revisa que tenga: localizador, nombre, precio, correo y teléfono', 'error');
+      toast('No se pudo interpretar el formato. Revisa que tenga: localizador, nombre, precio', 'error');
       return;
     }
     showPreview(parsedData);
@@ -301,11 +280,9 @@ function renderContactos() {
     if (CONTACTOS_STATE.search) {
       const s = CONTACTOS_STATE.search;
       const matchName = (c.nombre_apellidos || '').toLowerCase().includes(s);
-      const matchEmail = (c.correo || '').toLowerCase().includes(s);
-      const matchTlf = (c.telefono || '').toLowerCase().includes(s);
       const matchDni = (c.dni || '').toLowerCase().includes(s);
       const matchLoc = (c.localizador || '').toLowerCase().includes(s);
-      return matchName || matchEmail || matchTlf || matchDni || matchLoc;
+      return matchName || matchDni || matchLoc;
     }
     return true;
   });
@@ -397,8 +374,7 @@ function renderContactos() {
       estadoBadge = '<span class="badge off" style="color:var(--accent); border-color:var(--accent)">Pendiente de pago</span>';
     }
 
-    const infoSubtext = [c.correo, c.telefono].filter(Boolean).map(escapeHtml).join(' · ');
-    const subtextHtml = infoSubtext || '&nbsp;';
+    const subtextHtml = '&nbsp;';
     const checked = CONTACTOS_STATE.selectedContactos.has(c.id) ? 'checked' : '';
 
     const ahora = Date.now();
@@ -496,7 +472,6 @@ function saveNuevoApunteDraft() {
   const tipo = document.querySelector('input[name="cf-tipo"]:checked')?.value || 'entrada';
   NUEVO_APUNTE_DRAFT = {
     tipo,
-    nombre_apellidos: document.getElementById('cf-nombre')?.value || '',
     importe_total: document.getElementById('cf-importe')?.value || '',
     localizador: document.getElementById('cf-localizador')?.value || '',
     via: document.getElementById('cf-via')?.value || 'llamada',
@@ -504,13 +479,10 @@ function saveNuevoApunteDraft() {
     anotaciones: document.getElementById('cf-anotaciones')?.value || '',
     parque_id: document.getElementById('cf-parque')?.value || '',
     bono_id: document.getElementById('cf-bono')?.value || '',
-    correo: document.getElementById('cf-correo')?.value || '',
-    telefono: document.getElementById('cf-telefono')?.value || '',
     cantidad_entradas: document.getElementById('cf-cantidad-entradas')?.value || '1',
     extras: document.getElementById('cf-extras')?.value || '',
     bonosList: JSON.parse(JSON.stringify(CURRENT_BONOS_LIST)),
-    selectedMainBonoIndex: SELECTED_MAIN_BONO_INDEX,
-    showExtras: document.getElementById('cf-section-extras')?.style.display !== 'none'
+    selectedMainBonoIndex: SELECTED_MAIN_BONO_INDEX
   };
 }
 
@@ -521,7 +493,6 @@ function openContactoForm(id = null) {
     ? STATE.contactos.find((x) => x.id === id)
     : (NUEVO_APUNTE_DRAFT ? {
       tipo: NUEVO_APUNTE_DRAFT.tipo,
-      nombre_apellidos: NUEVO_APUNTE_DRAFT.nombre_apellidos,
       importe_total: NUEVO_APUNTE_DRAFT.importe_total,
       localizador: NUEVO_APUNTE_DRAFT.localizador,
       via: NUEVO_APUNTE_DRAFT.via,
@@ -529,8 +500,6 @@ function openContactoForm(id = null) {
       anotaciones: NUEVO_APUNTE_DRAFT.anotaciones,
       parque_id: NUEVO_APUNTE_DRAFT.parque_id,
       bono_id: NUEVO_APUNTE_DRAFT.bono_id,
-      correo: NUEVO_APUNTE_DRAFT.correo,
-      telefono: NUEVO_APUNTE_DRAFT.telefono,
       cantidad_entradas: NUEVO_APUNTE_DRAFT.cantidad_entradas,
       extras: NUEVO_APUNTE_DRAFT.extras
     } : null);
@@ -616,10 +585,6 @@ function openContactoForm(id = null) {
           </div>
         </div>
 
-        <div class="form-field" style="flex: 2 1 240px; min-width: 0;">
-          <label for="cf-nombre">👤 Nombre y apellidos</label>
-          <input type="text" id="cf-nombre" placeholder="Nombre completo del cliente..." value="${escapeHtml(c?.nombre_apellidos || '')}" required>
-        </div>
         <div class="form-field" style="flex: 1 1 140px; min-width: 0;">
           <label for="cf-importe">💵 Importe total (€)</label>
           <input type="number" placeholder="0.0€" step="0.01" min="0" id="cf-importe" value="${c?.importe_total || ''}" required>
@@ -673,51 +638,30 @@ function openContactoForm(id = null) {
         </div>
       </div>
 
-      <!-- Botón para mostrar/ocultar campos extra -->
-      <div style="margin-top:12px; text-align:center;">
-        <button type="button" class="btn btn-ghost btn-sm" id="cf-toggle-extras">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"><path d="M12 5v14M5 12h14"/></svg>
-          <span id="cf-toggle-extras-text">Mostrar más campos</span>
-        </button>
+      <!-- Campos extra para Entradas (siempre visibles) -->
+      <div id="cf-seccion-entradas-extra" class="form-grid" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+        <div class="form-field">
+          <label for="cf-cantidad-entradas">Cantidad de entradas</label>
+          <input type="number" min="1" id="cf-cantidad-entradas" value="${c?.cantidad_entradas || 1}">
+        </div>
+        <div class="form-field full">
+          <label for="cf-extras">Extras (ej. Comida, pase rápido...)</label>
+          <input type="text" id="cf-extras" value="${escapeHtml(c?.extras || '')}" placeholder="Sin extras">
+        </div>
       </div>
 
-      <!-- Campos extras (ocultos por defecto) -->
-      <div id="cf-section-extras" style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
-        <div class="form-grid">
-          <div class="form-field full">
-            <label for="cf-correo">Correo electrónico</label>
-            <input type="email" id="cf-correo" value="${escapeHtml(c?.correo || '')}">
-          </div>
+      <!-- Campos extra para Bonos -->
+      <div id="cf-seccion-bonos-extra" style="margin-top:12px; display:none;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:8px;">
+          <span style="font-weight:600; font-size:13px; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+            🪪 Detalle de Bonos (<span id="cf-bonos-count">1</span>)
+          </span>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-add-bono-item" style="gap:4px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            + Añadir otro bono al pedido
+          </button>
         </div>
-        <!-- Campos extra para Entradas -->
-        <div id="cf-seccion-entradas-extra" class="form-grid" style="margin-top:12px;">
-          <div class="form-field">
-            <label for="cf-telefono">Teléfono</label>
-            <input type="text" id="cf-telefono" value="${escapeHtml(c?.telefono || '')}">
-          </div>
-          <div class="form-field">
-            <label for="cf-cantidad-entradas">Cantidad de entradas</label>
-            <input type="number" min="1" id="cf-cantidad-entradas" value="${c?.cantidad_entradas || 1}">
-          </div>
-          <div class="form-field full">
-            <label for="cf-extras">Extras (ej. Comida, pase rápido...)</label>
-            <input type="text" id="cf-extras" value="${escapeHtml(c?.extras || '')}" placeholder="Sin extras">
-          </div>
-        </div>
-
-        <!-- Campos extra para Bonos -->
-        <div id="cf-seccion-bonos-extra" style="margin-top:12px; display:none;">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:8px;">
-            <span style="font-weight:600; font-size:13px; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
-              🪪 Detalle de Bonos (<span id="cf-bonos-count">1</span>)
-            </span>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-bono-item" style="gap:4px;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              + Añadir otro bono al pedido
-            </button>
-          </div>
-          <div id="cf-bonos-list-container" style="display:flex; flex-direction:column; gap:12px;"></div>
-        </div>
+        <div id="cf-bonos-list-container" style="display:flex; flex-direction:column; gap:12px;"></div>
       </div>
     `,
     footHtml: `
@@ -744,25 +688,11 @@ function openContactoForm(id = null) {
     if (fieldParque) fieldParque.style.display = tipo === 'entrada' ? 'block' : 'none';
     if (fieldBono) fieldBono.style.display = tipo === 'bono' ? 'block' : 'none';
 
-    const extrasContainer = document.getElementById('cf-section-extras');
-    const toggleText = document.getElementById('cf-toggle-extras-text');
     const secEntradasExtra = document.getElementById('cf-seccion-entradas-extra');
     const secBonosExtra = document.getElementById('cf-seccion-bonos-extra');
 
-    const isVisible = extrasContainer && extrasContainer.style.display !== 'none';
-
-    if (toggleText) {
-      if (tipo === 'bono') {
-        toggleText.textContent = isVisible ? 'Ocultar tarjetas de bonos' : 'Mostrar tarjetas de bonos';
-      } else {
-        toggleText.textContent = isVisible ? 'Ocultar campos extra' : 'Mostrar más campos';
-      }
-    }
-
-    if (isVisible) {
-      if (secEntradasExtra) secEntradasExtra.style.display = tipo === 'entrada' ? 'grid' : 'none';
-      if (secBonosExtra) secBonosExtra.style.display = tipo === 'bono' ? 'block' : 'none';
-    }
+    if (secEntradasExtra) secEntradasExtra.style.display = tipo === 'entrada' ? 'grid' : 'none';
+    if (secBonosExtra) secBonosExtra.style.display = tipo === 'bono' ? 'block' : 'none';
   };
 
   const renderBonosListUI = () => {
@@ -875,20 +805,6 @@ function openContactoForm(id = null) {
 
   document.querySelectorAll('input[name="cf-tipo"]').forEach(el => el.addEventListener('change', updateFormVisibility));
 
-  // Toggle extra fields
-  const toggleBtn = document.getElementById('cf-toggle-extras');
-  if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
-      const extras = document.getElementById('cf-section-extras');
-      if (extras) {
-        const isHidden = extras.style.display === 'none';
-        extras.style.display = isHidden ? 'block' : 'none';
-        updateFormVisibility();
-        saveNuevoApunteDraft();
-      }
-    });
-  }
-
   // ===== Quick Parse para apuntes (solo modo nuevo) =====
   if (!isEdit) {
     wireContactoQuickParse(updateFormVisibility);
@@ -896,16 +812,8 @@ function openContactoForm(id = null) {
 
   renderBonosListUI();
 
-  // Auto expand extras if bono, has extras or draft has showExtras
+  // Auto expand bono section if bono type
   const isBono = (document.querySelector('input[name="cf-tipo"][value="bono"]:checked') || initialTipo === 'bono');
-  const hasExtras = c && (c.correo || c.telefono || c.extras || c.dni || c.fecha_nacimiento || c.num_bono);
-  const extrasContainer = document.getElementById('cf-section-extras');
-
-  if (extrasContainer) {
-    if (isBono || hasExtras || (!isEdit && NUEVO_APUNTE_DRAFT && NUEVO_APUNTE_DRAFT.showExtras !== false)) {
-      extrasContainer.style.display = 'block';
-    }
-  }
 
   updateFormVisibility();
 
@@ -915,14 +823,11 @@ function openContactoForm(id = null) {
     CURRENT_BONOS_LIST = [{ nombre_apellidos: '', fecha_nacimiento: '', dni: '', num_bono: '', anotaciones: '' }];
     renderBonosListUI();
     // Reset common fields
-    document.getElementById('cf-nombre').value = '';
     document.getElementById('cf-importe').value = '';
     document.getElementById('cf-localizador').value = '';
     document.getElementById('cf-estado').value = 'pendiente';
     document.getElementById('cf-anotaciones').value = '';
-    document.getElementById('cf-correo').value = '';
     if (document.getElementById('cf-field-parque').style.display !== 'none') {
-      document.getElementById('cf-telefono').value = '';
       document.getElementById('cf-cantidad-entradas').value = '1';
       document.getElementById('cf-extras').value = '';
       document.getElementById('cf-parque').value = '';
@@ -933,19 +838,14 @@ function openContactoForm(id = null) {
   });
   document.getElementById('cf-save').addEventListener('click', async () => {
     const tipo = document.querySelector('input[name="cf-tipo"]:checked').value;
-    const nombre_apellidos = document.getElementById('cf-nombre').value.trim();
     const importe_total = Number(document.getElementById('cf-importe').value) || 0;
     const estado_pago = document.getElementById('cf-estado').value;
-
-    if (!nombre_apellidos) { toast('El nombre es obligatorio', 'error'); return; }
 
     const localizadorVal = document.getElementById('cf-localizador')?.value.trim() || '';
     const viaVal = document.getElementById('cf-via')?.value || 'llamada';
     let payload = {
       tipo,
       via: viaVal,
-      nombre_apellidos,
-      correo: document.getElementById('cf-correo').value.trim(),
       importe_total,
       estado_pago,
       anotaciones: document.getElementById('cf-anotaciones').value.trim(),
@@ -956,7 +856,6 @@ function openContactoForm(id = null) {
     if (tipo === 'entrada') {
       const parque_id = document.getElementById('cf-parque').value;
       if (!parque_id) { toast('Selecciona un parque', 'error'); return; }
-      payload.telefono = document.getElementById('cf-telefono').value.trim();
       payload.parque_id = parque_id;
       payload.cantidad_entradas = Number(document.getElementById('cf-cantidad-entradas').value) || 1;
       payload.extras = document.getElementById('cf-extras').value.trim();
@@ -994,7 +893,6 @@ function openContactoForm(id = null) {
           fecha: new Date().toISOString(),
           tipo: payload.tipo,
           via: payload.via || 'llamada',
-          cliente_nombre: payload.nombre_apellidos,
           importe_total: payload.importe_total,
           localizador: payload.localizador || null
         };

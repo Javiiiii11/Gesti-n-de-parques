@@ -32,6 +32,12 @@ function chipClass(dias) {
   return '';
 }
 
+/** Saludo según hora: antes de las 14:00 = buenos días, después = buenas tardes */
+function getTimeBasedGreeting() {
+  const hour = new Date().getHours();
+  return hour < 14 ? 'Hola, buenos días' : 'Hola, buenas tardes';
+}
+
 function initChatIA() {
   if (typeof HALLOWEEN_KNOWLEDGE !== 'undefined') {
     Object.assign(MAIL_KNOWLEDGE.parques, HALLOWEEN_KNOWLEDGE.parques);
@@ -40,22 +46,9 @@ function initChatIA() {
     }
   }
 
-  wireChatIATabs();
   wireEmailAssistant();
-  wireFrasesBuscador();
-  renderFrases('');
   populateParkSelect();
-  renderKnowledgeChips();
   renderEmptyEmailDraft();
-}
-
-function wireChatIATabs() {
-  document.querySelectorAll('#view-chat-ia .chat-ia-tab').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#view-chat-ia .chat-ia-tab').forEach((b) => b.classList.toggle('active', b === btn));
-      document.querySelectorAll('#view-chat-ia .chat-ia-panel').forEach((p) => p.classList.toggle('active', p.id === `chat-ia-panel-${btn.dataset.tab}`));
-    });
-  });
 }
 
 function wireEmailAssistant() {
@@ -205,7 +198,7 @@ function buildEmailDraft(mode = 'normal') {
 
   if (tone === 'derivacion') {
     const finalDerivationText = [
-      'Hola, buenos días, soy Javier. Le comento sobre lo que me dice:',
+      getTimeBasedGreeting(),
       '',
       MAIL_KNOWLEDGE.templates.derivacion,
       '',
@@ -417,89 +410,4 @@ function populateParkSelect() {
     .concat(keys.map((key) => `<option value="${escapeHtml(key)}">${escapeHtml(formatParkName(key))}</option>`))
     .join('');
   select.value = '__auto__';
-}
-
-function renderKnowledgeChips() {
-  const wrap = document.getElementById('chat-ia-knowledge-list');
-  if (!wrap) return;
-
-  const all = Object.keys(MAIL_KNOWLEDGE.parques).sort((a, b) => formatParkName(a).localeCompare(formatParkName(b), 'es'));
-  const activos   = [];
-  const caducados = [];
-
-  all.forEach((key) => {
-    const park = MAIL_KNOWLEDGE.parques[key];
-    const dias = diasHastaExpiracion(park.expires);
-    if (dias < 0) caducados.push({ key, dias });
-    else          activos.push({ key, dias });
-  });
-
-  function chipHtml({ key, dias }) {
-    const park = MAIL_KNOWLEDGE.parques[key];
-    const cls  = chipClass(dias);
-    const expired = dias < 0;
-    let badge = '';
-    if (park.expires && !expired && dias <= 10) {
-      badge = `<span class="chip-days">${dias}d</span>`;
-    }
-    if (park.expires && expired) {
-      badge = `<span class="chip-days">Caducado</span>`;
-    }
-    return `<button type="button" class="chat-ia-chip ${cls}" data-park-chip="${escapeHtml(key)}" ${expired ? 'disabled' : ''}>${escapeHtml(formatParkName(key))}${badge}</button>`;
-  }
-
-  let html = activos.map(chipHtml).join('');
-
-  if (caducados.length) {
-    html += `<span class="chip-obsoletos-title">⚠️ Obsoletos — para eliminar</span>`;
-    html += caducados.map(chipHtml).join('');
-  }
-
-  wrap.innerHTML = html;
-
-  wrap.querySelectorAll('[data-park-chip]:not([disabled])').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const value = btn.getAttribute('data-park-chip') || '';
-      const parkInput = document.getElementById('chat-ia-park');
-      if (parkInput) parkInput.value = value;
-    });
-  });
-}
-
-function wireFrasesBuscador() {
-  const input = document.getElementById('chat-ia-frases-buscador');
-  if (!input) return;
-  input.addEventListener('input', (e) => renderFrases(e.target.value.trim().toLowerCase()));
-}
-
-function renderFrases(filter) {
-  const cont = document.getElementById('chat-ia-frases-list');
-  if (!cont) return;
-  const entries = Object.entries(EMAIL_PHRASES);
-
-  cont.innerHTML = entries.map(([category, items]) => {
-    const filtered = items.filter((item) => !filter || item.toLowerCase().includes(filter) || category.toLowerCase().includes(filter));
-    if (!filtered.length) return '';
-    return `
-      <div class="frase-cat-title">${escapeHtml(category)}</div>
-      ${filtered.map((frase) => `
-        <div class="frase-item">
-          <span>${escapeHtml(frase)}</span>
-          <button type="button" class="btn btn-ghost btn-sm" data-copy-frase="${escapeHtml(frase)}">Copiar</button>
-        </div>
-      `).join('')}
-    `;
-  }).join('') || '<div class="empty-state"><span>No se han encontrado frases.</span></div>';
-
-  cont.querySelectorAll('[data-copy-frase]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const text = btn.getAttribute('data-copy-frase') || '';
-      try {
-        await navigator.clipboard.writeText(text);
-        toast('Frase copiada.', 'success');
-      } catch {
-        toast('No se pudo copiar.', 'error');
-      }
-    });
-  });
 }

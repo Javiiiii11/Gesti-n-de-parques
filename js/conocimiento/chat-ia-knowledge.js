@@ -1,3 +1,9 @@
+/** Saludo según hora: antes de las 14:00 = buenos días, después = buenas tardes */
+function getTimeBasedGreeting() {
+  const hour = new Date().getHours();
+  return hour < 14 ? 'Hola, buenos días' : 'Hola, buenas tardes';
+}
+
 const MAIL_KNOWLEDGE = {
   parques: {
     'aquopolis torrevieja': {
@@ -198,9 +204,9 @@ const MAIL_KNOWLEDGE = {
   ],
   templates: {
     saludo: {
-      formal: 'Hola, buenos días, soy Javier. Le comento sobre lo que me dice:',
-      neutro: 'Hola, buenos días:',
-      cercano: 'Hola, ¿qué tal? Te comento:'
+      formal: getTimeBasedGreeting(),
+      neutro: getTimeBasedGreeting(),
+      cercano: getTimeBasedGreeting()
     },
     cierre: {
       formal: 'Un saludo.',
@@ -226,8 +232,7 @@ const MAIL_KNOWLEDGE = {
 
 const EMAIL_PHRASES = {
   saludos: [
-    'Hola, buenos días, soy Javier. Le comento sobre lo que me dice:',
-    'Hola, buenas tardes, soy Javier. Le comento sobre lo que me dice:',
+    getTimeBasedGreeting(),
     'Hola, buenos días:',
   ],
   cierres: [

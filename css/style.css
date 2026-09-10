@@ -5901,22 +5901,33 @@ textarea:focus-visible,
   display: grid;
   grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .chat-ia-side-card {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-height: 640px;
 }
 
 .chat-ia-simple-form {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 14px;
+  flex: 1;
 }
 
 .chat-ia-simple-form .full {
-  grid-column: 1 / -1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-ia-simple-form .full textarea {
+  flex: 1;
+  min-height: 200px;
+  resize: vertical;
 }
 
 .chat-ia-simple-form textarea,

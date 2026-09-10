@@ -153,14 +153,14 @@ function updateHistBatchUI() {
   const count = document.getElementById('hist-batch-count');
   const allCb = document.getElementById('hist-select-all');
   const size = HIST_STATE.selectedVentas.size;
-  
+
   if (size > 0) {
     btn.style.display = 'inline-flex';
     count.textContent = size;
   } else {
     btn.style.display = 'none';
   }
-  
+
   // Check if all checkboxes in current view are selected
   const cbs = Array.from(document.querySelectorAll('.hist-row-cb'));
   if (cbs.length > 0 && cbs.every(cb => cb.checked)) {
@@ -173,7 +173,7 @@ function updateHistBatchUI() {
 function fillParqueFiltro() {
   const sel = document.getElementById('hist-filtro-parque');
   const current = sel.value;
-  sel.innerHTML = '<option value="">Todos los parques</option>' + 
+  sel.innerHTML = '<option value="">Todos los parques</option>' +
     STATE.parques.map((p) => `<option value="${p.id}">${escapeHtml(p.nombre)}</option>`).join('');
   sel.value = current;
 }
@@ -181,7 +181,7 @@ function fillParqueFiltro() {
 function fillBonoFiltro() {
   const sel = document.getElementById('hist-filtro-bono');
   const current = sel.value;
-  sel.innerHTML = '<option value="">Todos los bonos</option>' + 
+  sel.innerHTML = '<option value="">Todos los bonos</option>' +
     STATE.tipos_bono.filter(b => b.activo).map((b) => `<option value="${b.id}">${escapeHtml(b.nombre)}</option>`).join('');
   sel.value = current;
 }
@@ -217,8 +217,8 @@ function updateHistStatusPillsCounts() {
 }
 
 function getFilteredSortedVentas() {
-  let rows = STATE.ventas.map((v) => ({ 
-    ...v, 
+  let rows = STATE.ventas.map((v) => ({
+    ...v,
     parqueNombreCache: parqueNombre(v.parque_id),
     bonoNombreCache: getBonoNombre(v.bono_id),
     estadoNorm: typeof normalizeEstadoVenta === 'function' ? normalizeEstadoVenta(v.estado) : (v.estado || 'completado')
@@ -274,7 +274,7 @@ function renderHistorial() {
   fillParqueFiltro();
   fillBonoFiltro();
   updateHistStatusPillsCounts();
-  
+
   const allRows = getFilteredSortedVentas();
   const totalPages = Math.max(1, Math.ceil(allRows.length / HIST_STATE.pageSize));
   HIST_STATE.page = Math.min(HIST_STATE.page, totalPages);
@@ -348,7 +348,7 @@ function renderHistorial() {
 
   tbody.querySelectorAll('[data-edit-venta]').forEach((btn) => btn.addEventListener('click', () => openEditVenta(btn.dataset.editVenta)));
   tbody.querySelectorAll('[data-delete-venta]').forEach((btn) => btn.addEventListener('click', () => deleteVentaFlow(btn.dataset.deleteVenta)));
-  
+
   // Quick change status listener
   tbody.querySelectorAll('.hist-quick-status-select').forEach((sel) => {
     sel.addEventListener('change', async (e) => {
@@ -365,7 +365,7 @@ function renderHistorial() {
       updateHistBatchUI();
     });
   });
-  
+
   updateHistBatchUI();
 }
 
@@ -464,35 +464,21 @@ function openEditVenta(id) {
   const estadoActual = v.estado || 'completado';
 
   openModal({
-    title: 'Editar venta',
+    title: '✏️  Editar venta',
     width: '640px',
     bodyHtml: `
       <div class="form-grid">
-        <div class="form-field full">
-          <label>Tipo de venta</label>
-          <div style="display:flex; gap:16px;">
-            <label style="flex-direction:row; align-items:center; gap:8px;">
-              <input type="radio" name="ev-tipo" value="entrada" ${tipo === 'entrada' ? 'checked' : ''} style="width:auto"> Entradas
-            </label>
-            <label style="flex-direction:row; align-items:center; gap:8px;">
-              <input type="radio" name="ev-tipo" value="bono" ${tipo === 'bono' ? 'checked' : ''} style="width:auto"> Bonos
-            </label>
-          </div>
-        </div>
-
+        ${tipo === 'entrada' ? `
         <div class="form-field" id="ev-field-parque">
           <label for="ev-parque">Parque</label>
           <select id="ev-parque">${parquesOptions}</select>
         </div>
-        <div class="form-field" id="ev-field-bono" style="display:none;">
+        ` : `
+        <div class="form-field" id="ev-field-bono">
           <label for="ev-bono">Tipo de bono</label>
           <select id="ev-bono">${bonosOptions}</select>
         </div>
-
-        <div class="form-field">
-          <label for="ev-cliente">Nombre del cliente</label>
-          <input type="text" id="ev-cliente" value="${escapeHtml(v.cliente_nombre || contacto.nombre_apellidos || '')}">
-        </div>
+        `}
         <div class="form-field">
           <label for="ev-importe">Importe total (€)</label>
           <input type="number" id="ev-importe" min="0" step="0.01" value="${v.importe_total}">
@@ -521,68 +507,23 @@ function openEditVenta(id) {
         </div>
       </div>
 
+      ${tipo === 'entrada' ? `
       <div id="ev-seccion-entradas" class="form-grid" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
         <div class="form-field full">
           <label for="ev-anotaciones">Anotaciones</label>
           <textarea id="ev-anotaciones" rows="2" placeholder="Apuntes sobre el cliente...">${escapeHtml(contacto.anotaciones || '')}</textarea>
         </div>
       </div>
-
-      <div id="ev-seccion-bonos" class="form-grid" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border); display:none;">
+      ` : `
+      <div id="ev-seccion-bonos" class="form-grid" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
         <div class="form-field full">
           <label for="ev-anotaciones-bono">Anotaciones</label>
           <textarea id="ev-anotaciones-bono" rows="2" placeholder="Apuntes sobre el bono...">${escapeHtml(contacto.anotaciones || '')}</textarea>
         </div>
       </div>
+      `}
 
-      <div style="margin-top:12px; text-align:center;">
-        <button type="button" class="btn btn-ghost btn-sm" id="ev-toggle-extras">
-          <span id="ev-toggle-extras-text">${hasExtras ? 'Ocultar campos extra' : 'Mostrar más campos'}</span>
-        </button>
-      </div>
 
-      <div id="ev-section-extras" style="display:${hasExtras ? 'block' : 'none'}; margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
-        <div class="form-grid">
-          <div class="form-field full">
-            <label for="ev-correo">Correo electrónico</label>
-            <input type="email" id="ev-correo" value="${escapeHtml(contacto.correo || '')}" placeholder="cliente@ejemplo.com">
-          </div>
-        </div>
-
-        <div id="ev-seccion-entradas-extra" class="form-grid" style="margin-top:12px;">
-          <div class="form-field">
-            <label for="ev-telefono">Teléfono</label>
-            <input type="text" id="ev-telefono" value="${escapeHtml(contacto.telefono || '')}" placeholder="Ej. 612 345 678">
-          </div>
-          <div class="form-field">
-            <label for="ev-cantidad-entradas">Cantidad de entradas</label>
-            <input type="number" min="1" id="ev-cantidad-entradas" value="${contacto.cantidad_entradas != null ? Number(contacto.cantidad_entradas) : 1}">
-          </div>
-          <div class="form-field full">
-            <label for="ev-extras">Extras (ej. Comida, pase rápido...)</label>
-            <input type="text" id="ev-extras" value="${escapeHtml(contacto.extras || '')}" placeholder="Sin extras">
-          </div>
-        </div>
-
-        <div id="ev-seccion-bonos-extra" class="form-grid" style="margin-top:12px; display:none;">
-          <div class="form-field">
-            <label for="ev-num-bono">Nº de bono</label>
-            <input type="text" id="ev-num-bono" value="${escapeHtml(contacto.num_bono || '')}">
-          </div>
-          <div class="form-field">
-            <label for="ev-dni">DNI</label>
-            <input type="text" id="ev-dni" value="${escapeHtml(contacto.dni || '')}">
-          </div>
-          <div class="form-field">
-            <label for="ev-nacimiento">Fecha de nacimiento</label>
-            <input type="date" id="ev-nacimiento" value="${escapeHtml(fechaNac)}">
-          </div>
-          <div class="form-field">
-            <label for="ev-cantidad-bonos">Cantidad de bonos</label>
-            <input type="number" min="1" id="ev-cantidad-bonos" value="${contacto.cantidad_bonos != null ? Number(contacto.cantidad_bonos) : 1}">
-          </div>
-        </div>
-      </div>
     `,
     footHtml: `
       <button class="btn btn-ghost" id="ev-cancel">Cancelar</button>
@@ -590,35 +531,13 @@ function openEditVenta(id) {
     `,
   });
 
-  const syncTipoVisibility = () => {
-    const currentTipo = document.querySelector('input[name="ev-tipo"]:checked')?.value || 'entrada';
-    const isEntrada = currentTipo === 'entrada';
-    document.getElementById('ev-field-parque').style.display = isEntrada ? 'block' : 'none';
-    document.getElementById('ev-field-bono').style.display = isEntrada ? 'none' : 'block';
-    document.getElementById('ev-seccion-entradas').style.display = isEntrada ? 'grid' : 'none';
-    document.getElementById('ev-seccion-bonos').style.display = isEntrada ? 'none' : 'grid';
-    document.getElementById('ev-seccion-entradas-extra').style.display = isEntrada ? 'grid' : 'none';
-    document.getElementById('ev-seccion-bonos-extra').style.display = isEntrada ? 'none' : 'grid';
-  };
 
-  document.querySelectorAll('input[name="ev-tipo"]').forEach((el) => {
-    el.addEventListener('change', syncTipoVisibility);
-  });
-  syncTipoVisibility();
 
-  const extrasSection = document.getElementById('ev-section-extras');
-  const toggleExtrasBtn = document.getElementById('ev-toggle-extras');
-  const toggleExtrasText = document.getElementById('ev-toggle-extras-text');
-  toggleExtrasBtn.addEventListener('click', () => {
-    const open = extrasSection.style.display !== 'none';
-    extrasSection.style.display = open ? 'none' : 'block';
-    toggleExtrasText.textContent = open ? 'Mostrar más campos' : 'Ocultar campos extra';
-  });
+
 
   document.getElementById('ev-cancel').addEventListener('click', closeModal);
   document.getElementById('ev-save').addEventListener('click', async () => {
-    const nextTipo = document.querySelector('input[name="ev-tipo"]:checked').value;
-    const clienteNombre = document.getElementById('ev-cliente').value.trim();
+    const nextTipo = tipo;
     const importeTotal = Number(document.getElementById('ev-importe').value);
     const localizador = document.getElementById('ev-localizador')?.value.trim() || null;
     const via = document.getElementById('ev-via').value;
@@ -627,10 +546,6 @@ function openEditVenta(id) {
       ? (document.getElementById('ev-anotaciones')?.value.trim() || '')
       : (document.getElementById('ev-anotaciones-bono')?.value.trim() || '');
 
-    if (!clienteNombre) {
-      toast('Indica el nombre del cliente', 'error');
-      return;
-    }
     if (Number.isNaN(importeTotal) || importeTotal < 0) {
       toast('Indica un importe válido', 'error');
       return;
@@ -640,7 +555,7 @@ function openEditVenta(id) {
       fecha: v.fecha,
       tipo: nextTipo,
       via,
-      cliente_nombre: clienteNombre,
+      cliente_nombre: '',
       importe_total: importeTotal,
       localizador,
       estado: nextEstado,
@@ -667,8 +582,8 @@ function openEditVenta(id) {
 
     const contactoPayload = {
       tipo: nextTipo,
-      nombre_apellidos: clienteNombre,
-      correo: document.getElementById('ev-correo')?.value.trim() || '',
+      nombre_apellidos: '',
+      correo: '',
       importe_total: importeTotal,
       estado_pago: estadoPagoContacto,
       anotaciones,
@@ -677,24 +592,22 @@ function openEditVenta(id) {
     };
 
     if (nextTipo === 'entrada') {
-      contactoPayload.telefono = document.getElementById('ev-telefono')?.value.trim() || '';
+      contactoPayload.telefono = '';
       contactoPayload.parque_id = itemId;
       contactoPayload.bono_id = null;
-      const cantVal = document.getElementById('ev-cantidad-entradas')?.value;
-      contactoPayload.cantidad_entradas = cantVal ? Number(cantVal) : null;
-      contactoPayload.extras = document.getElementById('ev-extras')?.value.trim() || '';
+      contactoPayload.cantidad_entradas = null;
+      contactoPayload.extras = '';
       contactoPayload.num_bono = null;
       contactoPayload.dni = null;
       contactoPayload.fecha_nacimiento = null;
       contactoPayload.cantidad_bonos = null;
     } else {
-      contactoPayload.num_bono = document.getElementById('ev-num-bono')?.value.trim() || '';
-      contactoPayload.dni = document.getElementById('ev-dni')?.value.trim() || '';
-      contactoPayload.fecha_nacimiento = document.getElementById('ev-nacimiento')?.value || null;
+      contactoPayload.num_bono = '';
+      contactoPayload.dni = '';
+      contactoPayload.fecha_nacimiento = null;
       contactoPayload.bono_id = itemId;
       contactoPayload.parque_id = null;
-      const cantVal = document.getElementById('ev-cantidad-bonos')?.value;
-      contactoPayload.cantidad_bonos = cantVal ? Number(cantVal) : null;
+      contactoPayload.cantidad_bonos = null;
       contactoPayload.telefono = null;
       contactoPayload.cantidad_entradas = null;
       contactoPayload.extras = null;
