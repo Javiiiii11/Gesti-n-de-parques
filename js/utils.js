@@ -2,8 +2,10 @@
    utils.js — helpers compartidos por toda la aplicación
 ============================================================================ */
 
-const fmtEUR = (n) => (Number(n) || 0).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
-const fmtNum = (n) => (Number(n) || 0).toLocaleString('es-ES');
+const _eurFmt = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtEUR = (n) => _eurFmt.format(Number(n) || 0);
+const _numFmt = new Intl.NumberFormat('es-ES', { useGrouping: true });
+const fmtNum = (n) => _numFmt.format(Number(n) || 0);
 const fmtDateShort = (iso) => new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const fmtDateTime = (iso) => new Date(iso).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 

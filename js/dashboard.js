@@ -1,4 +1,4 @@
-﻿/* ============================================================================
+/* ============================================================================
    dashboard.js — vista "Dashboard"
 ============================================================================ */
 
@@ -1764,7 +1764,57 @@ function wireTopbarUserMenu() {
     parquesBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       toggleTopbarUserMenu(false);
-      if (typeof switchView === 'function') switchView('parques');
+
+      // Si ya se autenticó en esta sesión, acceder directamente
+      if (sessionStorage.getItem('parksales_parques_unlocked') === '1') {
+        if (typeof switchView === 'function') switchView('parques');
+        return;
+      }
+
+      // Modal de contraseña
+      openModal({
+        title: '🔒 Acceso restringido',
+        width: '400px',
+        bodyHtml: `
+          <p style="color:var(--text-muted); margin:0 0 16px 0; font-size:14px;">
+            Esta sección requiere una contraseña de administración para acceder.
+          </p>
+          <div class="form-field">
+            <label for="parques-gate-pwd">Contraseña</label>
+            <input type="password" id="parques-gate-pwd" placeholder="Introduce la contraseña" autocomplete="off">
+          </div>
+          <div id="parques-gate-error" class="auth-error" style="margin-top:8px;"></div>
+        `,
+        footHtml: `
+          <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+          <button class="btn btn-primary" id="parques-gate-submit">Acceder</button>
+        `,
+      });
+
+      const pwdInput = document.getElementById('parques-gate-pwd');
+      const errorEl = document.getElementById('parques-gate-error');
+      const submitBtn = document.getElementById('parques-gate-submit');
+
+      const attemptUnlock = () => {
+        const val = pwdInput.value;
+        if (val === 'parques2026') {
+          sessionStorage.setItem('parksales_parques_unlocked', '1');
+          closeModal();
+          if (typeof switchView === 'function') switchView('parques');
+        } else {
+          errorEl.textContent = 'Contraseña incorrecta';
+          errorEl.style.display = 'block';
+          pwdInput.value = '';
+          pwdInput.focus();
+        }
+      };
+
+      submitBtn.addEventListener('click', attemptUnlock);
+      pwdInput.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') { ev.preventDefault(); attemptUnlock(); }
+      });
+
+      setTimeout(() => pwdInput.focus(), 100);
     });
   }
   const estBtn = document.getElementById('tbm-estadisticas-btn');

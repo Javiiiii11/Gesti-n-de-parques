@@ -18,6 +18,11 @@ const VIEW_TITLES = {
 };
 
 function switchView(viewId) {
+  // Bloquear acceso directo a parques sin contraseña
+  if (viewId === 'parques' && sessionStorage.getItem('parksales_parques_unlocked') !== '1') {
+    viewId = 'dashboard';
+  }
+
   document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
   document.getElementById(`view-${viewId}`).classList.add('active');
   document.querySelectorAll('.nav-item').forEach((n) => n.classList.toggle('active', n.dataset.view === viewId));
