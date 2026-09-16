@@ -207,16 +207,27 @@ function startBackupInterval() {
 /* --- Generar y guardar el backup en IndexedDB --- */
 async function runBackupNow(label) {
   try {
-    const backup = {
-      generado_en: new Date().toISOString(),
-      version: 2,
-      parques: STATE.parques,
-      tipos_bono: STATE.tipos_bono,
-      contactos: STATE.contactos,
-      ventas: STATE.ventas,
-      // Notas rápidas (guardadas en localStorage)
-      notas_rapidas: localStorage.getItem('parksales_quick_notes') || '',
-    };
+    let backup;
+    if (typeof buildFullBackupData === 'function') {
+      backup = buildFullBackupData();
+    } else {
+      let llamadas = [];
+      try {
+        llamadas = JSON.parse(localStorage.getItem('parksales_llamadas') || '[]');
+      } catch (e) { llamadas = []; }
+
+      backup = {
+        generado_en: new Date().toISOString(),
+        version: 3,
+        app: 'ParkSales',
+        parques: STATE.parques || [],
+        tipos_bono: STATE.tipos_bono || [],
+        contactos: STATE.contactos || [],
+        ventas: STATE.ventas || [],
+        llamadas,
+        notas_rapidas: localStorage.getItem('parksales_quick_notes') || '',
+      };
+    }
 
     const entry = await saveBackupToDB(backup);
     await cleanupOldBackupsDB();
@@ -274,14 +285,30 @@ async function showBackupList() {
     const fecha = new Date(b.fecha).toLocaleString('es-ES');
     const size = new Blob([JSON.stringify(b.data)]).size;
     const sizeStr = size > 1024 ? `${(size / 1024).toFixed(1)} KB` : `${size} B`;
+    const vCount = Array.isArray(b.data?.ventas) ? b.data.ventas.length : 0;
+    const cCount = Array.isArray(b.data?.contactos) ? b.data.contactos.length : 0;
+    const lCount = Array.isArray(b.data?.llamadas) ? b.data.llamadas.length : (Array.isArray(b.data?.calls) ? b.data.calls.length : 0);
+    const hasN = Boolean(b.data?.notas_rapidas && String(b.data.notas_rapidas).trim());
+
+    const resumenTags = [];
+    if (vCount) resumenTags.push(`${vCount} ventas`);
+    if (cCount) resumenTags.push(`${cCount} apuntes`);
+    if (lCount) resumenTags.push(`${lCount} llamadas`);
+    if (hasN) resumenTags.push(`notas`);
+    const resumenStr = resumenTags.length ? resumenTags.join(' · ') : 'Backup completo';
+
     html += `
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-s);">
         <div style="flex:1;min-width:0;">
           <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${fecha}</div>
-          <div style="font-size:11px;color:var(--text-muted);">${sizeStr}</div>
+          <div style="font-size:11px;color:var(--text-muted);">${sizeStr} — <span style="color:var(--brand-primary);">${resumenStr}</span></div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
-          <button class="btn btn-secondary btn-sm" onclick="downloadBackup('${b.id}')" title="Descargar">
+          <button class="btn btn-primary btn-sm" onclick="restoreBackupUI('${b.id}')" title="Restaurar esta copia">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Restaurar
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="downloadBackup('${b.id}')" title="Descargar .json">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
             Descargar
           </button>
@@ -295,12 +322,66 @@ async function showBackupList() {
 
   openModal({
     title: `Backups guardados (${backups.length})`,
-    width: '520px',
+    width: '600px',
     sizeClass: 'modal-cuadradito',
     bodyHtml: html,
     footHtml: `<button class="btn btn-ghost" onclick="closeModal()">Cerrar</button>`,
   });
 }
+
+/* --- Restaurar un backup específico desde la lista --- */
+window.restoreBackupUI = async function(id) {
+  try {
+    const db = await openBackupDB();
+    const tx = db.transaction(BACKUP_DB_STORE, 'readonly');
+    const req = tx.objectStore(BACKUP_DB_STORE).get(id);
+    req.onsuccess = () => {
+      if (!req.result || !req.result.data) {
+        toast('No se encontró el backup solicitado', 'error');
+        return;
+      }
+      const data = req.result.data;
+      const fecha = new Date(req.result.fecha).toLocaleString('es-ES');
+
+      const totalVentas = Array.isArray(data.ventas) ? data.ventas.length : 0;
+      const totalContactos = Array.isArray(data.contactos) ? data.contactos.length : 0;
+      const totalLlamadas = Array.isArray(data.llamadas) ? data.llamadas.length : (Array.isArray(data.calls) ? data.calls.length : 0);
+      const hasNotas = Boolean(data.notas_rapidas && String(data.notas_rapidas).trim());
+
+      const descPartes = [];
+      if (totalVentas) descPartes.push(`<strong>${totalVentas}</strong> ventas`);
+      if (totalContactos) descPartes.push(`<strong>${totalContactos}</strong> apuntes`);
+      if (totalLlamadas) descPartes.push(`<strong>${totalLlamadas}</strong> llamadas`);
+      if (hasNotas) descPartes.push(`notas rápidas`);
+
+      const detalleTexto = descPartes.length ? descPartes.join(', ') : 'todos los registros';
+
+      confirmDialog({
+        title: 'Restaurar copia de seguridad',
+        message: `¿Deseas restaurar la copia del <strong>${fecha}</strong>?<br><br>Incluye ${detalleTexto}. Se añadirán los registros sin duplicar los existentes.`,
+        isHtmlMessage: true,
+        confirmLabel: 'Restaurar ahora',
+        danger: false,
+        onConfirm: async () => {
+          try {
+            if (typeof applyBackupData === 'function') {
+              const stats = await applyBackupData(data);
+              closeModal();
+              toast(`Copia restaurada correctamente: ${stats.ventas} ventas, ${stats.contactos} apuntes, ${stats.llamadas} llamadas`, 'success', 5000);
+            } else {
+              toast('Función de importación no disponible en este momento', 'error');
+            }
+          } catch (err) {
+            console.error('Error al restaurar backup:', err);
+            toast('Error al restaurar: ' + err.message, 'error');
+          }
+        }
+      });
+    };
+  } catch (err) {
+    toast('Error al leer el backup: ' + err.message, 'error');
+  }
+};
 
 /* --- Descargar un backup específico --- */
 window.downloadBackup = async function(id) {

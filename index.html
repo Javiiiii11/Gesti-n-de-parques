@@ -1881,8 +1881,7 @@
                   </svg></div>
                 <h4 class="ex-title">Descargar Backup Total</h4>
               </div>
-              <p class="ex-desc">Genera un archivo <strong>.json</strong> con absolutamente todo (ventas, parques,
-                bonos, apuntes) para guardarlo en un pendrive o la nube.</p>
+              <p class="ex-desc">Genera un archivo <strong>.json</strong> con absolutamente todo (ventas, llamadas gestionadas/pendientes, notas rápidas, apuntes, parques, bonos, objetivos y cuadrantes).</p>
               <div class="ex-actions">
                 <button class="btn btn-secondary" id="btn-export-json">Descargar .json</button>
               </div>
@@ -1899,7 +1898,7 @@
                   </svg></div>
                 <h4 class="ex-title">Restaurar Datos</h4>
               </div>
-              <p class="ex-desc">Restaura un backup .json generado previamente. Los registros que ya existan se omiten y no se duplican.</p>
+              <p class="ex-desc">Restaura un backup .json completo (incluyendo llamadas, notas, ventas y apuntes). Los registros que ya existan se omiten sin duplicarse.</p>
               <div class="ex-file-drop" id="import-drop">Haz clic o arrastra un archivo .json aquí</div>
               <input type="file" id="import-file" accept="application/json" style="display:none;">
             </div>
@@ -2108,7 +2107,7 @@
   <div id="toast-stack"></div>
 
 
-  <script src="js/supabase-client.js?v=12"></script>
+  <script src="js/supabase-client.js?v=13"></script>
   <script src="js/utils.js?v=5"></script>
   <script src="js/auth.js?v=5"></script>
   <script src="js/parques.js?v=4"></script>
@@ -2117,10 +2116,10 @@
   <script src="js/contactos.js?v=3"></script>
   <script src="js/dashboard.js?v=8"></script>
   <script src="js/estadisticas.js?v=3"></script>
-  <script src="js/exportar.js?v=7"></script>
-  <script src="js/backup-auto.js?v=3"></script>
-  <script src="js/notas.js?v=3"></script>
-  <script src="js/llamadas.js?v=3"></script>
+  <script src="js/exportar.js?v=8"></script>
+  <script src="js/backup-auto.js?v=4"></script>
+  <script src="js/notas.js?v=4"></script>
+  <script src="js/llamadas.js?v=4"></script>
   <script src="js/horarios.js?v=3"></script>
   <script src="js/cuadrante.js?v=26"></script>
   <script src="js/pomodoro.js?v=3"></script>

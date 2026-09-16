@@ -202,15 +202,29 @@ async function requestPersistentStorage() {
 /** Recupera datos del espejo IndexedDB si localStorage los ha perdido */
 async function restoreMirroredData() {
   await requestPersistentStorage();
-  const keysToRestore = [LOCAL_KEYS.ventas, LOCAL_KEYS.contactos, LOCAL_KEYS.parques, LOCAL_KEYS.tipos_bono, LOCAL_KEYS.objetivos_mensuales, 'parksales_quick_notes', LOCAL_KEYS.cuadrante_list];
+  const keysToRestore = [
+    LOCAL_KEYS.ventas,
+    LOCAL_KEYS.contactos,
+    LOCAL_KEYS.parques,
+    LOCAL_KEYS.tipos_bono,
+    LOCAL_KEYS.objetivos_mensuales,
+    'parksales_llamadas',
+    'parksales_quick_notes',
+    'parksales_cuadrante_aliases',
+    LOCAL_KEYS.cuadrante_list
+  ];
   for (const key of keysToRestore) {
     const current = localStorage.getItem(key);
     if (current === null || current === '') {
       const mirrored = await mirrorGet(key);
       if (mirrored !== null) {
         try {
-          JSON.parse(mirrored); // validar que es JSON válido
-          localStorage.setItem(key, mirrored);
+          if (key === 'parksales_quick_notes') {
+            localStorage.setItem(key, String(mirrored));
+          } else {
+            JSON.parse(mirrored); // validar que es JSON válido
+            localStorage.setItem(key, mirrored);
+          }
           console.info('[ParkSales] Datos recuperados desde el espejo IndexedDB:', key);
         } catch (err) { /* espejo corrupto: ignorar */ }
       }

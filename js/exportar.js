@@ -254,17 +254,73 @@ function exportXLSX() {
 
 /* --- BACKUP JSON COMPLETO --- */
 
-function exportBackupJSON() {
-  const backup = {
+function buildFullBackupData() {
+  // Cuadrantes
+  let cuadList = [];
+  try {
+    cuadList = JSON.parse(localStorage.getItem(LOCAL_KEYS.cuadrante_list) || '[]');
+  } catch (e) { cuadList = []; }
+
+  const cuadData = {};
+  if (Array.isArray(cuadList)) {
+    cuadList.forEach(item => {
+      if (item && item.mes) {
+        const raw = localStorage.getItem(LOCAL_KEYS.cuadrante_data + '_' + item.mes);
+        if (raw) {
+          try { cuadData[item.mes] = JSON.parse(raw); } catch (e) { }
+        }
+      }
+    });
+  }
+
+  let cuadAliases = {};
+  try {
+    cuadAliases = JSON.parse(localStorage.getItem('parksales_cuadrante_aliases') || '{}');
+  } catch (e) { cuadAliases = {}; }
+
+  // Llamadas
+  let llamadas = [];
+  try {
+    llamadas = JSON.parse(localStorage.getItem('parksales_llamadas') || '[]');
+  } catch (e) { llamadas = []; }
+
+  // Objetivos mensuales
+  let objetivos = [];
+  try {
+    objetivos = JSON.parse(localStorage.getItem(LOCAL_KEYS.objetivos_mensuales) || '[]');
+  } catch (e) { objetivos = []; }
+
+  // Notas rápidas
+  const notasRapidas = localStorage.getItem('parksales_quick_notes') || '';
+
+  return {
     generado_en: new Date().toISOString(),
-    version: 2,
-    parques: STATE.parques,
-    tipos_bono: STATE.tipos_bono,
-    contactos: STATE.contactos,
-    ventas: STATE.ventas,
+    version: 3,
+    app: 'ParkSales',
+    parques: STATE.parques || [],
+    tipos_bono: STATE.tipos_bono || [],
+    contactos: STATE.contactos || [],
+    ventas: STATE.ventas || [],
+    llamadas,
+    notas_rapidas: notasRapidas,
+    objetivos_mensuales: objetivos,
+    cuadrantes: {
+      list: cuadList,
+      data: cuadData,
+      aliases: cuadAliases
+    }
   };
+}
+
+function exportBackupJSON() {
+  const backup = buildFullBackupData();
+  const numVentas = backup.ventas.length;
+  const numContactos = backup.contactos.length;
+  const numLlamadas = backup.llamadas.length;
+  const hasNotas = Boolean(backup.notas_rapidas && backup.notas_rapidas.trim());
+
   downloadFile(`parksales_backup_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(backup, null, 2), 'application/json');
-  toast('Copia de seguridad completa descargada', 'success');
+  toast(`Copia total descargada (${numVentas} ventas, ${numContactos} apuntes, ${numLlamadas} llamadas${hasNotas ? ', notas rápidas' : ''})`, 'success');
 }
 
 /* --- IMPORTACIÓN DE BACKUP --- */
@@ -308,132 +364,337 @@ function contactoDupKey(c) {
   ].join('|');
 }
 
+function llamadaDupKey(c) {
+  if (c.id) return `id|${c.id}`;
+  return [
+    'll',
+    backupIsoKey(c.fecha_hora),
+    String(c.telefono || '').replace(/\s/g, ''),
+    String(c.cliente || '').trim().toLowerCase(),
+    c.tipo || 'entrada',
+    String(c.notas || '').trim().toLowerCase()
+  ].join('|');
+}
+
+async function applyBackupData(data) {
+  const stats = {
+    parques: 0,
+    bonos: 0,
+    ventas: 0,
+    contactos: 0,
+    llamadas: 0,
+    notas: false,
+    objetivos: 0,
+    cuadrantes: 0
+  };
+
+  // 1. Parques
+  const parqueNombreAId = {};
+  STATE.parques.forEach((p) => { parqueNombreAId[p.nombre] = p.id; });
+  const nuevosParques = (data.parques || []).filter((p) => !parqueNombreAId[p.nombre]);
+  if (nuevosParques.length) {
+    await DB.bulkInsertParques(nuevosParques.map(({ id, created_at, updated_at, ...rest }) => rest));
+    stats.parques = nuevosParques.length;
+  }
+  STATE.parques = await DB.getParques();
+  STATE.parques.forEach((p) => { parqueNombreAId[p.nombre] = p.id; });
+
+  // 2. Bonos
+  const bonoNombreAId = {};
+  STATE.tipos_bono.forEach((b) => { bonoNombreAId[b.nombre] = b.id; });
+  const nuevosBonos = (data.tipos_bono || []).filter((b) => !bonoNombreAId[b.nombre]);
+  if (nuevosBonos.length) {
+    for (const b of nuevosBonos) {
+      await DB.addTipoBono({ nombre: b.nombre, activo: b.activo });
+    }
+    stats.bonos = nuevosBonos.length;
+  }
+  STATE.tipos_bono = await DB.getTiposBono();
+  STATE.tipos_bono.forEach((b) => { bonoNombreAId[b.nombre] = b.id; });
+
+  // Helper to get matching ids
+  const getNewParqueId = (oldId) => {
+    const oldP = (data.parques || []).find(p => p.id === oldId);
+    return oldP ? parqueNombreAId[oldP.nombre] : null;
+  };
+  const getNewBonoId = (oldId) => {
+    const oldB = (data.tipos_bono || []).find(b => b.id === oldId);
+    return oldB ? bonoNombreAId[oldB.nombre] : null;
+  };
+
+  // 3. Ventas
+  if (Array.isArray(data.ventas) && data.ventas.length) {
+    const existingVentaKeys = new Set(STATE.ventas.map(ventaDupKey));
+    const ventasParaInsertar = data.ventas.map(({ id, created_at, parque_id, bono_id, ...rest }) => {
+      const cliente_nombre = rest.cliente_nombre || 'Cliente';
+      const importe_total = Number(rest.importe_total) || 0;
+      return {
+        fecha: rest.fecha || new Date().toISOString(),
+        tipo: rest.tipo || 'entrada',
+        via: rest.via || 'llamada',
+        parque_id: parque_id ? getNewParqueId(parque_id) : null,
+        bono_id: bono_id ? getNewBonoId(bono_id) : null,
+        cliente_nombre,
+        importe_total,
+        localizador: rest.localizador || null,
+        estado: rest.estado || 'completado',
+      };
+    }).filter(v => (v.tipo === 'entrada' && v.parque_id) || (v.tipo === 'bono' && v.bono_id))
+      .filter(v => !existingVentaKeys.has(ventaDupKey(v)));
+
+    if (ventasParaInsertar.length) {
+      await DB.bulkInsertVentas(ventasParaInsertar);
+      stats.ventas = ventasParaInsertar.length;
+    }
+    STATE.ventas = await DB.getVentas();
+  }
+
+  // 4. Apuntes (Contactos)
+  if (Array.isArray(data.contactos) && data.contactos.length) {
+    const existingContactoKeys = new Set(STATE.contactos.map(contactoDupKey));
+    const apuntesParaInsertar = data.contactos.map(({ id, created_at, parque_id, bono_id, ...rest }) => {
+      return {
+        tipo: rest.tipo,
+        estado_pago: rest.estado_pago || 'Apunte rápido',
+        nombre_apellidos: rest.nombre_apellidos || '—',
+        correo: rest.correo || null,
+        importe_total: Number(rest.importe_total) || 0,
+        anotaciones: rest.anotaciones || null,
+        telefono: rest.telefono || null,
+        parque_id: parque_id ? getNewParqueId(parque_id) : null,
+        cantidad_entradas: rest.cantidad_entradas || null,
+        extras: rest.extras || null,
+        num_bono: rest.num_bono || null,
+        dni: rest.dni || null,
+        fecha_nacimiento: rest.fecha_nacimiento || null,
+        bono_id: bono_id ? getNewBonoId(bono_id) : null,
+        cantidad_bonos: rest.cantidad_bonos || null,
+        via: rest.via || null,
+        localizador: rest.localizador || null,
+        localizador_bono: rest.localizador_bono || null,
+        fecha_maxima: rest.fecha_maxima || null,
+        created_at: created_at || new Date().toISOString()
+      };
+    }).filter(c => !existingContactoKeys.has(contactoDupKey(c)));
+
+    for (const apunte of apuntesParaInsertar) {
+      await DB.addContacto(apunte);
+    }
+    stats.contactos = apuntesParaInsertar.length;
+    STATE.contactos = await DB.getContactos();
+  }
+
+  // 5. Llamadas (gestionadas, realizadas, pendientes)
+  const rawCalls = Array.isArray(data.llamadas) ? data.llamadas : (Array.isArray(data.calls) ? data.calls : null);
+  if (rawCalls && rawCalls.length) {
+    let currentCalls = [];
+    try {
+      currentCalls = JSON.parse(localStorage.getItem('parksales_llamadas') || '[]');
+    } catch (e) { currentCalls = []; }
+
+    const existingCallIds = new Set(currentCalls.map(c => c.id).filter(Boolean));
+    const existingCallKeys = new Set(currentCalls.map(llamadaDupKey));
+    let llamadasNuevasCount = 0;
+
+    for (const call of rawCalls) {
+      if (!call) continue;
+      let resolvedItemId = call.item_id;
+      let resolvedItemNombre = call.item_nombre;
+      if (call.tipo === 'entrada' && call.item_id) {
+        resolvedItemId = getNewParqueId(call.item_id) || call.item_id;
+        const p = STATE.parques.find(x => x.id === resolvedItemId);
+        if (p) resolvedItemNombre = p.nombre;
+      } else if (call.tipo === 'bono' && call.item_id) {
+        resolvedItemId = getNewBonoId(call.item_id) || call.item_id;
+        const b = STATE.tipos_bono.find(x => x.id === resolvedItemId);
+        if (b) resolvedItemNombre = b.nombre;
+      }
+
+      const dupKey = llamadaDupKey(call);
+      const existsById = call.id && existingCallIds.has(call.id);
+      const existsBySignature = existingCallKeys.has(dupKey);
+
+      if (!existsById && !existsBySignature) {
+        currentCalls.push({
+          ...call,
+          id: call.id || uid(),
+          item_id: resolvedItemId,
+          item_nombre: resolvedItemNombre || call.item_nombre || ''
+        });
+        if (call.id) existingCallIds.add(call.id);
+        existingCallKeys.add(dupKey);
+        llamadasNuevasCount++;
+      } else if (existsById) {
+        const idx = currentCalls.findIndex(c => c.id === call.id);
+        if (idx !== -1) {
+          if (call.completada && !currentCalls[idx].completada) currentCalls[idx].completada = true;
+          if (call.cancelada && !currentCalls[idx].cancelada) currentCalls[idx].cancelada = true;
+          if (call.notas && !currentCalls[idx].notas) currentCalls[idx].notas = call.notas;
+        }
+      }
+    }
+
+    localStorage.setItem('parksales_llamadas', JSON.stringify(currentCalls));
+    if (typeof mirrorPut === 'function') {
+      mirrorPut('parksales_llamadas', JSON.stringify(currentCalls));
+    }
+    stats.llamadas = llamadasNuevasCount;
+
+    if (typeof renderLlamadasList === 'function') {
+      try { renderLlamadasList(); } catch (e) { }
+    }
+    if (typeof startAlarmChecker === 'function') {
+      try { startAlarmChecker(); } catch (e) { }
+    }
+  }
+
+  // 6. Notas rápidas
+  if (typeof data.notas_rapidas === 'string' && data.notas_rapidas.trim()) {
+    const notasActuales = localStorage.getItem('parksales_quick_notes') || '';
+    let finalNotes = '';
+    if (notasActuales.trim()) {
+      if (!notasActuales.includes(data.notas_rapidas.trim())) {
+        finalNotes = notasActuales + '\n\n--- Restaurado del backup ---\n' + data.notas_rapidas;
+        stats.notas = true;
+      } else {
+        finalNotes = notasActuales;
+      }
+    } else {
+      finalNotes = data.notas_rapidas;
+      stats.notas = true;
+    }
+    localStorage.setItem('parksales_quick_notes', finalNotes);
+    if (typeof mirrorPut === 'function') {
+      mirrorPut('parksales_quick_notes', finalNotes);
+    }
+    const txtArea = document.getElementById('notas-rapidas-textarea');
+    if (txtArea) {
+      txtArea.value = finalNotes;
+      const charCountEl = document.getElementById('notes-char-count');
+      const wordCountEl = document.getElementById('notes-word-count');
+      if (charCountEl) charCountEl.textContent = `${finalNotes.length} caracteres`;
+      if (wordCountEl) {
+        const words = finalNotes.trim() ? finalNotes.trim().split(/\s+/).length : 0;
+        wordCountEl.textContent = `${words} palabras`;
+      }
+    }
+  }
+
+  // 7. Objetivos mensuales
+  if (Array.isArray(data.objetivos_mensuales) && data.objetivos_mensuales.length) {
+    let currentObjs = [];
+    try {
+      currentObjs = JSON.parse(localStorage.getItem(LOCAL_KEYS.objetivos_mensuales) || '[]');
+    } catch (e) { currentObjs = []; }
+    const objKeys = new Set(currentObjs.map(o => `${o.mes || o.month}_${o.anio || o.year}`));
+    let nuevosObjs = 0;
+    for (const obj of data.objetivos_mensuales) {
+      const key = `${obj.mes || obj.month}_${obj.anio || obj.year}`;
+      if (!objKeys.has(key)) {
+        currentObjs.push(obj);
+        objKeys.add(key);
+        nuevosObjs++;
+      }
+    }
+    if (nuevosObjs > 0) {
+      writeLocal(LOCAL_KEYS.objetivos_mensuales, currentObjs);
+      stats.objetivos = nuevosObjs;
+    }
+  }
+
+  // 8. Cuadrantes
+  if (data.cuadrantes) {
+    if (Array.isArray(data.cuadrantes.list) && data.cuadrantes.list.length) {
+      let currentCuadList = [];
+      try {
+        currentCuadList = JSON.parse(localStorage.getItem(LOCAL_KEYS.cuadrante_list) || '[]');
+      } catch (e) { currentCuadList = []; }
+      const cuadKeys = new Set(currentCuadList.map(c => c.mes));
+      for (const item of data.cuadrantes.list) {
+        if (item?.mes && !cuadKeys.has(item.mes)) {
+          currentCuadList.push(item);
+          cuadKeys.add(item.mes);
+        }
+      }
+      writeLocal(LOCAL_KEYS.cuadrante_list, currentCuadList);
+    }
+    if (data.cuadrantes.data && typeof data.cuadrantes.data === 'object') {
+      for (const [mesKey, monthData] of Object.entries(data.cuadrantes.data)) {
+        const storageKey = LOCAL_KEYS.cuadrante_data + '_' + mesKey;
+        const currentData = localStorage.getItem(storageKey);
+        if (!currentData && monthData) {
+          writeLocal(storageKey, monthData);
+          stats.cuadrantes++;
+        }
+      }
+    }
+    if (data.cuadrantes.aliases && typeof data.cuadrantes.aliases === 'object') {
+      let currentAliases = {};
+      try {
+        currentAliases = JSON.parse(localStorage.getItem('parksales_cuadrante_aliases') || '{}');
+      } catch (e) { currentAliases = {}; }
+      const mergedAliases = { ...data.cuadrantes.aliases, ...currentAliases };
+      localStorage.setItem('parksales_cuadrante_aliases', JSON.stringify(mergedAliases));
+      if (typeof mirrorPut === 'function') mirrorPut('parksales_cuadrante_aliases', JSON.stringify(mergedAliases));
+    }
+  }
+
+  refreshAllViewsAfterDataChange();
+  return stats;
+}
+
 function handleImportFile(file) {
   if (!file.name.endsWith('.json')) { toast('Solo se admiten archivos .json de backup', 'error'); return; }
   const reader = new FileReader();
   reader.onload = async (e) => {
     try {
       const data = JSON.parse(e.target.result);
-      if (!data.ventas || !data.parques) throw new Error('El archivo no tiene el formato esperado');
+      if (!data.ventas && !data.parques && !data.contactos && !data.llamadas && !data.notas_rapidas) {
+        throw new Error('El archivo no tiene el formato esperado');
+      }
+
+      const totalVentas = Array.isArray(data.ventas) ? data.ventas.length : 0;
+      const totalContactos = Array.isArray(data.contactos) ? data.contactos.length : 0;
+      const totalLlamadas = Array.isArray(data.llamadas) ? data.llamadas.length : (Array.isArray(data.calls) ? data.calls.length : 0);
+      const hasNotas = Boolean(data.notas_rapidas && String(data.notas_rapidas).trim());
+
+      const descPartes = [];
+      if (totalVentas) descPartes.push(`<strong>${totalVentas}</strong> ventas`);
+      if (totalContactos) descPartes.push(`<strong>${totalContactos}</strong> apuntes`);
+      if (totalLlamadas) descPartes.push(`<strong>${totalLlamadas}</strong> llamadas gestionadas/pendientes`);
+      if (hasNotas) descPartes.push(`notas rápidas`);
+      if (data.cuadrantes) descPartes.push(`cuadrantes y turnos`);
+
+      const detalleTexto = descPartes.length ? descPartes.join(', ') : 'todos los registros del backup';
 
       confirmDialog({
-        title: 'Importar copia de seguridad',
-        message: `Se importarán parques, bonos, apuntes y ventas. Esto añadirá los registros sin eliminar los existentes. ¿Continuar?`,
-        confirmLabel: 'Importar',
+        title: 'Importar copia de seguridad total',
+        message: `El archivo contiene ${detalleTexto}.<br><br>Se añadirán los registros respetando los que ya existan para no duplicar. ¿Continuar con la importación?`,
+        isHtmlMessage: true,
+        confirmLabel: 'Importar todo',
         danger: false,
         onConfirm: async () => {
           try {
-            // 1. Parques
-            const parqueNombreAId = {};
-            STATE.parques.forEach((p) => { parqueNombreAId[p.nombre] = p.id; });
-            const nuevosParques = data.parques.filter((p) => !parqueNombreAId[p.nombre]);
-            if (nuevosParques.length) {
-              await DB.bulkInsertParques(nuevosParques.map(({ id, created_at, updated_at, ...rest }) => rest));
-            }
-            STATE.parques = await DB.getParques();
-            STATE.parques.forEach((p) => { parqueNombreAId[p.nombre] = p.id; });
+            const stats = await applyBackupData(data);
+            const summaryParts = [];
+            if (stats.ventas > 0) summaryParts.push(`${stats.ventas} ventas`);
+            if (stats.contactos > 0) summaryParts.push(`${stats.contactos} apuntes`);
+            if (stats.llamadas > 0) summaryParts.push(`${stats.llamadas} llamadas`);
+            if (stats.notas) summaryParts.push(`notas actualizadas`);
 
-            // 2. Bonos
-            const bonoNombreAId = {};
-            STATE.tipos_bono.forEach((b) => { bonoNombreAId[b.nombre] = b.id; });
-            const nuevosBonos = (data.tipos_bono || []).filter((b) => !bonoNombreAId[b.nombre]);
-            if (nuevosBonos.length) {
-              for (const b of nuevosBonos) {
-                await DB.addTipoBono({ nombre: b.nombre, activo: b.activo });
-              }
-            }
-            STATE.tipos_bono = await DB.getTiposBono();
-            STATE.tipos_bono.forEach((b) => { bonoNombreAId[b.nombre] = b.id; });
+            const msg = summaryParts.length
+              ? `Copia importada: ${summaryParts.join(', ')} añadidas correctamente`
+              : `Copia de seguridad importada (los registros ya estaban al día)`;
 
-            // Helper to get matching ids
-            const getNewParqueId = (oldId) => {
-              const oldP = data.parques.find(p => p.id === oldId);
-              return oldP ? parqueNombreAId[oldP.nombre] : null;
-            };
-            const getNewBonoId = (oldId) => {
-              const oldB = (data.tipos_bono || []).find(b => b.id === oldId);
-              return oldB ? bonoNombreAId[oldB.nombre] : null;
-            };
-
-            // 3. Ventas
-            const existingVentaKeys = new Set(STATE.ventas.map(ventaDupKey));
-            const ventasParaInsertar = data.ventas.map(({ id, created_at, parque_id, bono_id, ...rest }) => {
-              const cliente_nombre = rest.cliente_nombre || 'Cliente';
-              const importe_total = Number(rest.importe_total) || 0;
-              return {
-                fecha: rest.fecha || new Date().toISOString(),
-                tipo: rest.tipo || 'entrada',
-                via: rest.via || 'llamada',
-                parque_id: parque_id ? getNewParqueId(parque_id) : null,
-                bono_id: bono_id ? getNewBonoId(bono_id) : null,
-                cliente_nombre,
-                importe_total,
-                localizador: rest.localizador || null,
-                estado: rest.estado || 'completado',
-              };
-            }).filter(v => (v.tipo === 'entrada' && v.parque_id) || (v.tipo === 'bono' && v.bono_id))
-              .filter(v => !existingVentaKeys.has(ventaDupKey(v)));
-
-            if (ventasParaInsertar.length) {
-              await DB.bulkInsertVentas(ventasParaInsertar);
-            }
-            STATE.ventas = await DB.getVentas();
-
-            // 4. Apuntes (Contactos)
-            if (data.contactos && data.contactos.length) {
-              const existingContactoKeys = new Set(STATE.contactos.map(contactoDupKey));
-              const apuntesParaInsertar = data.contactos.map(({ id, created_at, parque_id, bono_id, ...rest }) => {
-                return {
-                  tipo: rest.tipo,
-                  estado_pago: rest.estado_pago || 'Apunte rápido',
-                  nombre_apellidos: rest.nombre_apellidos || '—',
-                  correo: rest.correo || null,
-                  importe_total: Number(rest.importe_total) || 0,
-                  anotaciones: rest.anotaciones || null,
-                  telefono: rest.telefono || null,
-                  parque_id: parque_id ? getNewParqueId(parque_id) : null,
-                  cantidad_entradas: rest.cantidad_entradas || null,
-                  extras: rest.extras || null,
-                  num_bono: rest.num_bono || null,
-                  dni: rest.dni || null,
-                  fecha_nacimiento: rest.fecha_nacimiento || null,
-                  bono_id: bono_id ? getNewBonoId(bono_id) : null,
-                  cantidad_bonos: rest.cantidad_bonos || null,
-                  // Campos opcionales que antes se perdián al restaurar:
-                  via: rest.via || null,
-                  localizador: rest.localizador || null,
-                  localizador_bono: rest.localizador_bono || null,
-                  fecha_maxima: rest.fecha_maxima || null,
-                  created_at: created_at || new Date().toISOString()
-                };
-              }).filter(c => !existingContactoKeys.has(contactoDupKey(c)));
-
-              for (const apunte of apuntesParaInsertar) {
-                await DB.addContacto(apunte);
-              }
-              STATE.contactos = await DB.getContactos();
-            }
-
-            // 5. Notas rápidas (si el backup las incluíe)
-            if (typeof data.notas_rapidas === 'string' && data.notas_rapidas.trim()) {
-              const notasActuales = localStorage.getItem('parksales_quick_notes') || '';
-              // Fusionar: añadir al final si ya hay notas, o reemplazar si está vacío
-              if (notasActuales.trim()) {
-                localStorage.setItem('parksales_quick_notes', notasActuales + '\n\n--- Restaurado del backup ---\n' + data.notas_rapidas);
-              } else {
-                localStorage.setItem('parksales_quick_notes', data.notas_rapidas);
-              }
-            }
-
-            toast('Copia de seguridad importada correctamente', 'success');
-            refreshAllViewsAfterDataChange();
+            toast(msg, 'success', 5000);
           } catch (err) {
+            console.error('[ParkSales] Error al importar backup:', err);
             toast('Error al importar: ' + err.message, 'error');
           }
         },
       });
     } catch (err) {
-      toast('El archivo no es un backup válido de ParkSales', 'error');
+      toast('El archivo no es un backup válido de ParkSales: ' + err.message, 'error');
     }
   };
   reader.readAsText(file);
