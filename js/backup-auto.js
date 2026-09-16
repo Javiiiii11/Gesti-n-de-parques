@@ -289,13 +289,17 @@ async function showBackupList() {
     const cCount = Array.isArray(b.data?.contactos) ? b.data.contactos.length : 0;
     const lCount = Array.isArray(b.data?.llamadas) ? b.data.llamadas.length : (Array.isArray(b.data?.calls) ? b.data.calls.length : 0);
     const hasN = Boolean(b.data?.notas_rapidas && String(b.data.notas_rapidas).trim());
+    const totalImporteVentas = Array.isArray(b.data?.ventas)
+      ? b.data.ventas.reduce((acc, v) => acc + (Number(v.importe_total) || 0), 0)
+      : 0;
 
     const resumenTags = [];
-    if (vCount) resumenTags.push(`${vCount} ventas`);
+    const fmtTotal = typeof fmtEUR === 'function' ? fmtEUR(totalImporteVentas) : `${totalImporteVentas.toFixed(2)} €`;
+    resumenTags.push(`${vCount} ventas${vCount > 0 ? ' (' + fmtTotal + ')' : ''}`);
     if (cCount) resumenTags.push(`${cCount} apuntes`);
     if (lCount) resumenTags.push(`${lCount} llamadas`);
     if (hasN) resumenTags.push(`notas`);
-    const resumenStr = resumenTags.length ? resumenTags.join(' · ') : 'Backup completo';
+    const resumenStr = resumenTags.join(' · ');
 
     html += `
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-s);">
