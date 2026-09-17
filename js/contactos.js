@@ -141,45 +141,37 @@ function wireContactoQuickParse(updateFormVisibility) {
     const trimmed = text.trim();
     if (!trimmed) return null;
 
+    const tipo = typeof detectTipoFromRaw === 'function' ? detectTipoFromRaw(trimmed) : 'entrada';
+
     // Detectar si es formato separado por saltos de línea (cada campo en una línea)
-    const lines = trimmed.split('\n').filter(l => l.trim().length > 0);
+    const lines = trimmed.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length >= 5) {
-      // Formato línea por línea:
-      //   0: username (ignorado)
-      //   1: localizador
-      //   2: nombre_cliente
-      //   3: precio (179,70 €)
-      //   4: fecha_hora (ignorada)
-      //   5: correo (ignorado)
-      //   6: teléfono (ignorado)
-      //   7+: ignorado
       const localizador = lines[1]?.trim() || '';
       const nombreCliente = lines[2]?.trim() || '';
       const precioStr = (lines[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
       const precio = parseFloat(precioStr) || 0;
 
-      return { localizador, nombreCliente, precio };
+      return { localizador, nombreCliente, precio, tipo };
     }
 
     // Formato clásico: separado por tabs o espacios múltiples (una línea)
-    //   username(0)  localizador(1)  nombre(2)  precio(3)  fecha(4)  correo(5)  tlf(6)  metodo(7)
-    const parts = trimmed.split(/\t+|  +/).filter(p => p.length > 0);
-    if (parts.length < 5) return null;
+    const parts = trimmed.split(/\t+|\s{2,}/).map(p => p.trim()).filter(p => p.length > 0);
+    if (parts.length < 4) return null;
 
     const localizador = parts[1] || '';
     const nombreCliente = parts[2] || '';
     const precioStr = (parts[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
     const precio = parseFloat(precioStr) || 0;
 
-    return { localizador, nombreCliente, precio };
+    return { localizador, nombreCliente, precio, tipo };
   }
 
   function fillContactoForm(data) {
     if (!data) return;
 
-    // Asegurar que estamos en modo "entrada"
-    const radioEntrada = document.querySelector('input[name="cf-tipo"][value="entrada"]');
-    if (radioEntrada) radioEntrada.checked = true;
+    const targetTipo = data.tipo || 'entrada';
+    const radioTipo = document.querySelector(`input[name="cf-tipo"][value="${targetTipo}"]`);
+    if (radioTipo) radioTipo.checked = true;
     if (typeof updateFormVisibility === 'function') updateFormVisibility();
 
     // Rellenar campos

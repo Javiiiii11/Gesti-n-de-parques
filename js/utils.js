@@ -332,11 +332,11 @@ const ESTADOS_VENTA = {
 function normalizeEstadoVenta(val) {
   if (!val) return 'completado';
   const str = String(val).trim().toLowerCase();
-  if (str === 'completado' || str === 'pagado' || str === 'completada' || str === 'completed') return 'completado';
+  if (str === 'completado' || str === 'pagado' || str === 'completada' || str === 'completed' || str === 'paid') return 'completado';
   if (str === 'enviado' || str === 'enviada' || str === 'sent') return 'enviado';
-  if (str === 'incompleto' || str === 'incompleta' || str === 'fallido' || str === 'error' || str === 'incomplete') return 'incompleto';
-  if (str === 'no enviado' || str === 'no_enviado' || str === 'no-enviado' || str === 'sin enviar') return 'no_enviado';
-  if (str === 'pago accesible' || str === 'pago_accesible' || str === 'pendiente' || str === 'pendiente de pago' || str === 'pendiente_pago' || str === 'pending') return 'pendiente';
+  if (str === 'incompleto' || str === 'incompleta' || str === 'fallido' || str === 'error' || str === 'incomplete' || str === 'incompleted') return 'incompleto';
+  if (str === 'no enviado' || str === 'no_enviado' || str === 'no-enviado' || str === 'sin enviar' || str === 'not_send' || str === 'not send' || str === 'not_sent') return 'no_enviado';
+  if (str === 'pago accesible' || str === 'pago_accesible' || str === 'pendiente' || str === 'pendiente de pago' || str === 'pendiente_pago' || str === 'pending' || str === 'access_pay' || str === 'access pay') return 'pendiente';
   return 'completado';
 }
 

@@ -175,8 +175,28 @@ function updateBackupUI() {
   }
 }
 
+/* --- Fijar Almacenamiento Persistente en el Navegador --- */
+async function requestPersistentStorage() {
+  if (navigator.storage && typeof navigator.storage.persist === 'function') {
+    try {
+      const isPersisted = await navigator.storage.persisted();
+      if (!isPersisted) {
+        const granted = await navigator.storage.persist();
+        console.log(`[ParkSales] Almacenamiento persistente ${granted ? 'concedido por el navegador' : 'no concedido'}`);
+      } else {
+        console.log('[ParkSales] Almacenamiento persistente del navegador activo');
+      }
+    } catch (err) {
+      console.warn('[ParkSales] Error al solicitar almacenamiento persistente:', err);
+    }
+  }
+}
+
 /* --- Activación automática al arrancar la app --- */
 async function initAutoBackup() {
+  // Solicitar almacenamiento persistente al navegador para evitar limpiezas automáticas
+  await requestPersistentStorage();
+
   // Las copias automáticas se activan SIEMPRE al iniciar la app
   autoBackupEnabled = true;
   updateBackupUI();

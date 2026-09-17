@@ -155,13 +155,27 @@ function updateTicketPreview() {
    ============================================================================ */
 function detectEstadoFromRaw(text) {
   if (!text) return 'completado';
-  const str = String(text).toLowerCase();
+  const str = String(text).trim().toLowerCase();
+  if (str.includes('not_send') || str.includes('not send') || str.includes('not_sent') || str.includes('no enviado') || str.includes('no_enviado') || str.includes('no-enviado')) return 'no_enviado';
   if (str.includes('incomplet')) return 'incompleto';
-  if (str.includes('no enviado') || str.includes('no_enviado')) return 'no_enviado';
-  if (str.includes('pago accesible') || str.includes('pendiente')) return 'pendiente';
-  if (str.includes('enviad')) return 'enviado';
-  if (str.includes('completad') || str.includes('pagad')) return 'completado';
+  if (str.includes('access_pay') || str.includes('access pay') || str.includes('pago accesible') || str.includes('pago_accesible') || str.includes('pendiente')) return 'pendiente';
+  if (str.includes('enviad') || str.includes('sent')) return 'enviado';
+  if (str.includes('completad') || str.includes('pagad') || str.includes('paid') || str.includes('completed')) return 'completado';
   return 'completado';
+}
+
+function detectTipoFromRaw(text) {
+  if (!text) return 'entrada';
+  const str = String(text).toUpperCase();
+  // Detectar estados característicos de Bonos en Vector
+  if (/\b(SENT|NOT_SEND|NOT[ _]SENT|INCOMPLETED|INCOMPLETE|ACCESS_PAY)\b/.test(str)) {
+    return 'bono';
+  }
+  // Detectar patrón de columnas de exportación de Bonos (-   -   ESTADO)
+  if (/-\s+-\s+/.test(text) || /-\s+-\s+[A-Z_]+/i.test(text)) {
+    return 'bono';
+  }
+  return 'entrada';
 }
 
 function wireQuickParse() {
@@ -190,17 +204,19 @@ function wireQuickParse() {
     const trimmed = text.trim();
     if (!trimmed) return null;
 
+    const tipo = detectTipoFromRaw(trimmed);
+
     // Detectar si es formato separado por saltos de línea (cada campo en una línea)
-    const lines = trimmed.split('\n').filter(l => l.trim().length > 0);
+    const lines = trimmed.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length >= 5) {
       const localizador = lines[1]?.trim() || '';
       // Ignorados por petición: nombre, correo, teléfono
       const precioStr = (lines[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
       const precio = parseFloat(precioStr) || 0;
       let estado = 'completado';
-      for (let i = 7; i < lines.length; i++) {
+      for (let i = 4; i < lines.length; i++) {
         const detected = detectEstadoFromRaw(lines[i]);
-        if (detected !== 'completado' || /completad|pagad/i.test(lines[i])) {
+        if (detected !== 'completado' || /completad|pagad|paid|completed/i.test(lines[i])) {
           estado = detected;
           break;
         }
@@ -209,24 +225,22 @@ function wireQuickParse() {
         estado = detectEstadoFromRaw(trimmed);
       }
 
-      return { localizador, precio, estado };
+      return { localizador, precio, estado, tipo };
     }
 
     // Formato clásico: separado por tabs o espacios múltiples (una línea)
-    const parts = trimmed.split(/\t+|  +/).filter(p => p.length > 0);
-    if (parts.length < 5) return null;
+    const parts = trimmed.split(/\t+|\s{2,}/).map(p => p.trim()).filter(p => p.length > 0);
+    if (parts.length < 4) return null;
 
     const localizador = parts[1] || '';
     // Ignorados: nombre, correo, teléfono
     const precioStr = (parts[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
     const precio = parseFloat(precioStr) || 0;
     let estado = 'completado';
-    if (parts[10]) {
-      estado = detectEstadoFromRaw(parts[10]);
-    } else {
-      for (let i = 7; i < parts.length; i++) {
+    for (let i = parts.length - 1; i >= 4; i--) {
+      if (parts[i] && parts[i] !== '-') {
         const detected = detectEstadoFromRaw(parts[i]);
-        if (detected !== 'completado' || /completad|pagad/i.test(parts[i])) {
+        if (detected !== 'completado' || /completad|pagad|paid|completed/i.test(parts[i])) {
           estado = detected;
           break;
         }
@@ -236,15 +250,18 @@ function wireQuickParse() {
       estado = detectEstadoFromRaw(trimmed);
     }
 
-    return { localizador, precio, estado };
+    return { localizador, precio, estado, tipo };
   }
 
   function fillForm(data) {
     if (!data) return;
     
-    // Asegurar que estamos en modo "entrada"
-    const radioEntrada = document.querySelector('input[name="v-tipo"][value="entrada"]');
-    if (radioEntrada) radioEntrada.checked = true;
+    // Cambiar al tipo detectado (entrada o bono)
+    const targetTipo = data.tipo || 'entrada';
+    const radioTipo = document.querySelector(`input[name="v-tipo"][value="${targetTipo}"]`);
+    if (radioTipo) {
+      radioTipo.checked = true;
+    }
     updateVentaFormVisibility();
     
     // Rellenar campos
@@ -262,10 +279,22 @@ function wireQuickParse() {
 
   function showPreview(data) {
     const badgeInfo = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(data.estado) : { label: data.estado || 'Completado', colorBg: '#34D39922', textColor: '#34D399', colorBorder: '#34D399', icon: '✅' };
+    
+    const tipoLabel = data.tipo === 'bono' ? '🎟️ Bono' : '🎡 Entrada (Parque)';
+    const tipoBadgeBg = data.tipo === 'bono' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(59, 130, 246, 0.15)';
+    const tipoBadgeColor = data.tipo === 'bono' ? '#C084FC' : '#60A5FA';
+    const tipoBadgeBorder = data.tipo === 'bono' ? 'rgba(168, 85, 247, 0.3)' : 'rgba(59, 130, 246, 0.3)';
+
     if (preview) {
       preview.innerHTML = `
         <div class="qp-card">
           <div class="qp-head">📋 Vista previa de datos detectados</div>
+          <div class="qp-row">
+            <span>Tipo detectado</span>
+            <strong style="background:${tipoBadgeBg}; color:${tipoBadgeColor}; border: 1px solid ${tipoBadgeBorder}; font-weight:700; font-size:11px; padding:2px 8px; border-radius:999px;">
+              ${tipoLabel}
+            </strong>
+          </div>
           <div class="qp-row"><span>Estado</span><strong style="color:${badgeInfo.textColor}; font-weight:700;">${badgeInfo.icon} ${badgeInfo.label}</strong></div>
           <div class="qp-row"><span>Localizador</span><strong>${escapeHtml(data.localizador) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
           <div class="qp-row"><span>Importe</span><strong>${typeof fmtEUR === 'function' ? fmtEUR(data.precio) : data.precio.toFixed(2) + ' €'}</strong></div>
