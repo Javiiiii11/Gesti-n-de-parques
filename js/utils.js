@@ -352,3 +352,13 @@ function isVentaEfectiva(venta) {
   return norm === 'completado';
 }
 
+function getEstadoPriority(val) {
+  const norm = normalizeEstadoVenta(val);
+  switch (norm) {
+    case 'completado': return 4; // 1º completado (máxima prioridad)
+    case 'pendiente': return 3;  // 2º pendiente de pago
+    case 'enviado': return 2;    // 3º enviado
+    default: return 1;           // 4º el resto (incompleto, no_enviado, etc.)
+  }
+}
+

@@ -709,6 +709,7 @@ async function handleImportCSVFiles(fileList) {
 
   let totalNuevasVentas = [];
   let totalNuevosApuntes = [];
+  let totalVentasAActualizar = {}; // id -> { id, localizador, estadoAnterior, estadoNuevo, cliente_nombre, item_nombre }
   let totalDuplicadas = 0;
   let parquesInvolucrados = new Set();
   let filesProcessed = 0;
@@ -743,7 +744,6 @@ async function handleImportCSVFiles(fileList) {
           if (lines.length < 5) throw new Error('Archivo demasiado corto o sin formato válido.');
 
           let parqueLine = lines[1].split(',')[0].trim();
-
           let pl = parqueLine.toLowerCase().trim();
           
           if (pl.includes('zoo') && pl.includes('aquarium')) {
@@ -804,7 +804,6 @@ async function handleImportCSVFiles(fileList) {
             parquesInvolucrados.add(nombreImport);
           } else if (pl.includes('multipark') || pl === '') {
             // Multipark SOLO sale al exportar bonos (los parques sí traen su nombre)
-            // No lo hemos roto: los parques siguen entrando por el if de arriba
             tipoImport = 'bono';
             bonoId = null;
             nombreImport = 'Sin especificar · Bono';
@@ -826,36 +825,71 @@ async function handleImportCSVFiles(fileList) {
           const fileNuevasVentas = [];
           const fileNuevosApuntes = [];
 
-          const localizadoresExistentes = new Set(
-            STATE.ventas.filter(v => {
-              if (tipoImport === 'entrada') return v.parque_id === parqueId && v.localizador;
-              return v.bono_id === bonoId && v.localizador;
-            }).map(v => v.localizador)
-          );
-
-          for (const v of totalNuevasVentas) {
-            if (tipoImport === 'entrada' && v.parque_id === parqueId && v.localizador) localizadoresExistentes.add(v.localizador);
-            if (tipoImport === 'bono' && v.bono_id === bonoId && v.localizador) localizadoresExistentes.add(v.localizador);
-          }
-
           for (let i = headerIdx + 1; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
             const row = parseCSVLine(lines[i]);
             if (row.length < 11) continue;
 
-            const localizador = row[1];
-            const cliente_nombre = row[2];
+            const localizador = (row[1] || '').trim();
+            const cliente_nombre = row[2] || '';
             const importe_total = Number(row[3]) || 0;
             const fechaVentaOriginal = row[4];
             const correo = row[5];
-            const telefono = row[6].replace(/\s/g, '').replace(/^\+34/, '');
+            const telefono = (row[6] || '').replace(/\s/g, '').replace(/^\+34/, '');
             const metodoPago = row[7];
             const estadoRaw = row[10] || 'Completado';
             const estadoNorm = typeof normalizeEstadoVenta === 'function' ? normalizeEstadoVenta(estadoRaw) : 'completado';
+            const newPrio = typeof getEstadoPriority === 'function' ? getEstadoPriority(estadoNorm) : 1;
 
-            if (localizador && localizadoresExistentes.has(localizador)) {
-              fileDuplicadas++;
-              continue;
+            if (localizador) {
+              // 1. Comprobar si ya existe en la base de datos (STATE.ventas)
+              const existingVenta = (STATE.ventas || []).find(v => String(v.localizador || '').trim() === localizador);
+              if (existingVenta) {
+                // Verificar si ya fue marcado para actualizar en una fila previa de esta importación
+                const currentUpdated = totalVentasAActualizar[existingVenta.id];
+                const currentPrio = currentUpdated
+                  ? (typeof getEstadoPriority === 'function' ? getEstadoPriority(currentUpdated.estadoNuevo) : 1)
+                  : (typeof getEstadoPriority === 'function' ? getEstadoPriority(existingVenta.estado) : 1);
+
+                if (newPrio > currentPrio) {
+                  totalVentasAActualizar[existingVenta.id] = {
+                    id: existingVenta.id,
+                    localizador: localizador,
+                    estadoAnterior: existingVenta.estado,
+                    estadoNuevo: estadoNorm,
+                    cliente_nombre: existingVenta.cliente_nombre || cliente_nombre,
+                    item_nombre: nombreImport
+                  };
+                } else {
+                  fileDuplicadas++;
+                }
+                continue;
+              }
+
+              // 2. Comprobar si ya fue agregado en el lote actual (totalNuevasVentas o fileNuevasVentas)
+              const batchVenta = totalNuevasVentas.find(v => String(v.localizador || '').trim() === localizador)
+                || fileNuevasVentas.find(v => String(v.localizador || '').trim() === localizador);
+
+              if (batchVenta) {
+                const batchPrio = typeof getEstadoPriority === 'function' ? getEstadoPriority(batchVenta.estado) : 1;
+                if (newPrio > batchPrio) {
+                  batchVenta.estado = estadoNorm;
+                  // Actualizar también el apunte correspondiente
+                  const batchApunte = totalNuevosApuntes.find(a => String(a.localizador || '').trim() === localizador)
+                    || fileNuevosApuntes.find(a => String(a.localizador || '').trim() === localizador);
+                  if (batchApunte) {
+                    let estadoPagoContacto = 'pagado';
+                    if (estadoNorm === 'pendiente') estadoPagoContacto = 'pendiente';
+                    else if (estadoNorm === 'incompleto') estadoPagoContacto = 'Incompleto';
+                    else if (estadoNorm === 'enviado') estadoPagoContacto = 'Enviado';
+                    else if (estadoNorm === 'no_enviado') estadoPagoContacto = 'No enviado';
+                    batchApunte.estado_pago = estadoPagoContacto;
+                  }
+                } else {
+                  fileDuplicadas++;
+                }
+                continue;
+              }
             }
 
             let isoDate = new Date().toISOString();
@@ -882,7 +916,7 @@ async function handleImportCSVFiles(fileList) {
               bono_id: tipoImport === 'bono' ? bonoId : null,
               cliente_nombre,
               importe_total,
-              localizador,
+              localizador: localizador || null,
               estado: estadoNorm,
             });
 
@@ -906,11 +940,9 @@ async function handleImportCSVFiles(fileList) {
               cantidad_entradas: tipoImport === 'entrada' ? 1 : null,
               cantidad_bonos: tipoImport === 'bono' ? 1 : null,
               extras: metodoPago ? `Método: ${metodoPago}` : null,
-              localizador: localizador,
+              localizador: localizador || null,
               created_at: isoDate
             });
-
-            if (localizador) localizadoresExistentes.add(localizador);
           }
 
           resolve({ fileNuevasVentas, fileNuevosApuntes, fileDuplicadas });
@@ -945,8 +977,11 @@ async function handleImportCSVFiles(fileList) {
     return;
   }
 
-  if (totalNuevasVentas.length === 0) {
-    let msg = `No hay ventas nuevas para importar. ${totalDuplicadas} duplicadas omitidas en los archivos.\n`;
+  const numNuevas = totalNuevasVentas.length;
+  const numActualizadas = Object.keys(totalVentasAActualizar).length;
+
+  if (numNuevas === 0 && numActualizadas === 0) {
+    let msg = `No hay ventas nuevas ni actualizaciones de estado para importar. ${totalDuplicadas} duplicadas omitidas sin cambios en los archivos.\n`;
     if (failedFiles.length > 0) msg += `\nErrores en algunos archivos:\n${failedFiles.join('\n')}`;
     alert(msg);
     return;
@@ -964,34 +999,64 @@ async function handleImportCSVFiles(fileList) {
 
   let listHtml = '<ul style="margin: 8px 0 16px 20px; font-size: 13px;">';
   for (const [pName, count] of Object.entries(countsByPark)) {
-    listHtml += `<li><strong>${count}</strong> de ${escapeHtml(pName)}</li>`;
+    listHtml += `<li><strong>${count}</strong> nueva(s) de ${escapeHtml(pName)}</li>`;
+  }
+  if (numActualizadas > 0) {
+    listHtml += `<li><strong>${numActualizadas}</strong> venta(s) existente(s) que suben a un estado superior (ej. a Completado)</li>`;
   }
   listHtml += '</ul>';
 
-  let messageHtml = `Se han procesado <strong>${filesProcessed} archivo(s)</strong> y encontrado <strong>${totalNuevasVentas.length} ventas nuevas</strong> en total:<br>${listHtml}Se omitirán ${totalDuplicadas} ventas ya existentes o duplicadas entre archivos. ¿Continuar con la importación?`;
+  const resumenPartes = [];
+  if (numNuevas > 0) resumenPartes.push(`<strong>${numNuevas} venta(s) nueva(s)</strong>`);
+  if (numActualizadas > 0) resumenPartes.push(`<strong>${numActualizadas} venta(s) actualizada(s) de estado</strong>`);
+
+  let messageHtml = `Se han procesado <strong>${filesProcessed} archivo(s)</strong> y encontrado ${resumenPartes.join(' y ')}:<br>${listHtml}Se omitirán ${totalDuplicadas} registros duplicados sin cambios. ¿Continuar con la importación?`;
 
   if (failedFiles.length > 0) {
     messageHtml += `<br><br><span style="color:var(--danger)"><strong>Atención:</strong> Hubo errores en ${failedFiles.length} archivo(s):</span><ul style="font-size:12px; margin-top:4px; margin-left: 20px;"><li>${failedFiles.map(escapeHtml).join('</li><li>')}</li></ul>`;
   }
 
   confirmDialog({
-    title: 'Importar múltiples ventas',
+    title: 'Importar ventas de Vector',
     message: messageHtml,
     isHtmlMessage: true,
     confirmLabel: 'Importar todo',
     danger: false,
     onConfirm: async () => {
       try {
-        await DB.bulkInsertVentas(totalNuevasVentas);
-        for (const apunte of totalNuevosApuntes) {
-          await DB.addContacto(apunte);
+        // 1. Insertar nuevas ventas y contactos
+        if (totalNuevasVentas.length > 0) {
+          await DB.bulkInsertVentas(totalNuevasVentas);
+          for (const apunte of totalNuevosApuntes) {
+            await DB.addContacto(apunte);
+          }
+        }
+
+        // 2. Actualizar ventas existentes cuyo estado ha mejorado
+        for (const item of Object.values(totalVentasAActualizar)) {
+          await DB.updateVenta(item.id, { estado: item.estadoNuevo });
+
+          let estadoPagoContacto = 'pagado';
+          if (item.estadoNuevo === 'pendiente') estadoPagoContacto = 'pendiente';
+          else if (item.estadoNuevo === 'incompleto') estadoPagoContacto = 'Incompleto';
+          else if (item.estadoNuevo === 'enviado') estadoPagoContacto = 'Enviado';
+          else if (item.estadoNuevo === 'no_enviado') estadoPagoContacto = 'No enviado';
+
+          const vExisting = (STATE.ventas || []).find(v => v.id === item.id);
+          const linked = typeof findContactoForVenta === 'function' ? findContactoForVenta(vExisting) : null;
+          if (linked?.id) {
+            await DB.updateContacto(linked.id, { estado_pago: estadoPagoContacto });
+          }
         }
 
         STATE.ventas = await DB.getVentas();
         STATE.contactos = await DB.getContactos();
         refreshAllViewsAfterDataChange();
 
-        toast(`${totalNuevasVentas.length} ventas importadas correctamente`, 'success');
+        const toastMsgs = [];
+        if (numNuevas > 0) toastMsgs.push(`${numNuevas} venta(s) importada(s)`);
+        if (numActualizadas > 0) toastMsgs.push(`${numActualizadas} estado(s) actualizado(s)`);
+        toast(toastMsgs.join(' y ') + ' correctamente', 'success');
       } catch (err) {
         toast('Error al guardar: ' + err.message, 'error');
       }
