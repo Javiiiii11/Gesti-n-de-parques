@@ -70,22 +70,54 @@ function setDefaultLlamadaFecha() {
 }
 
 function renderLlamadasForm() {
-  // Default date = today
-  setDefaultLlamadaFecha();
+  const curParque = document.getElementById('ll-parque')?.value;
+  const curBono = document.getElementById('ll-bono')?.value;
+  const curFecha = document.getElementById('ll-fecha')?.value;
 
   // Fill park and bono selects
   const selParque = document.getElementById('ll-parque');
   const selBono = document.getElementById('ll-bono');
   if (selParque) {
-    const activos = (STATE.parques || []).filter(p => p.activo !== false);
+    const todos = STATE.parques || [];
+    const activos = todos.filter(p => p.activo !== false);
+    if (editingCallId && curParque && !activos.some(p => p.id === curParque)) {
+      const oldItem = todos.find(p => p.id === curParque);
+      if (oldItem) activos.push(oldItem);
+    }
     selParque.innerHTML = '<option value="">Seleccionar parque...</option>' +
       activos.map(p => `<option value="${p.id}">${escapeHtml(p.nombre)}</option>`).join('');
+    if (curParque) selParque.value = curParque;
   }
+
   if (selBono) {
-    const activos = (STATE.tipos_bono || []).filter(b => b.activo !== false);
+    const todos = STATE.tipos_bono || [];
+    const activos = todos.filter(b => b.activo !== false);
+    if (editingCallId && curBono && !activos.some(b => b.id === curBono)) {
+      const oldItem = todos.find(b => b.id === curBono);
+      if (oldItem) activos.push(oldItem);
+    }
     selBono.innerHTML = '<option value="">Seleccionar bono...</option>' +
       activos.map(b => `<option value="${b.id}">${escapeHtml(b.nombre)}</option>`).join('');
+    if (curBono) selBono.value = curBono;
   }
+
+  // Solo establecer fecha por defecto a HOY si no estamos editando y el campo está vacío
+  if (!editingCallId && !curFecha) {
+    setDefaultLlamadaFecha();
+  }
+}
+
+function updateLlamadaTipoVisibility() {
+  const tipo = document.querySelector('input[name="ll-tipo"]:checked')?.value || 'entrada';
+  const parqueField = document.getElementById('ll-field-parque');
+  const bonoField = document.getElementById('ll-field-bono');
+  const selParque = document.getElementById('ll-parque');
+  const selBono = document.getElementById('ll-bono');
+
+  if (parqueField) parqueField.style.display = tipo === 'entrada' ? '' : 'none';
+  if (bonoField) bonoField.style.display = tipo === 'bono' ? '' : 'none';
+  if (selParque) selParque.required = (tipo === 'entrada');
+  if (selBono) selBono.required = (tipo === 'bono');
 }
 
 function wireLlamadasForm() {
@@ -117,14 +149,10 @@ function wireLlamadasForm() {
 
   // Tipo selector
   document.querySelectorAll('input[name="ll-tipo"]').forEach(el => {
-    el.addEventListener('change', () => {
-      const tipo = document.querySelector('input[name="ll-tipo"]:checked')?.value || 'entrada';
-      const parqueField = document.getElementById('ll-field-parque');
-      const bonoField = document.getElementById('ll-field-bono');
-      if (parqueField) parqueField.style.display = tipo === 'entrada' ? '' : 'none';
-      if (bonoField) bonoField.style.display = tipo === 'bono' ? '' : 'none';
-    });
+    el.addEventListener('change', updateLlamadaTipoVisibility);
   });
+
+  updateLlamadaTipoVisibility();
 
   // Toggle extras
   const toggleBtn = document.getElementById('ll-toggle-extras');
@@ -176,11 +204,11 @@ function guardarLlamada() {
     let itemNombre = '';
     if (tipo === 'entrada') {
       itemId = document.getElementById('ll-parque')?.value || null;
-      const parque = itemId ? STATE.parques.find(p => p.id === itemId) : null;
+      const parque = itemId ? (STATE.parques || []).find(p => p.id === itemId) : null;
       itemNombre = parque ? parque.nombre : '';
     } else {
       itemId = document.getElementById('ll-bono')?.value || null;
-      const bono = itemId ? STATE.tipos_bono.find(b => b.id === itemId) : null;
+      const bono = itemId ? (STATE.tipos_bono || []).find(b => b.id === itemId) : null;
       itemNombre = bono ? bono.nombre : '';
     }
 
@@ -197,12 +225,14 @@ function guardarLlamada() {
         return;
       }
       const existing = calls[idx];
+      const finalItemNombre = itemNombre || (existing.item_id === itemId ? existing.item_nombre : '') || '';
+
       calls[idx] = {
         ...existing,
         fecha_hora: fechaHora,
         tipo,
         item_id: itemId,
-        item_nombre: itemNombre,
+        item_nombre: finalItemNombre,
         telefono,
         cliente,
         prioridad,
@@ -267,16 +297,17 @@ function resetLlamadaForm() {
   editingCallId = null;
   const form = document.getElementById('llamada-form');
   if (form) form.reset();
+  
+  updateLlamadaTipoVisibility();
+  
   // Default date = today (restaurar tras reset)
   setDefaultLlamadaFecha();
-  const parqueField = document.getElementById('ll-field-parque');
-  const bonoField = document.getElementById('ll-field-bono');
-  if (parqueField) parqueField.style.display = '';
-  if (bonoField) bonoField.style.display = 'none';
+
   const extras = document.getElementById('ll-section-extras');
   if (extras) extras.style.display = 'none';
   const text = document.getElementById('ll-toggle-extras-text');
   if (text) text.textContent = 'Más opciones';
+  
   // Reset título y botones
   const title = document.getElementById('llamada-form-title');
   if (title) title.textContent = '📞 Programar llamada';
@@ -484,32 +515,64 @@ function editarLlamada(id) {
 
   editingCallId = id;
 
-  // Rellenar el formulario con los datos de la llamada
-  const tipoRadio = document.querySelector(`input[name="ll-tipo"][value="${c.tipo}"]`);
+  // Asegurar que las opciones de parques y bonos estén actualizadas
+  renderLlamadasForm();
+
+  // Tipo (entrada o bono)
+  const tipoRadio = document.querySelector(`input[name="ll-tipo"][value="${c.tipo || 'entrada'}"]`);
   if (tipoRadio) tipoRadio.checked = true;
 
-  // Mostrar/ocultar campos según tipo
-  const parqueField = document.getElementById('ll-field-parque');
-  const bonoField = document.getElementById('ll-field-bono');
-  if (parqueField) parqueField.style.display = c.tipo === 'entrada' ? '' : 'none';
-  if (bonoField) bonoField.style.display = c.tipo === 'bono' ? '' : 'none';
+  updateLlamadaTipoVisibility();
 
-  // Rellenar selects
+  // Rellenar selects de parque o bono
   const selParque = document.getElementById('ll-parque');
   const selBono = document.getElementById('ll-bono');
-  if (selParque && c.tipo === 'entrada') selParque.value = c.item_id || '';
-  if (selBono && c.tipo === 'bono') selBono.value = c.item_id || '';
+  
+  if (c.tipo === 'entrada') {
+    if (selParque) {
+      if (c.item_id && !selParque.querySelector(`option[value="${c.item_id}"]`)) {
+        const opt = document.createElement('option');
+        opt.value = c.item_id;
+        opt.textContent = c.item_nombre || 'Parque anterior';
+        selParque.appendChild(opt);
+      }
+      selParque.value = c.item_id || '';
+    }
+  } else {
+    if (selBono) {
+      if (c.item_id && !selBono.querySelector(`option[value="${c.item_id}"]`)) {
+        const opt = document.createElement('option');
+        opt.value = c.item_id;
+        opt.textContent = c.item_nombre || 'Bono anterior';
+        selBono.appendChild(opt);
+      }
+      selBono.value = c.item_id || '';
+    }
+  }
 
-  // Rellenar campos (usar hora local para no desviar con UTC)
-  const fechaHora = new Date(c.fecha_hora);
-  const pad = n => String(n).padStart(2, '0');
-  const fechaStr = `${fechaHora.getFullYear()}-${pad(fechaHora.getMonth() + 1)}-${pad(fechaHora.getDate())}`;
-  const horaStr = `${pad(fechaHora.getHours())}:${pad(fechaHora.getMinutes())}`;
+  // Parsear fecha y hora de forma ultra-robusta sin desviaciones de zona horaria o NaN
+  let fechaStr = '';
+  let horaStr = '';
+  if (c.fecha_hora) {
+    if (typeof c.fecha_hora === 'string' && c.fecha_hora.includes('T')) {
+      const parts = c.fecha_hora.split('T');
+      fechaStr = parts[0];
+      horaStr = (parts[1] || '').substring(0, 5);
+    } else {
+      const d = new Date(c.fecha_hora);
+      if (!isNaN(d.getTime())) {
+        const pad = n => String(n).padStart(2, '0');
+        fechaStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        horaStr = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+    }
+  }
 
-  const setVal = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.value = val || '';
+  const setVal = (fieldId, val) => {
+    const el = document.getElementById(fieldId);
+    if (el) el.value = val !== undefined && val !== null ? val : '';
   };
+
   setVal('ll-fecha', fechaStr);
   setVal('ll-hora', horaStr);
   setVal('ll-telefono', c.telefono);
@@ -521,10 +584,12 @@ function editarLlamada(id) {
 
   // Mostrar extras si hay correo o localizador
   const extras = document.getElementById('ll-section-extras');
-  if (extras && (c.correo || c.localizador)) {
-    extras.style.display = 'block';
-    const text = document.getElementById('ll-toggle-extras-text');
-    if (text) text.textContent = 'Ocultar opciones extra';
+  if (extras) {
+    if (c.correo || c.localizador) {
+      extras.style.display = 'block';
+      const text = document.getElementById('ll-toggle-extras-text');
+      if (text) text.textContent = 'Ocultar opciones extra';
+    }
   }
 
   // Actualizar título y botones
@@ -533,7 +598,7 @@ function editarLlamada(id) {
   const submitText = document.getElementById('llamada-submit-text');
   if (submitText) submitText.textContent = 'Guardar cambios';
   const cancelBtn = document.getElementById('ll-cancel-edit');
-  if (cancelBtn) cancelBtn.style.display = '';
+  if (cancelBtn) cancelBtn.style.display = 'inline-flex';
 
   // Scroll al formulario
   const form = document.getElementById('llamada-form');
