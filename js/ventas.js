@@ -164,16 +164,6 @@ function detectEstadoFromRaw(text) {
   return 'completado';
 }
 
-function detectTipoFromRaw(text) {
-  if (!text) return 'entrada';
-  const str = String(text).toUpperCase();
-  // Los Bonos de Vector vienen con los estados exclusivamente en inglés: SENT, NOT_SEND, INCOMPLETED, ACCESS_PAY
-  if (/\b(SENT|NOT_SEND|NOT[ _]SENT|INCOMPLETED|INCOMPLETE|ACCESS_PAY)\b/.test(str)) {
-    return 'bono';
-  }
-  return 'entrada';
-}
-
 function wireQuickParse() {
   const textarea = document.getElementById('venta-quick-parse');
   if (!textarea || textarea.dataset.wired === '1') return;
@@ -200,8 +190,6 @@ function wireQuickParse() {
     const trimmed = text.trim();
     if (!trimmed) return null;
 
-    const tipo = detectTipoFromRaw(trimmed);
-
     // Detectar si es formato separado por saltos de línea (cada campo en una línea)
     const lines = trimmed.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length >= 5) {
@@ -221,7 +209,7 @@ function wireQuickParse() {
         estado = detectEstadoFromRaw(trimmed);
       }
 
-      return { localizador, precio, estado, tipo };
+      return { localizador, precio, estado };
     }
 
     // Formato clásico: separado por tabs o espacios múltiples (una línea)
@@ -246,18 +234,13 @@ function wireQuickParse() {
       estado = detectEstadoFromRaw(trimmed);
     }
 
-    return { localizador, precio, estado, tipo };
+    return { localizador, precio, estado };
   }
 
   function fillForm(data) {
     if (!data) return;
     
-    // Cambiar al tipo detectado (entrada o bono)
-    const targetTipo = data.tipo || 'entrada';
-    const radioTipo = document.querySelector(`input[name="v-tipo"][value="${targetTipo}"]`);
-    if (radioTipo) {
-      radioTipo.checked = true;
-    }
+    // Respetar el tipo seleccionado por el usuario (Entradas o Bonos) sin forzar cambio automático
     updateVentaFormVisibility();
     
     // Rellenar campos
@@ -275,22 +258,11 @@ function wireQuickParse() {
 
   function showPreview(data) {
     const badgeInfo = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(data.estado) : { label: data.estado || 'Completado', colorBg: '#34D39922', textColor: '#34D399', colorBorder: '#34D399', icon: '✅' };
-    
-    const tipoLabel = data.tipo === 'bono' ? '🎟️ Bono' : '🎡 Entrada (Parque)';
-    const tipoBadgeBg = data.tipo === 'bono' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(59, 130, 246, 0.15)';
-    const tipoBadgeColor = data.tipo === 'bono' ? '#C084FC' : '#60A5FA';
-    const tipoBadgeBorder = data.tipo === 'bono' ? 'rgba(168, 85, 247, 0.3)' : 'rgba(59, 130, 246, 0.3)';
 
     if (preview) {
       preview.innerHTML = `
         <div class="qp-card">
           <div class="qp-head">📋 Vista previa de datos detectados</div>
-          <div class="qp-row">
-            <span>Tipo detectado</span>
-            <strong style="background:${tipoBadgeBg}; color:${tipoBadgeColor}; border: 1px solid ${tipoBadgeBorder}; font-weight:700; font-size:11px; padding:2px 8px; border-radius:999px;">
-              ${tipoLabel}
-            </strong>
-          </div>
           <div class="qp-row"><span>Estado</span><strong style="color:${badgeInfo.textColor}; font-weight:700;">${badgeInfo.icon} ${badgeInfo.label}</strong></div>
           <div class="qp-row"><span>Localizador</span><strong>${escapeHtml(data.localizador) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
           <div class="qp-row"><span>Importe</span><strong>${typeof fmtEUR === 'function' ? fmtEUR(data.precio) : data.precio.toFixed(2) + ' €'}</strong></div>

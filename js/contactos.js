@@ -141,8 +141,6 @@ function wireContactoQuickParse(updateFormVisibility) {
     const trimmed = text.trim();
     if (!trimmed) return null;
 
-    const tipo = typeof detectTipoFromRaw === 'function' ? detectTipoFromRaw(trimmed) : 'entrada';
-
     // Detectar si es formato separado por saltos de línea (cada campo en una línea)
     const lines = trimmed.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length >= 5) {
@@ -151,7 +149,7 @@ function wireContactoQuickParse(updateFormVisibility) {
       const precioStr = (lines[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
       const precio = parseFloat(precioStr) || 0;
 
-      return { localizador, nombreCliente, precio, tipo };
+      return { localizador, nombreCliente, precio };
     }
 
     // Formato clásico: separado por tabs o espacios múltiples (una línea)
@@ -163,15 +161,12 @@ function wireContactoQuickParse(updateFormVisibility) {
     const precioStr = (parts[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
     const precio = parseFloat(precioStr) || 0;
 
-    return { localizador, nombreCliente, precio, tipo };
+    return { localizador, nombreCliente, precio };
   }
 
   function fillContactoForm(data) {
     if (!data) return;
 
-    const targetTipo = data.tipo || 'entrada';
-    const radioTipo = document.querySelector(`input[name="cf-tipo"][value="${targetTipo}"]`);
-    if (radioTipo) radioTipo.checked = true;
     if (typeof updateFormVisibility === 'function') updateFormVisibility();
 
     // Rellenar campos
