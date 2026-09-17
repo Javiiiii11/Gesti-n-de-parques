@@ -167,12 +167,8 @@ function detectEstadoFromRaw(text) {
 function detectTipoFromRaw(text) {
   if (!text) return 'entrada';
   const str = String(text).toUpperCase();
-  // Detectar estados característicos de Bonos en Vector
+  // Los Bonos de Vector vienen con los estados exclusivamente en inglés: SENT, NOT_SEND, INCOMPLETED, ACCESS_PAY
   if (/\b(SENT|NOT_SEND|NOT[ _]SENT|INCOMPLETED|INCOMPLETE|ACCESS_PAY)\b/.test(str)) {
-    return 'bono';
-  }
-  // Detectar patrón de columnas de exportación de Bonos (-   -   ESTADO)
-  if (/-\s+-\s+/.test(text) || /-\s+-\s+[A-Z_]+/i.test(text)) {
     return 'bono';
   }
   return 'entrada';
