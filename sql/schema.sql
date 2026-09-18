@@ -207,3 +207,63 @@ create policy "cuadrantes_delete" on public.cuadrantes
 drop view if exists public.vw_ventas_resumen;
 drop table if exists public.ventas;
 drop table if exists public.contactos;
+
+-- ----------------------------------------------------------------------------
+-- Tabla: backups_usuarios (copias automáticas periódicas por usuario)
+-- ----------------------------------------------------------------------------
+create table if not exists public.backups_usuarios (
+    id               uuid primary key default gen_random_uuid(),
+    user_id          uuid references auth.users (id) on delete cascade,
+    user_email       text not null,
+    user_name        text,
+    fecha            timestamptz not null default now(),
+    tipo             text not null default 'auto',
+    data             jsonb not null,
+    stats            jsonb not null default '{}'::jsonb,
+    created_at       timestamptz not null default now()
+);
+
+create index if not exists idx_backups_usuarios_user_fecha 
+    on public.backups_usuarios (user_id, fecha desc);
+create index if not exists idx_backups_usuarios_email_fecha 
+    on public.backups_usuarios (user_email, fecha desc);
+create index if not exists idx_backups_usuarios_fecha 
+    on public.backups_usuarios (fecha desc);
+
+alter table public.backups_usuarios enable row level security;
+
+drop policy if exists "backups_usuarios_select" on public.backups_usuarios;
+create policy "backups_usuarios_select" on public.backups_usuarios
+    for select using (auth.role() = 'authenticated');
+
+drop policy if exists "backups_usuarios_insert" on public.backups_usuarios;
+create policy "backups_usuarios_insert" on public.backups_usuarios
+    for insert with check (auth.role() = 'authenticated');
+
+drop policy if exists "backups_usuarios_delete" on public.backups_usuarios;
+create policy "backups_usuarios_delete" on public.backups_usuarios
+    for delete using (auth.role() = 'authenticated');
+
+-- ----------------------------------------------------------------------------
+-- Tabla: configuracion_global (para frecuencia de copias y ajustes globales)
+-- ----------------------------------------------------------------------------
+create table if not exists public.configuracion_global (
+    clave            text primary key,
+    valor            jsonb not null,
+    updated_at       timestamptz not null default now()
+);
+
+insert into public.configuracion_global (clave, valor)
+values ('backup_frecuencia_minutos', '120'::jsonb)
+on conflict (clave) do nothing;
+
+alter table public.configuracion_global enable row level security;
+
+drop policy if exists "configuracion_global_select" on public.configuracion_global;
+create policy "configuracion_global_select" on public.configuracion_global
+    for select using (auth.role() = 'authenticated');
+
+drop policy if exists "configuracion_global_upsert" on public.configuracion_global;
+create policy "configuracion_global_upsert" on public.configuracion_global
+    for all using (auth.role() = 'authenticated');
+

@@ -904,6 +904,249 @@ const DB = {
     writeLocal(LOCAL_KEYS.objetivos_mensuales, list);
     return rowToStore;
   },
+
+  // --------------------------------------------------------- COPIAS EN NUBE (SUPABASE)
+  async saveUserBackupToCloud(backupData, { tipo = 'auto' } = {}) {
+    if (!backupData) return null;
+    const user = STATE.currentUser || await AUTH.getCurrentUser().catch(() => null);
+    const userEmail = user?.email || (user?.id ? `user-${user.id.slice(0, 8)}@parksales` : 'usuario@parksales');
+    const userName = (typeof getUserDisplayName === 'function' && user) ? getUserDisplayName(user) : (user?.user_metadata?.name || userEmail.split('@')[0]);
+
+    const vCount = Array.isArray(backupData.ventas) ? backupData.ventas.length : 0;
+    const totalImporte = Array.isArray(backupData.ventas)
+      ? backupData.ventas.reduce((acc, v) => acc + (Number(v.importe_total) || 0), 0)
+      : 0;
+    const cCount = Array.isArray(backupData.contactos) ? backupData.contactos.length : 0;
+    const lCount = Array.isArray(backupData.llamadas) ? backupData.llamadas.length : 0;
+    const hasNotas = Boolean(backupData.notas_rapidas && String(backupData.notas_rapidas).trim());
+
+    const stats = {
+      ventas: vCount,
+      importe_total: totalImporte,
+      contactos: cCount,
+      llamadas: lCount,
+      has_notas: hasNotas,
+      generado_en: backupData.generado_en || new Date().toISOString(),
+    };
+
+    const row = {
+      user_id: user?.id || null,
+      user_email: userEmail,
+      user_name: userName,
+      fecha: new Date().toISOString(),
+      tipo: tipo || 'auto',
+      data: backupData,
+      stats,
+    };
+
+    // Almacenamiento local temporal como caché de seguridad
+    try {
+      const cacheKey = 'parksales_cloud_backups_local_cache';
+      const currentCache = JSON.parse(localStorage.getItem(cacheKey) || '[]');
+      currentCache.unshift({ ...row, id: 'loc-' + Date.now() });
+      if (currentCache.length > 40) currentCache.length = 40;
+      localStorage.setItem(cacheKey, JSON.stringify(currentCache));
+    } catch (e) { /* ignore */ }
+
+    if (!CATALOG_SUPABASE || !supabaseClient) {
+      console.log('[ParkSales Cloud Backup] Guardado en caché local (Supabase no configurado)');
+      return { ...row, localOnly: true };
+    }
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('backups_usuarios')
+        .insert(row)
+        .select('id, user_email, user_name, fecha, tipo, stats, created_at')
+        .single();
+
+      if (error) throw error;
+
+      // Poda de copias muy antiguas para este usuario (dejar las últimas 60 copias)
+      try {
+        if (user?.id) {
+          const { data: userBackups } = await supabaseClient
+            .from('backups_usuarios')
+            .select('id')
+            .eq('user_id', user.id)
+            .order('fecha', { ascending: false });
+
+          if (userBackups && userBackups.length > 60) {
+            const idsToDelete = userBackups.slice(60).map(b => b.id);
+            await supabaseClient.from('backups_usuarios').delete().in('id', idsToDelete);
+          }
+        }
+      } catch (pruneErr) {
+        console.warn('[ParkSales Cloud Backup] Error no crítico al limpiar backups antiguos:', pruneErr);
+      }
+
+      return data;
+    } catch (err) {
+      console.warn('[ParkSales Cloud Backup] No se pudo guardar en Supabase (comprueba si ejecutaste copias_seguridad.sql):', err);
+      return { ...row, localOnly: true, error: err.message };
+    }
+  },
+
+  async getCloudBackupsList() {
+    if (!CATALOG_SUPABASE || !supabaseClient) {
+      try {
+        return JSON.parse(localStorage.getItem('parksales_cloud_backups_local_cache') || '[]');
+      } catch (e) { return []; }
+    }
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('backups_usuarios')
+        .select('id, user_id, user_email, user_name, fecha, tipo, stats, created_at')
+        .order('fecha', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      console.warn('[ParkSales] Error al obtener lista de backups en nube:', err);
+      try {
+        return JSON.parse(localStorage.getItem('parksales_cloud_backups_local_cache') || '[]');
+      } catch (e) { return []; }
+    }
+  },
+
+  async getCloudBackupDetail(id) {
+    if (!CATALOG_SUPABASE || !supabaseClient || String(id).startsWith('loc-')) {
+      const cache = JSON.parse(localStorage.getItem('parksales_cloud_backups_local_cache') || '[]');
+      const found = cache.find(b => b.id === id);
+      if (!found) throw new Error('Copia no encontrada en caché');
+      return found;
+    }
+
+    const { data, error } = await supabaseClient
+      .from('backups_usuarios')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw normalizeDbError(error, 'backups_usuarios');
+    return data;
+  },
+
+  async deleteCloudBackup(id) {
+    if (String(id).startsWith('loc-')) {
+      const cache = JSON.parse(localStorage.getItem('parksales_cloud_backups_local_cache') || '[]');
+      const filtered = cache.filter(b => b.id !== id);
+      localStorage.setItem('parksales_cloud_backups_local_cache', JSON.stringify(filtered));
+      return true;
+    }
+
+    if (CATALOG_SUPABASE && supabaseClient) {
+      const { error } = await supabaseClient
+        .from('backups_usuarios')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw normalizeDbError(error, 'backups_usuarios');
+    }
+    return true;
+  },
+
+  async getCloudBackupFrequency() {
+    const DEFAULT_MINUTES = 120; // 2 horas por defecto
+    const localVal = parseInt(localStorage.getItem('parksales_cloud_backup_interval_minutes'), 10);
+    if (!CATALOG_SUPABASE || !supabaseClient) {
+      return !isNaN(localVal) && localVal >= 15 ? localVal : DEFAULT_MINUTES;
+    }
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('configuracion_global')
+        .select('valor')
+        .eq('clave', 'backup_frecuencia_minutos')
+        .single();
+
+      if (data && data.valor) {
+        const mins = Number(data.valor);
+        if (!isNaN(mins) && mins >= 15) {
+          localStorage.setItem('parksales_cloud_backup_interval_minutes', mins);
+          return mins;
+        }
+      }
+    } catch (err) {
+      // Ignorar si no existe la tabla aún
+    }
+    return !isNaN(localVal) && localVal >= 15 ? localVal : DEFAULT_MINUTES;
+  },
+
+  async setCloudBackupFrequency(minutes) {
+    const mins = Math.max(15, parseInt(minutes, 10) || 120);
+    localStorage.setItem('parksales_cloud_backup_interval_minutes', mins);
+
+    if (CATALOG_SUPABASE && supabaseClient) {
+      try {
+        await supabaseClient
+          .from('configuracion_global')
+          .upsert({ clave: 'backup_frecuencia_minutos', valor: mins, updated_at: new Date().toISOString() });
+      } catch (err) {
+        console.warn('[ParkSales] No se pudo guardar frecuencia global en Supabase:', err);
+      }
+    }
+    return mins;
+  },
+
+  // --------------------------------------------------------- FORZAR BACKUP GLOBAL (TODOS LOS USUARIOS)
+  /**
+   * Escribe en configuracion_global la hora actual como señal para que
+   * todos los clientes conectados ejecuten una copia en cuanto la detecten.
+   */
+  async requestForceBackupAll() {
+    const nowIso = new Date().toISOString();
+    localStorage.setItem('parksales_force_backup_requested_at', nowIso);
+
+    if (CATALOG_SUPABASE && supabaseClient) {
+      try {
+        await supabaseClient
+          .from('configuracion_global')
+          .upsert({ clave: 'backup_forzado_en', valor: nowIso, updated_at: nowIso });
+      } catch (err) {
+        console.warn('[ParkSales] No se pudo escribir señal de backup forzado en Supabase:', err);
+      }
+    }
+    return nowIso;
+  },
+
+  /**
+   * Comprueba si hay una petición de backup forzado en BD más reciente que
+   * la última vez que este cliente la atendió. Si la hay, devuelve true.
+   */
+  async checkPendingForceBackup() {
+    const handledKey = 'parksales_force_backup_last_handled';
+    const lastHandled = localStorage.getItem(handledKey) || '1970-01-01T00:00:00Z';
+
+    let requestedAt = null;
+
+    // Comprobar en Supabase primero
+    if (CATALOG_SUPABASE && supabaseClient) {
+      try {
+        const { data } = await supabaseClient
+          .from('configuracion_global')
+          .select('valor')
+          .eq('clave', 'backup_forzado_en')
+          .single();
+        if (data?.valor) requestedAt = data.valor;
+      } catch (err) { /* ignorar */ }
+    }
+
+    // Fallback: señal local (cuando el admin y el usuario son el mismo navegador)
+    if (!requestedAt) {
+      requestedAt = localStorage.getItem('parksales_force_backup_requested_at');
+    }
+
+    if (!requestedAt) return false;
+
+    const isPending = new Date(requestedAt) > new Date(lastHandled);
+    if (isPending) {
+      // Marcar como atendida para este cliente
+      localStorage.setItem(handledKey, requestedAt);
+    }
+    return isPending;
+  },
 };
 
 /* ============================================================================
