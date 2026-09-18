@@ -496,6 +496,13 @@ async function guardarVenta({ keepOpen }) {
         ventaPayload.fecha_visita = fechaVisita.toISOString();
         ventaPayload.fecha_registro = new Date().toISOString();
         ventaPayload.fecha = fechaVisita.toISOString(); // cuenta en el día de la visita
+        // Estado especial: "Flexible Pendiente" hasta que llegue el día de visita
+        const hoy = new Date();
+        const esFechaFutura = fechaVisita > new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59);
+        if (esFechaFutura) {
+          ventaPayload.estado = 'selwo_flexible'; // badge especial hasta que llegue el día
+        }
+        // Si la fecha de visita es hoy o ya pasó, queda como 'completado' (el estado por defecto del formulario)
       }
     }
 

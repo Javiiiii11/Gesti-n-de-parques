@@ -3325,6 +3325,18 @@ label:has(input[type="radio"]:checked) {
   width: 100%;
 }
 
+.form-field input[type="radio"],
+.form-field input[type="checkbox"] {
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+
 .form-field textarea {
   resize: vertical;
   min-height: 60px;

@@ -181,9 +181,13 @@ async function bootApp(user) {
   safe(initHorarios, 'vista de horarios');
   safe(initPomodoro, 'temporizador y pendientes');
   safe(initChatIA, 'Chat IA');
+  safe(checkAndAutoCompleteFlexibles, 'auto-completado de flexibles');
   safe(renderHistorial, 'renderizado de historial');
   safe(renderContactos, 'renderizado de contactos');
   safe(renderDashboard, 'renderizado de dashboard');
+
+  // Comprobar periódicamente si han llegado fechas de visitas flexibles (cada 30 min)
+  setInterval(() => safe(checkAndAutoCompleteFlexibles, 'verificación periódica flexibles'), 30 * 60 * 1000);
 
   document.getElementById('app').classList.add('ready');
 

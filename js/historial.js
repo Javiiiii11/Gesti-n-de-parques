@@ -194,6 +194,7 @@ function updateHistStatusPillsCounts() {
     pendiente: 0,
     incompleto: 0,
     no_enviado: 0,
+    selwo_flexible: 0,
   };
 
   STATE.ventas.forEach((v) => {
@@ -306,6 +307,7 @@ function renderHistorial() {
       const checked = HIST_STATE.selectedVentas.has(v.id) ? 'checked' : '';
       const estadoNorm = v.estadoNorm || 'completado';
       const badgeInfo = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(estadoNorm) : { label: estadoNorm, colorBg: 'rgba(0,138,0,0.18)', textColor: '#00E676', colorBorder: '#008A00' };
+      const isSelwo = typeof isSelwoVenta === 'function' ? isSelwoVenta(v) : (v.selwo_tipo || (v.parqueNombreCache && v.parqueNombreCache.toLowerCase().includes('hotel selwo')));
 
       return `
         <tr>
@@ -313,7 +315,10 @@ function renderHistorial() {
           <td>${fmtDateTime(v.fecha)}</td>
           <td><span class="badge ${tipo === 'entrada' ? 'badge-primary' : 'badge-success'}">${tipo === 'entrada' ? 'Entrada' : 'Bono'}</span></td>
           <td><span class="badge ${viaClasses[via] || 'badge-via-llamada'}">${viaLabels[via] || '📞 Llamada'}</span></td>
-          <td>${escapeHtml(detalle)}</td>
+          <td>
+            ${escapeHtml(detalle)}
+            ${v.selwo_tipo === 'flexible' && v.fecha_visita ? `<div style="font-size:11px; margin-top:2px; color:#00C6FF; font-weight:600; display:flex; align-items:center; gap:3px;"><span>🗓️</span> Visita: ${typeof fmtDateShort === 'function' ? fmtDateShort(v.fecha_visita) : v.fecha_visita.split('T')[0]}</div>` : ''}
+          </td>
           <td>${escapeHtml(loc)}</td>
           <td>
             <div class="hist-quick-status-wrap">
@@ -323,6 +328,7 @@ function renderHistorial() {
                 <option value="pendiente" ${estadoNorm === 'pendiente' ? 'selected' : ''}>⏳ Pendiente de pago</option>
                 <option value="incompleto" ${estadoNorm === 'incompleto' ? 'selected' : ''}>❌ Incompleto</option>
                 <option value="no_enviado" ${estadoNorm === 'no_enviado' ? 'selected' : ''}>⏸️ No enviado</option>
+                ${isSelwo || estadoNorm === 'selwo_flexible' ? `<option value="selwo_flexible" ${estadoNorm === 'selwo_flexible' ? 'selected' : ''}>🗓️ Flexible Pendiente</option>` : ''}
               </select>
             </div>
           </td>
@@ -376,7 +382,26 @@ async function quickChangeVentaEstado(id, newEstado) {
   if (prevEstado === newEstado) return;
 
   try {
-    await DB.updateVenta(id, { estado: newEstado });
+    const updatePayload = { estado: newEstado };
+
+    // Si una venta flexible pasa a completado (o cualquier estado no flexible) y tenía fecha futura,
+    // actualizamos la fecha a HOY para que sume inmediatamente en las ventas del día.
+    if (newEstado === 'completado' || newEstado !== 'selwo_flexible') {
+      const fechaVenta = new Date(v.fecha);
+      const hoyEnd = new Date();
+      hoyEnd.setHours(23, 59, 59, 999);
+
+      const normPrev = typeof normalizeEstadoVenta === 'function' ? normalizeEstadoVenta(prevEstado) : prevEstado;
+      if (fechaVenta > hoyEnd || normPrev === 'selwo_flexible') {
+        updatePayload.fecha = new Date().toISOString();
+        if (v.selwo_tipo === 'flexible') {
+          updatePayload.fecha_visita = new Date().toISOString();
+          updatePayload.selwo_tipo = 'no_flexible';
+        }
+      }
+    }
+
+    await DB.updateVenta(id, updatePayload);
 
     // Mapear estado_pago para contacto vinculado
     let estadoPagoContacto = 'pagado';
@@ -462,6 +487,8 @@ function openEditVenta(id) {
     : '';
 
   const estadoActual = v.estado || 'completado';
+  const isSelwoEdit = typeof isSelwoVenta === 'function' ? isSelwoVenta(v) : (v.selwo_tipo || false);
+  const showSelwoBlock = isSelwoEdit && (normalizeEstadoVenta(estadoActual) === 'selwo_flexible');
 
   openModal({
     title: '✏️  Editar venta',
@@ -503,11 +530,37 @@ function openEditVenta(id) {
             <option value="pendiente" ${estadoActual === 'pendiente' ? 'selected' : ''}>⏳ Pendiente de pago</option>
             <option value="incompleto" ${estadoActual === 'incompleto' ? 'selected' : ''}>❌ Incompleto</option>
             <option value="no_enviado" ${estadoActual === 'no_enviado' ? 'selected' : ''}>⏸️ No enviado</option>
+            ${isSelwoEdit || estadoActual === 'selwo_flexible' ? `<option value="selwo_flexible" ${estadoActual === 'selwo_flexible' ? 'selected' : ''}>🗓️ Flexible Pendiente</option>` : ''}
           </select>
         </div>
       </div>
 
       ${tipo === 'entrada' ? `
+      <div id="ev-field-selwo" class="form-field full" style="display:${showSelwoBlock ? 'block' : 'none'}; margin-top:14px;">
+        <div style="background:rgba(255,154,68,0.08); border:1px solid rgba(255,154,68,0.35); border-radius:var(--radius-m); padding:14px 16px; display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:15px;">🏨</span>
+            <span style="font-size:13px; font-weight:700; color:#FF9A44;">Hotel Selwo — Tipo de entrada</span>
+          </div>
+          <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:center;">
+            <label style="display:inline-flex !important; flex-direction:row !important; align-items:center !important; gap:8px !important; cursor:pointer !important; width:auto !important; margin:0 !important;">
+              <input type="radio" name="ev-selwo-tipo" id="ev-selwo-noflex" value="no_flexible" ${v.selwo_tipo !== 'flexible' ? 'checked' : ''} style="width:auto; height:auto; accent-color:#FF9A44;">
+              <span style="font-size:13px; font-weight:600;">🔒 No Flexible</span>
+              <span style="font-size:11px; color:var(--text-muted);">(Cuenta hoy)</span>
+            </label>
+            <label style="display:inline-flex !important; flex-direction:row !important; align-items:center !important; gap:8px !important; cursor:pointer !important; width:auto !important; margin:0 !important;">
+              <input type="radio" name="ev-selwo-tipo" id="ev-selwo-flex" value="flexible" ${v.selwo_tipo === 'flexible' ? 'checked' : ''} style="width:auto; height:auto; accent-color:#00C6FF;">
+              <span style="font-size:13px; font-weight:600;">🗓️ Flexible</span>
+              <span style="font-size:11px; color:var(--text-muted);">(Elige fecha de visita)</span>
+            </label>
+          </div>
+          <div id="ev-selwo-fecha-row" style="display:${v.selwo_tipo === 'flexible' ? 'block' : 'none'}; margin-top:4px;">
+            <label for="ev-selwo-fecha" style="font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:4px; display:block; width:100%;">📅 Fecha de visita (la venta contará ese día):</label>
+            <input type="date" id="ev-selwo-fecha" value="${(v.fecha_visita || v.fecha || '').slice(0, 10)}" style="max-width:220px; height:38px;">
+          </div>
+        </div>
+      </div>
+
       <div id="ev-seccion-entradas" class="form-grid" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
         <div class="form-field full">
           <label for="ev-anotaciones">Anotaciones</label>
@@ -531,9 +584,55 @@ function openEditVenta(id) {
     `,
   });
 
+  // Listener para controlar visibilidad del bloque Selwo según parque y estado
+  const updateSelwoBlockVisibility = () => {
+    const parqueSel = document.getElementById('ev-parque');
+    const estadoSel = document.getElementById('ev-estado');
+    const block = document.getElementById('ev-field-selwo');
+    if (!block || !parqueSel || !estadoSel) return;
 
+    const pId = parqueSel.value;
+    const isSelwoNow = (STATE.parques.find(p => p.id === pId)?.nombre || '').trim().toLowerCase() === 'hotel selwo';
+    const isFlexibleNow = estadoSel.value === 'selwo_flexible';
 
+    block.style.display = (isSelwoNow && isFlexibleNow) ? 'block' : 'none';
+  };
 
+  const parqueSel = document.getElementById('ev-parque');
+  if (parqueSel) {
+    parqueSel.addEventListener('change', () => {
+      const pId = parqueSel.value;
+      const isSelwoNow = (STATE.parques.find(p => p.id === pId)?.nombre || '').trim().toLowerCase() === 'hotel selwo';
+      const estadoSel = document.getElementById('ev-estado');
+      if (estadoSel) {
+        let optSelwo = estadoSel.querySelector('option[value="selwo_flexible"]');
+        if (isSelwoNow) {
+          if (!optSelwo) {
+            optSelwo = document.createElement('option');
+            optSelwo.value = 'selwo_flexible';
+            optSelwo.textContent = '🗓️ Flexible Pendiente';
+            estadoSel.appendChild(optSelwo);
+          }
+        } else if (optSelwo && estadoSel.value !== 'selwo_flexible') {
+          optSelwo.remove();
+        }
+      }
+      updateSelwoBlockVisibility();
+    });
+  }
+
+  const estadoSel = document.getElementById('ev-estado');
+  if (estadoSel) {
+    estadoSel.addEventListener('change', updateSelwoBlockVisibility);
+  }
+
+  document.querySelectorAll('input[name="ev-selwo-tipo"]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+      const fRow = document.getElementById('ev-selwo-fecha-row');
+      const val = document.querySelector('input[name="ev-selwo-tipo"]:checked')?.value;
+      if (fRow) fRow.style.display = val === 'flexible' ? '' : 'none';
+    });
+  });
 
   document.getElementById('ev-cancel').addEventListener('click', closeModal);
   document.getElementById('ev-save').addEventListener('click', async () => {
@@ -567,6 +666,49 @@ function openEditVenta(id) {
       if (!itemId) { toast('Selecciona un parque', 'error'); return; }
       changes.parque_id = itemId;
       changes.bono_id = null;
+
+      // Hotel Selwo: guardar tipo y fecha de visita
+      const isSelwoParque = (STATE.parques.find(p => p.id === itemId)?.nombre || '').trim().toLowerCase() === 'hotel selwo';
+      if (isSelwoParque) {
+        if (nextEstado === 'selwo_flexible') {
+          const tipoSelwo = document.querySelector('input[name="ev-selwo-tipo"]:checked')?.value || 'flexible';
+          changes.selwo_tipo = tipoSelwo;
+
+          if (tipoSelwo === 'flexible') {
+            const fechaVisitaStr = document.getElementById('ev-selwo-fecha')?.value;
+            if (!fechaVisitaStr) {
+              toast('Indica la fecha de visita para la entrada flexible', 'error');
+              return;
+            }
+            const [y, m, d] = fechaVisitaStr.split('-').map(Number);
+            const fechaVisita = new Date(y, m - 1, d, 12, 0, 0);
+            changes.fecha_visita = fechaVisita.toISOString();
+            changes.fecha = fechaVisita.toISOString(); // la venta se asigna a esa fecha
+
+            const hoy = new Date();
+            const esFechaFutura = fechaVisita > new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59);
+            if (esFechaFutura) {
+              changes.estado = 'selwo_flexible';
+            } else {
+              changes.estado = 'completado';
+            }
+          } else {
+            changes.selwo_tipo = 'no_flexible';
+            changes.estado = 'completado';
+            changes.fecha = new Date().toISOString();
+          }
+        } else {
+          // Si el estado es completado (o cualquier otro no flexible),
+          // nos aseguramos de que su fecha sume hoy si tenía fecha futura asignada
+          changes.selwo_tipo = 'no_flexible';
+          const fechaActual = new Date(v.fecha);
+          const hoyEnd = new Date();
+          hoyEnd.setHours(23, 59, 59, 999);
+          if (fechaActual > hoyEnd || normalizeEstadoVenta(v.estado) === 'selwo_flexible') {
+            changes.fecha = new Date().toISOString();
+          }
+        }
+      }
     } else {
       itemId = document.getElementById('ev-bono').value;
       if (!itemId) { toast('Selecciona un tipo de bono', 'error'); return; }

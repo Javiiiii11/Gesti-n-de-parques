@@ -327,11 +327,22 @@ const ESTADOS_VENTA = {
     icon: '⏸️',
     esEfectivo: false,
   },
+  selwo_flexible: {
+    id: 'selwo_flexible',
+    label: 'Flexible Pendiente',
+    color: '#00C6FF',
+    colorBg: 'rgba(0, 198, 255, 0.10)',
+    colorBorder: 'rgba(0, 198, 255, 0.35)',
+    textColor: '#00C6FF',
+    icon: '🗓️',
+    esEfectivo: false,
+  },
 };
 
 function normalizeEstadoVenta(val) {
   if (!val) return 'completado';
   const str = String(val).trim().toLowerCase();
+  if (str === 'selwo_flexible' || str === 'flexible pendiente' || str === 'flexible_pendiente') return 'selwo_flexible';
   if (str === 'completado' || str === 'pagado' || str === 'completada' || str === 'completed' || str === 'paid') return 'completado';
   if (str === 'enviado' || str === 'enviada' || str === 'sent') return 'enviado';
   if (str === 'incompleto' || str === 'incompleta' || str === 'fallido' || str === 'error' || str === 'incomplete' || str === 'incompleted') return 'incompleto';
@@ -349,7 +360,64 @@ function isVentaEfectiva(venta) {
   if (!venta) return false;
   // Solo se suman a ventas los que estén como completados
   const norm = normalizeEstadoVenta(venta.estado);
+  // selwo_flexible no cuenta hasta que llegue su día (y se auto-complete)
+  if (norm === 'selwo_flexible') return false;
   return norm === 'completado';
+}
+
+/** Devuelve true si la venta pertenece al parque Hotel Selwo */
+function isSelwoVenta(v) {
+  if (!v) return false;
+  if (v.selwo_tipo === 'flexible' || v.selwo_tipo === 'no_flexible') return true;
+  if (!v.parque_id) return false;
+  const p = (STATE.parques || []).find(x => x.id === v.parque_id);
+  return p && p.nombre.trim().toLowerCase() === 'hotel selwo';
+}
+
+/**
+ * Recorre todas las ventas con selwo_tipo='flexible' y, si su fecha_visita
+ * ya llegó (o es hoy), cambia automáticamente su estado a 'completado'.
+ * Se llama al arrancar la app y cada hora.
+ */
+async function checkAndAutoCompleteFlexibles() {
+  if (!STATE.ventas || !STATE.ventas.length) return;
+
+  const now = new Date();
+  // Inicio del día de hoy a las 00:00
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+
+  const toComplete = STATE.ventas.filter(v => {
+    if (v.selwo_tipo !== 'flexible') return false;
+    const norm = normalizeEstadoVenta(v.estado);
+    // Solo si sigue en estado 'selwo_flexible' (no si ya fue completada manualmente)
+    if (norm !== 'selwo_flexible') return false;
+    // La fecha de visita ya llegó (es hoy o anterior)
+    const fechaVisita = new Date(v.fecha_visita || v.fecha);
+    return fechaVisita <= new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1); // hasta el final del día de hoy
+  });
+
+  if (!toComplete.length) return;
+
+  let updated = 0;
+  for (const v of toComplete) {
+    try {
+      await DB.updateVenta(v.id, { estado: 'completado' });
+      updated++;
+    } catch (e) {
+      console.warn('[ParkSales] No se pudo auto-completar venta flexible:', v.id, e);
+    }
+  }
+
+  if (updated > 0) {
+    STATE.ventas = await DB.getVentas();
+    if (typeof renderDashboard === 'function') renderDashboard();
+    if (typeof renderHistorial === 'function') renderHistorial();
+    if (typeof renderEstadisticas === 'function') renderEstadisticas();
+    const msg = updated === 1
+      ? '🏨 1 entrada flexible de Hotel Selwo ha llegado a su fecha de visita y se ha marcado como Completada'
+      : `🏨 ${updated} entradas flexibles de Hotel Selwo han llegado a su fecha y se han marcado como Completadas`;
+    toast(msg, 'success', 6000);
+  }
 }
 
 function getEstadoPriority(val) {
