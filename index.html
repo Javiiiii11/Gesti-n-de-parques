@@ -596,6 +596,32 @@
                   <label for="v-parque">Parque</label>
                   <select id="v-parque"></select>
                 </div>
+
+                <!-- ⭐ Bloque especial Hotel Selwo (solo visible al seleccionar ese parque) -->
+                <div id="v-field-selwo" style="display:none;" class="form-field full">
+                  <div style="background:rgba(255,154,68,0.08);border:1px solid rgba(255,154,68,0.35);border-radius:var(--radius-m);padding:14px 16px;display:flex;flex-direction:column;gap:12px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+                      <span style="font-size:15px;">🏨</span>
+                      <span style="font-size:13px;font-weight:700;color:#FF9A44;">Hotel Selwo — Tipo de entrada</span>
+                    </div>
+                    <div style="display:flex;gap:20px;flex-wrap:wrap;">
+                      <label style="flex-direction:row;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="radio" name="v-selwo-tipo" id="v-selwo-noflex" value="no_flexible" checked style="width:auto;accent-color:#FF9A44;">
+                        <span style="font-size:13px;font-weight:600;">🔒 No Flexible</span>
+                        <span style="font-size:11px;color:var(--text-muted);">Cuenta hoy</span>
+                      </label>
+                      <label style="flex-direction:row;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="radio" name="v-selwo-tipo" id="v-selwo-flex" value="flexible" style="width:auto;accent-color:#00C6FF;">
+                        <span style="font-size:13px;font-weight:600;">🗓️ Flexible</span>
+                        <span style="font-size:11px;color:var(--text-muted);">Elige fecha de visita</span>
+                      </label>
+                    </div>
+                    <div id="v-selwo-fecha-row" style="display:none;">
+                      <label for="v-selwo-fecha" style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">📅 Fecha de visita (la venta contará ese día)</label>
+                      <input type="date" id="v-selwo-fecha" style="max-width:200px;">
+                    </div>
+                  </div>
+                </div>
                 <!-- Bono-specific field -->
                 <div class="form-field" id="v-field-bono" style="display:none;">
                   <label for="v-bono">Tipo de bono</label>

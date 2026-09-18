@@ -5,6 +5,18 @@
    detalles del cliente.
    ============================================================================ */
 
+// Nombre del parque especial (insensible a mayúsculas/minúsculas y espacios)
+const SELWO_PARK_NAME = 'hotel selwo';
+
+/** Devuelve true si el parque seleccionado es Hotel Selwo */
+function isSelwoSelected() {
+  const parqueId = document.getElementById('v-parque')?.value;
+  if (!parqueId) return false;
+  const parque = STATE.parques.find(p => p.id === parqueId);
+  return parque && parque.nombre.trim().toLowerCase() === SELWO_PARK_NAME;
+}
+
+
 function getResumen(tipo, itemId) {
   if (tipo === 'entrada') {
     const ventasParque = STATE.ventas.filter((v) => v.tipo === 'entrada' && v.parque_id === itemId && isVentaEfectiva(v));
@@ -42,8 +54,29 @@ function updateVentaFormVisibility() {
   const secBonos = document.getElementById('v-seccion-bonos');
   if (secEntradas) secEntradas.style.display = tipo === 'entrada' ? 'grid' : 'none';
   if (secBonos) secBonos.style.display = tipo === 'bono' ? 'grid' : 'none';
+
+  // Hotel Selwo: mostrar bloque solo si es una entrada Y el parque seleccionado es Selwo
+  updateSelwoBlock();
   
   updateTicketPreview();
+}
+
+/** Muestra u oculta el bloque especial de Hotel Selwo según el parque elegido */
+function updateSelwoBlock() {
+  const tipo = document.querySelector('input[name="v-tipo"]:checked')?.value || 'entrada';
+  const fieldSelwo = document.getElementById('v-field-selwo');
+  const fechaRow = document.getElementById('v-selwo-fecha-row');
+  if (!fieldSelwo) return;
+
+  const esSelwo = tipo === 'entrada' && isSelwoSelected();
+  fieldSelwo.style.display = esSelwo ? '' : 'none';
+
+  if (!esSelwo && fechaRow) fechaRow.style.display = 'none';
+
+  if (esSelwo && fechaRow) {
+    const tipoSelwo = document.querySelector('input[name="v-selwo-tipo"]:checked')?.value || 'no_flexible';
+    fechaRow.style.display = tipoSelwo === 'flexible' ? '' : 'none';
+  }
 }
 
 function initVentaForm() {
@@ -63,6 +96,36 @@ function initVentaForm() {
       el.addEventListener('change', updateTicketPreview);
     }
   });
+
+  // Cambio de parque: detectar si es Hotel Selwo
+  const parqueSelect = document.getElementById('v-parque');
+  if (parqueSelect) {
+    parqueSelect.addEventListener('change', () => {
+      updateSelwoBlock();
+      updateTicketPreview();
+    });
+  }
+
+  // Radios de tipo Selwo: mostrar/ocultar fecha de visita
+  document.querySelectorAll('input[name="v-selwo-tipo"]').forEach(el => {
+    el.addEventListener('change', () => {
+      const fechaRow = document.getElementById('v-selwo-fecha-row');
+      const tipoSelwo = document.querySelector('input[name="v-selwo-tipo"]:checked')?.value;
+      if (fechaRow) fechaRow.style.display = tipoSelwo === 'flexible' ? '' : 'none';
+      // Poner fecha de hoy por defecto si se activa Flexible y está vacía
+      if (tipoSelwo === 'flexible') {
+        const fechaInput = document.getElementById('v-selwo-fecha');
+        if (fechaInput && !fechaInput.value) {
+          fechaInput.value = new Date().toISOString().slice(0, 10);
+        }
+      }
+      updateTicketPreview();
+    });
+  });
+
+  // Fecha visita Selwo: actualizar preview
+  const fechaSelwo = document.getElementById('v-selwo-fecha');
+  if (fechaSelwo) fechaSelwo.addEventListener('change', updateTicketPreview);
   
   // Listeners para los radio buttons de tipo
   document.querySelectorAll('input[name="v-tipo"]').forEach(el => {
@@ -79,8 +142,6 @@ function initVentaForm() {
   
   const btnClear = document.getElementById('btn-clear-form');
   if (btnClear) btnClear.addEventListener('click', resetVentaForm);
-
-
 
   // Cablear el parseo rápido
   wireQuickParse();
@@ -115,7 +176,23 @@ function updateTicketPreview() {
 
   // Header
   setPreviewText('tp-park', itemNombre);
-  setPreviewText('tp-type', '');
+
+  // Si es Hotel Selwo flexible, mostrar fecha de visita en el preview
+  const tipoSelwo = document.querySelector('input[name="v-selwo-tipo"]:checked')?.value || 'no_flexible';
+  const esSelwo = isSelwoSelected && isSelwoSelected();
+  if (esSelwo && tipoSelwo === 'flexible') {
+    const fechaVal = document.getElementById('v-selwo-fecha')?.value;
+    if (fechaVal) {
+      const [y, m, d] = fechaVal.split('-');
+      setPreviewText('tp-type', `🗓️ Flexible — Visita: ${d}/${m}/${y}`);
+    } else {
+      setPreviewText('tp-type', '🗓️ Flexible — Elige fecha de visita');
+    }
+  } else if (esSelwo) {
+    setPreviewText('tp-type', '🔒 No Flexible — Cuenta hoy');
+  } else {
+    setPreviewText('tp-type', '');
+  }
 
   // Estado badge preview
   const badgeInfo = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(estadoVal) : { label: estadoVal, colorBg: '#34D39922', textColor: '#34D399', colorBorder: '#34D399', icon: '✅' };
@@ -387,7 +464,7 @@ async function guardarVenta({ keepOpen }) {
     localizador: localizador || null,
     estado: estado,
   };
-  
+
   if (tipo === 'entrada') {
     ventaPayload.parque_id = itemId;
     ventaPayload.bono_id = null;
@@ -396,10 +473,32 @@ async function guardarVenta({ keepOpen }) {
     ventaPayload.parque_id = null;
   }
 
+
   const submitBtns = document.querySelectorAll('#venta-form button, #btn-save-and-add');
   submitBtns.forEach((b) => (b.disabled = true));
 
   try {
+    // Hotel Selwo: tipo flexible/no flexible y fecha de visita
+    if (tipo === 'entrada' && isSelwoSelected()) {
+      const tipoSelwo = document.querySelector('input[name="v-selwo-tipo"]:checked')?.value || 'no_flexible';
+      ventaPayload.selwo_tipo = tipoSelwo;
+
+      if (tipoSelwo === 'flexible') {
+        const fechaVisitaStr = document.getElementById('v-selwo-fecha')?.value;
+        if (!fechaVisitaStr) {
+          toast('Indica la fecha de visita para la entrada flexible', 'error');
+          submitBtns.forEach((b) => (b.disabled = false));
+          return;
+        }
+        // La venta cuenta el día de la visita: se guarda con esa fecha (hora 12:00 local)
+        const [y, m, d] = fechaVisitaStr.split('-').map(Number);
+        const fechaVisita = new Date(y, m - 1, d, 12, 0, 0);
+        ventaPayload.fecha_visita = fechaVisita.toISOString();
+        ventaPayload.fecha_registro = new Date().toISOString();
+        ventaPayload.fecha = fechaVisita.toISOString(); // cuenta en el día de la visita
+      }
+    }
+
     // Create both the contacto and the venta
     await DB.addContacto(contactoPayload);
     await DB.addVenta(ventaPayload);
@@ -409,7 +508,15 @@ async function guardarVenta({ keepOpen }) {
     refreshAllViewsAfterDataChange();
 
     const estadoInfo = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(estado) : { label: estado };
-    toast(`Venta registrada (${estadoInfo.label}) y apunte creado`, 'success');
+
+    // Toast especial para Hotel Selwo flexible
+    if (ventaPayload.selwo_tipo === 'flexible' && ventaPayload.fecha_visita) {
+      const fv = new Date(ventaPayload.fecha_visita);
+      const fechaStr = fv.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+      toast(`🗓️ Entrada flexible registrada — Contará el ${fechaStr} (${estadoInfo.label})`, 'success', 5000);
+    } else {
+      toast(`Venta registrada (${estadoInfo.label}) y apunte creado`, 'success');
+    }
 
     if (keepOpen) {
       // Clear client-specific fields, keep tipo and parque/bono selection
@@ -433,9 +540,17 @@ async function guardarVenta({ keepOpen }) {
   }
 }
 
+
 function resetVentaForm() {
   const form = document.getElementById('venta-form');
   if (form) form.reset();
+  // Reset Selwo: volver a "No flexible" y ocultar bloque fecha
+  const noFlexRadio = document.getElementById('v-selwo-noflex');
+  if (noFlexRadio) noFlexRadio.checked = true;
+  const fechaRow = document.getElementById('v-selwo-fecha-row');
+  if (fechaRow) fechaRow.style.display = 'none';
+  const fieldSelwo = document.getElementById('v-field-selwo');
+  if (fieldSelwo) fieldSelwo.style.display = 'none';
   updateVentaFormVisibility();
   updateTicketPreview();
 }
