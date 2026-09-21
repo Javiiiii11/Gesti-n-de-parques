@@ -14,7 +14,7 @@ const BACKUP_SCHEDULED_TIMES = [
 ];
 
 let scheduledBackupTimers = [];
-const BACKUP_MAX_FILES = 30;
+const BACKUP_MAX_FILES = 5;
 const BACKUP_DB_NAME = 'parksales_backups_db';
 const BACKUP_DB_STORE = 'backups';
 
@@ -271,9 +271,16 @@ async function runCloudBackupNow(tipo = 'auto') {
       };
     }
 
+    if (typeof isBackupEmpty === 'function' && isBackupEmpty(backup)) {
+      console.log('[ParkSales Cloud Backup] Omitida: el usuario no tiene datos (ventas, llamadas, apuntes, etc.)');
+      return null;
+    }
+
     const res = await DB.saveUserBackupToCloud(backup, { tipo });
-    localStorage.setItem('parksales_last_cloud_backup_time', new Date().toISOString());
-    console.log(`[ParkSales] Copia en BD realizada con éxito (${tipo}):`, new Date().toLocaleTimeString('es-ES'));
+    if (res) {
+      localStorage.setItem('parksales_last_cloud_backup_time', new Date().toISOString());
+      console.log(`[ParkSales] Copia en BD realizada con éxito (${tipo}):`, new Date().toLocaleTimeString('es-ES'));
+    }
     return res;
   } catch (err) {
     console.warn('[ParkSales] Error al guardar copia en BD:', err);
@@ -301,7 +308,7 @@ async function initAutoBackup() {
     if (backups.length > 0) {
       setBackupStatus(`${backups.length} backup(s) guardados. Último: ${new Date(backups[0].fecha).toLocaleString('es-ES')}`);
     } else {
-      // Primera vez: hacer una copia inmediatamente
+      // Primera vez: hacer una copia inmediatamente si tiene datos
       await runBackupNow();
     }
   } catch (err) {
@@ -338,6 +345,12 @@ async function runBackupNow(label) {
         llamadas,
         notas_rapidas: localStorage.getItem('parksales_quick_notes') || '',
       };
+    }
+
+    if (typeof isBackupEmpty === 'function' && isBackupEmpty(backup)) {
+      console.log('[ParkSales Backup] Copia omitida: el usuario no tiene datos (ventas, llamadas, apuntes, etc.)');
+      setBackupStatus('Sin datos nuevos para copia de seguridad.');
+      return null;
     }
 
     const entry = await saveBackupToDB(backup);

@@ -832,7 +832,7 @@ async function handleImportCSVFiles(fileList) {
 
             const localizador = (row[1] || '').trim();
             const cliente_nombre = row[2] || '';
-            const importe_total = Number(row[3]) || 0;
+            const importe_total = typeof parseSpanishNumber === 'function' ? parseSpanishNumber(row[3]) : (Number(row[3]) || 0);
             const fechaVentaOriginal = row[4];
             const correo = row[5];
             const telefono = (row[6] || '').replace(/\s/g, '').replace(/^\+34/, '');

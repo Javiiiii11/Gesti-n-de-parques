@@ -86,3 +86,30 @@ create policy "configuracion_global_select" on public.configuracion_global
 drop policy if exists "configuracion_global_upsert" on public.configuracion_global;
 create policy "configuracion_global_upsert" on public.configuracion_global
     for all using (auth.role() = 'authenticated');
+
+-- ----------------------------------------------------------------------------
+-- Trigger para limitar automáticamente a 5 copias máximo por usuario
+-- ----------------------------------------------------------------------------
+create or replace function public.prune_user_backups_trigger()
+returns trigger as $$
+begin
+  delete from public.backups_usuarios
+  where id in (
+    select id from (
+      select id, row_number() over (
+        partition by coalesce(user_id::text, user_email)
+        order by fecha desc, created_at desc
+      ) as rn
+      from public.backups_usuarios
+    ) sub
+    where sub.rn > 5
+  );
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists trg_prune_user_backups on public.backups_usuarios;
+create trigger trg_prune_user_backups
+  after insert on public.backups_usuarios
+  for each statement
+  execute function public.prune_user_backups_trigger();

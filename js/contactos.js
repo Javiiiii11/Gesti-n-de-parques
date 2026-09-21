@@ -146,8 +146,7 @@ function wireContactoQuickParse(updateFormVisibility) {
     if (lines.length >= 5) {
       const localizador = lines[1]?.trim() || '';
       const nombreCliente = lines[2]?.trim() || '';
-      const precioStr = (lines[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
-      const precio = parseFloat(precioStr) || 0;
+      const precio = parseSpanishNumber(lines[3]);
 
       return { localizador, nombreCliente, precio };
     }
@@ -158,8 +157,7 @@ function wireContactoQuickParse(updateFormVisibility) {
 
     const localizador = parts[1] || '';
     const nombreCliente = parts[2] || '';
-    const precioStr = (parts[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
-    const precio = parseFloat(precioStr) || 0;
+    const precio = parseSpanishNumber(parts[3]);
 
     return { localizador, nombreCliente, precio };
   }

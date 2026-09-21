@@ -9,6 +9,65 @@ const fmtNum = (n) => _numFmt.format(Number(n) || 0);
 const fmtDateShort = (iso) => new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const fmtDateTime = (iso) => new Date(iso).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
+/**
+ * Convierte cualquier texto o número a float válido.
+ * Soporta formato español (ej. 1.116,50 € / 1116,50 €) e inglés (ej. 1,116.50 / 1116.50).
+ */
+function parseSpanishNumber(val) {
+  if (typeof val === 'number') return isNaN(val) ? 0 : val;
+  if (!val) return 0;
+
+  let str = String(val).trim();
+  str = str.replace(/[€$£\s\u00a0]/g, '').trim();
+  if (!str) return 0;
+
+  const hasComma = str.includes(',');
+  const hasDot = str.includes('.');
+
+  if (hasComma && hasDot) {
+    const lastComma = str.lastIndexOf(',');
+    const lastDot = str.lastIndexOf('.');
+    if (lastComma > lastDot) {
+      // Formato español/europeo: 1.116,50 -> quitar puntos de millar, cambiar coma por punto
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else {
+      // Formato anglosajón: 1,116.50 -> quitar comas de millar
+      str = str.replace(/,/g, '');
+    }
+  } else if (hasComma) {
+    // Solo coma (ej: 1116,50 ó 25,00) -> cambiar coma por punto decimal
+    str = str.replace(',', '.');
+  } else if (hasDot) {
+    // Solo punto (ej: 1.116 ó 1116.50)
+    const dotCount = (str.match(/\./g) || []).length;
+    if (dotCount > 1) {
+      str = str.replace(/\./g, '');
+    } else {
+      const parts = str.split('.');
+      if (parts[1] && parts[1].length === 3) {
+        str = str.replace('.', '');
+      }
+    }
+  }
+
+  const num = parseFloat(str);
+  return isNaN(num) ? 0 : num;
+}
+
+/**
+ * Comprueba si un objeto de copia de seguridad carece de datos del usuario (ventas, llamadas, apuntes, notas).
+ * Ignora cuadrantes y catálogos predeterminados que todos los usuarios tienen.
+ */
+function isBackupEmpty(backupData) {
+  if (!backupData) return true;
+  const vCount = Array.isArray(backupData.ventas) ? backupData.ventas.length : 0;
+  const cCount = Array.isArray(backupData.contactos) ? backupData.contactos.length : 0;
+  const lCount = Array.isArray(backupData.llamadas) ? backupData.llamadas.length : (Array.isArray(backupData.calls) ? backupData.calls.length : 0);
+  const hasNotas = Boolean(backupData.notas_rapidas && String(backupData.notas_rapidas).trim().length > 0);
+
+  return vCount === 0 && cCount === 0 && lCount === 0 && !hasNotas;
+}
+
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

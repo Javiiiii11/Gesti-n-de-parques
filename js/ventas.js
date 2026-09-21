@@ -271,9 +271,7 @@ function wireQuickParse() {
     const lines = trimmed.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length >= 5) {
       const localizador = lines[1]?.trim() || '';
-      // Ignorados por petición: nombre, correo, teléfono
-      const precioStr = (lines[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
-      const precio = parseFloat(precioStr) || 0;
+      const precio = parseSpanishNumber(lines[3]);
       let estado = 'completado';
       for (let i = 4; i < lines.length; i++) {
         const detected = detectEstadoFromRaw(lines[i]);
@@ -295,8 +293,7 @@ function wireQuickParse() {
 
     const localizador = parts[1] || '';
     // Ignorados: nombre, correo, teléfono
-    const precioStr = (parts[3] || '0').replace('€', '').replace(',', '.').replace(/\s/g, '');
-    const precio = parseFloat(precioStr) || 0;
+    const precio = parseSpanishNumber(parts[3]);
     let estado = 'completado';
     for (let i = parts.length - 1; i >= 4; i--) {
       if (parts[i] && parts[i] !== '-') {

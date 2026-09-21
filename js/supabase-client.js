@@ -908,6 +908,11 @@ const DB = {
   // --------------------------------------------------------- COPIAS EN NUBE (SUPABASE)
   async saveUserBackupToCloud(backupData, { tipo = 'auto' } = {}) {
     if (!backupData) return null;
+    if (typeof isBackupEmpty === 'function' && isBackupEmpty(backupData)) {
+      console.log('[ParkSales Cloud Backup] Omitido: el usuario no tiene datos (ventas, llamadas, apuntes, etc.)');
+      return null;
+    }
+
     const user = STATE.currentUser || await AUTH.getCurrentUser().catch(() => null);
     const userEmail = user?.email || (user?.id ? `user-${user.id.slice(0, 8)}@parksales` : 'usuario@parksales');
     const userName = (typeof getUserDisplayName === 'function' && user) ? getUserDisplayName(user) : (user?.user_metadata?.name || userEmail.split('@')[0]);
@@ -939,12 +944,12 @@ const DB = {
       stats,
     };
 
-    // Almacenamiento local temporal como caché de seguridad
+    // Almacenamiento local temporal como caché de seguridad (máximo 5)
     try {
       const cacheKey = 'parksales_cloud_backups_local_cache';
       const currentCache = JSON.parse(localStorage.getItem(cacheKey) || '[]');
       currentCache.unshift({ ...row, id: 'loc-' + Date.now() });
-      if (currentCache.length > 40) currentCache.length = 40;
+      if (currentCache.length > 5) currentCache.length = 5;
       localStorage.setItem(cacheKey, JSON.stringify(currentCache));
     } catch (e) { /* ignore */ }
 
@@ -962,19 +967,20 @@ const DB = {
 
       if (error) throw error;
 
-      // Poda de copias muy antiguas para este usuario (dejar las últimas 60 copias)
+      // Poda de copias muy antiguas para este usuario (dejar máximo 5 copias)
       try {
-        if (user?.id) {
-          const { data: userBackups } = await supabaseClient
-            .from('backups_usuarios')
-            .select('id')
-            .eq('user_id', user.id)
-            .order('fecha', { ascending: false });
+        const userFilterCol = user?.id ? 'user_id' : 'user_email';
+        const userFilterVal = user?.id ? user.id : userEmail;
 
-          if (userBackups && userBackups.length > 60) {
-            const idsToDelete = userBackups.slice(60).map(b => b.id);
-            await supabaseClient.from('backups_usuarios').delete().in('id', idsToDelete);
-          }
+        const { data: userBackups } = await supabaseClient
+          .from('backups_usuarios')
+          .select('id')
+          .eq(userFilterCol, userFilterVal)
+          .order('fecha', { ascending: false });
+
+        if (userBackups && userBackups.length > 5) {
+          const idsToDelete = userBackups.slice(5).map(b => b.id);
+          await supabaseClient.from('backups_usuarios').delete().in('id', idsToDelete);
         }
       } catch (pruneErr) {
         console.warn('[ParkSales Cloud Backup] Error no crítico al limpiar backups antiguos:', pruneErr);
