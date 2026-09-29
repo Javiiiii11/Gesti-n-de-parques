@@ -737,7 +737,7 @@ async function handleImportCSVFiles(fileList) {
   const processFile = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           const text = e.target.result;
           const lines = text.split('\n');
@@ -826,6 +826,7 @@ async function handleImportCSVFiles(fileList) {
           const fileNuevosApuntes = [];
 
           for (let i = headerIdx + 1; i < lines.length; i++) {
+            if (i % 250 === 0) await new Promise(r => setTimeout(r, 0));
             if (!lines[i].trim()) continue;
             const row = parseCSVLine(lines[i]);
             if (row.length < 11) continue;

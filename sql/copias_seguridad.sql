@@ -93,6 +93,11 @@ create policy "configuracion_global_upsert" on public.configuracion_global
 create or replace function public.prune_user_backups_trigger()
 returns trigger as $$
 begin
+  -- 1. Eliminar copias de seguridad de más de 3 días de antigüedad
+  delete from public.backups_usuarios
+  where fecha < now() - interval '3 days';
+
+  -- 2. Mantener un máximo de 5 copias por usuario para las más recientes
   delete from public.backups_usuarios
   where id in (
     select id from (

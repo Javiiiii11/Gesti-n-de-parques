@@ -9,6 +9,109 @@ const fmtNum = (n) => _numFmt.format(Number(n) || 0);
 const fmtDateShort = (iso) => new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const fmtDateTime = (iso) => new Date(iso).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
+window.openTutorial = function(key) {
+  const tutorials = {
+    'exportar': {
+      title: 'Guía de Ayuda: Importar y Exportar Datos',
+      width: '640px',
+      bodyHtml: `
+        <div class="tutorial-modal-content" style="display:flex; flex-direction:column; gap:16px;">
+          <p style="color:var(--text-muted); font-size:0.95rem; line-height:1.5;">
+            Aprende a gestionar tus copias de seguridad, restaurar tu información y exportar datos a Excel o JSON de forma fácil y segura.
+          </p>
+
+          <div style="background:var(--bg-sunken); border:1px solid var(--border); border-radius:var(--radius-m); padding:14px 16px;">
+            <h4 style="margin:0 0 6px 0; display:flex; align-items:center; gap:8px; color:var(--accent);">
+              <span>💾</span> 1. Exportar Copia de Seguridad (.JSON)
+            </h4>
+            <p style="margin:0; font-size:0.88rem; color:var(--text-muted); line-height:1.4;">
+              Haz clic en <strong>"Exportar Copia (JSON)"</strong>. Guardará un archivo completo con todas tus ventas, historial, clientes, parques y bonos. Guárdalo en tu ordenador o nube como respaldo.
+            </p>
+          </div>
+
+          <div style="background:var(--bg-sunken); border:1px solid var(--border); border-radius:var(--radius-m); padding:14px 16px;">
+            <h4 style="margin:0 0 6px 0; display:flex; align-items:center; gap:8px; color:var(--accent);">
+              <span>📥</span> 2. Importar / Restaurar Copia (.JSON)
+            </h4>
+            <p style="margin:0; font-size:0.88rem; color:var(--text-muted); line-height:1.4;">
+              Arrastra tu archivo <code>.json</code> a la casilla de importación o pulsa sobre ella para seleccionarlo. El sistema analizará la copia y añadirá o actualizará los registros sin perder tus ajustes.
+            </p>
+          </div>
+
+          <div style="background:var(--bg-sunken); border:1px solid var(--border); border-radius:var(--radius-m); padding:14px 16px;">
+            <h4 style="margin:0 0 6px 0; display:flex; align-items:center; gap:8px; color:var(--accent);">
+              <span>📊</span> 3. Exportar Informes a Excel (.XLSX)
+            </h4>
+            <p style="margin:0; font-size:0.88rem; color:var(--text-muted); line-height:1.4;">
+              Si necesitas trabajar en hojas de cálculo, utiliza la opción <strong>"Exportar a Excel"</strong>. Genera un libro con pestañas organizadas para análisis contables y de rendimiento.
+            </p>
+          </div>
+
+          <div style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:var(--radius-m); padding:12px 16px;">
+            <h5 style="margin:0 0 4px 0; color:#3b82f6; display:flex; align-items:center; gap:6px;">
+              <span>💡</span> Recomendación importante
+            </h5>
+            <p style="margin:0; font-size:0.84rem; color:var(--text-muted);">
+              Te aconsejamos realizar una exportación JSON semanal o antes de hacer limpiezas de datos extensas.
+            </p>
+          </div>
+        </div>
+      `
+    },
+    'backus': {
+      title: 'Guía: Importación CSV (Backus)',
+      width: '600px',
+      bodyHtml: `
+        <div class="tutorial-modal-content" style="display:flex; flex-direction:column; gap:16px;">
+          <p style="color:var(--text-muted); font-size:0.95rem; line-height:1.5;">
+            Paso a paso para importar masivamente tus ventas extraídas de archivos CSV de la plataforma Backus.
+          </p>
+
+          <ol style="margin:0; padding-left:20px; display:flex; flex-direction:column; gap:10px; font-size:0.9rem; color:var(--text-muted);">
+            <li>Descarga el archivo <code>.csv</code> oficial desde el panel de Backus.</li>
+            <li>En esta pantalla, arrastra el archivo al recuadro <strong>"Importador CSV Backus"</strong>.</li>
+            <li>El sistema detectará automáticamente las columnas (fecha, parque, importe, comprador).</li>
+            <li>Revisa el resumen de filas a procesar y haz clic en <strong>Confirmar Importación</strong>.</li>
+          </ol>
+
+          <div style="background:rgba(234,179,8,0.08); border:1px solid rgba(234,179,8,0.25); border-radius:var(--radius-m); padding:12px 16px;">
+            <p style="margin:0; font-size:0.84rem; color:var(--text-muted);">
+              ⚠️ <strong>Nota:</strong> Si el CSV contiene fechas o importes en formato especial, el sistema los convertirá automáticamente al estándar de tu aplicación.
+            </p>
+          </div>
+        </div>
+      `
+    },
+    'cookies': {
+      title: 'Gestión de Cookies y Sesión',
+      width: '520px',
+      bodyHtml: `
+        <div class="tutorial-modal-content" style="display:flex; flex-direction:column; gap:12px;">
+          <p style="color:var(--text-muted); font-size:0.92rem;">
+            Aprende a solucionar problemas de inicio de sesión o limpiar datos en caché.
+          </p>
+          <ul style="margin:0; padding-left:20px; font-size:0.88rem; color:var(--text-muted); display:flex; flex-direction:column; gap:6px;">
+            <li>Puedes borrar la memoria local haciendo clic en <strong>Limpiar Caché</strong> en la barra de usuario.</li>
+            <li>Si no se guardan tus preferencias, asegúrate de tener las cookies habilitadas en tu navegador.</li>
+          </ul>
+        </div>
+      `
+    }
+  };
+
+  const tut = tutorials[key] || {
+    title: 'Tutorial',
+    width: '500px',
+    bodyHtml: `<p class="desc">Tutorial no disponible o en construcción.</p>`
+  };
+
+  openModal({
+    title: `📘 ${tut.title}`,
+    width: tut.width || '560px',
+    bodyHtml: tut.bodyHtml,
+    footHtml: `<button class="btn btn-primary" onclick="closeModal()">Entendido</button>`
+  });
+};
 /**
  * Convierte cualquier texto o número a float válido.
  * Soporta formato español (ej. 1.116,50 € / 1116,50 €) e inglés (ej. 1,116.50 / 1116.50).
