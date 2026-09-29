@@ -102,7 +102,7 @@ begin
       ) as rn
       from public.backups_usuarios
     ) sub
-    where sub.rn > 5
+    where sub.rn > 5 
   );
   return new;
 end;
