@@ -109,24 +109,13 @@ function shiftMeta(code, dateOrIso) {
     if (code === 'TM2') return { ...base, hours: '10:00–17:00', start: '10:00', end: '17:00', hoursNum: 7 };
     if (code === 'TT1') return { ...base, hours: '13:00–20:00', start: '13:00', end: '20:00', hoursNum: 7 };
   }
-  // TFS: siempre muestra "TFS" como código, pero con sub-label según día
-  if (d && code === 'TFS') {
-    const isWeekend = isWeekendDate(d);
-    return {
-      ...base,
-      kind: isWeekend ? 'weekend-work' : 'holiday',
-      label: 'TFS',
-      subLabel: isWeekend ? 'Finde' : 'Festivo'
-    };
-  }
   return base;
 }
 
 function shiftTitle(code, dateOrIso) {
   const meta = shiftMeta(code, dateOrIso);
   if (!meta) return 'Sin asignar';
-  const sub = meta.subLabel ? ` (${meta.subLabel})` : '';
-  return meta.hours ? `${meta.label}${sub} · ${meta.hours}` : `${meta.label}${sub}`;
+  return meta.hours ? `${meta.label} · ${meta.hours}` : meta.label;
 }
 
 function normalizePerson(value) {
@@ -574,7 +563,7 @@ function monthStats(person, monthDate) {
     if (meta.work) {
       work += 1;
       hours += meta.hoursNum || 0;
-      if (isWeekendDate(date)) weekendWork += 1;
+      if (code === 'TFS' || isWeekendDate(date)) weekendWork += 1;
     } else if (code === 'V') vac += 1;
     else free += 1;
   }
@@ -952,7 +941,7 @@ function renderStats(person, hasData) {
     <article class="stat-card cuad-stat">
       <div class="stat-label">Vacaciones</div>
       <div class="stat-value">${s.vac}</div>
-      <div class="stat-sub">${s.byCode.TM1 ? s.byCode.TM1 + ' TM1' : '—'}${s.byCode.TM2 ? ' · ' + s.byCode.TM2 + ' TM2' : ''}${s.byCode.TT1 ? ' · ' + s.byCode.TT1 + ' TT1' : ''}${s.byCode.TFS ? ' · ' + s.byCode.TFS + ' TFS' : ''}</div>
+      <div class="stat-sub">${s.byCode.TM1 ? s.byCode.TM1 + ' TM1' : '—'}${s.byCode.TM2 ? ' · ' + s.byCode.TM2 + ' TM2' : ''}${s.byCode.TT1 ? ' · ' + s.byCode.TT1 + ' TT1' : ''}</div>
     </article>`;
 }
 
@@ -1050,9 +1039,8 @@ function renderCalendar(person, hasData) {
     ].filter(Boolean).join(' ');
 
     const hours = meta?.hours ? `<span class="cuad-day-hours">${escapeHtml(meta.hours)}</span>` : '';
-    const subLabel = meta?.subLabel ? `<span class="cuad-day-sublabel">${escapeHtml(meta.subLabel)}</span>` : '';
     const label = displayCode
-      ? `<span class="cuad-day-code">${escapeHtml(displayCode === '0' || displayCode === 'L' ? 'Libre' : displayCode)}</span>${subLabel}`
+      ? `<span class="cuad-day-code">${escapeHtml(displayCode === '0' || displayCode === 'L' ? 'Libre' : displayCode)}</span>`
       : '<span class="cuad-day-code is-muted">—</span>';
     const hol = holiday ? '<span class="cuad-day-hol">Festivo</span>' : '';
 
@@ -1123,12 +1111,13 @@ function renderAgenda(person) {
     const range = bundleDateRange();
     if (!code && isWeekendDate(date) && person && range && iso >= range.from && iso <= range.to) code = '0';
     const holiday = (cuadBundle.holidays || []).includes(iso);
-    const isTfsFestivo = code === 'TFS' && !isWeekendDate(date);
+    const isWeekend = isWeekendDate(date);
+    const swapBtn = isWeekend && person ? `<button class="btn btn-secondary btn-sm" type="button" id="cuad-swap-btn" style="margin-top:10px;width:100%;justify-content:center;gap:6px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg> Buscar intercambio para este finde</button><p class="desc" style="font-size:11px;margin-top:6px;opacity:.7">Máx. 10 días seguidos — se comprueba para los dos</p>` : '';
     detail.innerHTML = `
       <div class="cuad-detail ${code ? `code-${code}` : ''}">
         <p class="cuad-kicker">${escapeHtml(relativeDayLabel(date))}</p>
         <h4>${escapeHtml(weekdayLong(date))}</h4>
-        <p class="cuad-detail-shift">${escapeHtml(shiftTitle(code, date))}${holiday && !isTfsFestivo ? ' · festivo' : ''}</p>
+        <p class="cuad-detail-shift">${escapeHtml(shiftTitle(code, date))}${holiday ? ' · festivo' : ''}</p>
       </div>
       ${swapBtn}`;
     document.getElementById('cuad-swap-btn')?.addEventListener('click', () => openSwapModal(iso));
@@ -1306,49 +1295,6 @@ function openSwapModal(iso) {
   document.getElementById('cuad-swap-close')?.addEventListener('click', closeModal);
 }
 
-let cuadEditorTimeout = null;
-function resetCuadEditorTimeout() {
-  if (cuadEditorTimeout) clearTimeout(cuadEditorTimeout);
-  if (cuadEditorMode) {
-    cuadEditorTimeout = setTimeout(() => {
-      if (cuadEditorMode) {
-        if (cuadPendingEdits.length > 0) {
-          // Hay cambios pendientes: mostrar modal en vez de cerrar solo
-          openModal({
-            title: 'Inactividad en modo editor',
-            width: '440px',
-            bodyHtml: `
-              <p class="desc">Llevas un rato sin editar y tienes <strong>${cuadPendingEdits.length} cambio${cuadPendingEdits.length > 1 ? 's' : ''}</strong> pendientes.</p>
-              <p class="desc" style="margin-top:8px;">¿Quieres guardarlos o descartarlos?</p>
-            `,
-            footHtml: `
-              <button class="btn btn-primary" type="button" id="cuad-idle-save">Guardar y salir</button>
-              <button class="btn btn-danger" type="button" id="cuad-idle-discard">Descartar y salir</button>
-              <button class="btn btn-secondary" type="button" id="cuad-idle-keep">Seguir editando</button>
-            `
-          });
-          document.getElementById('cuad-idle-save')?.addEventListener('click', () => {
-            closeModal();
-            toggleCuadEditor();
-          });
-          document.getElementById('cuad-idle-discard')?.addEventListener('click', () => {
-            closeModal();
-            cuadPendingEdits = [];
-            toggleCuadEditor();
-          });
-          document.getElementById('cuad-idle-keep')?.addEventListener('click', () => {
-            closeModal();
-            resetCuadEditorTimeout(); // Reiniciar temporizador
-          });
-        } else {
-          toggleCuadEditor();
-          toast('Modo editor desactivado por inactividad', 'info');
-        }
-      }
-    }, 30000); // 30 segundos
-  }
-}
-
 function toggleCuadEditor() {
   cuadEditorMode = !cuadEditorMode;
   const btn = document.getElementById('cuad-editor-toggle');
@@ -1357,21 +1303,9 @@ function toggleCuadEditor() {
   if (btn) btn.classList.toggle('is-on', cuadEditorMode);
   if (label) label.textContent = cuadEditorMode ? 'Modo editor: ON' : 'Modo editor: OFF';
   if (view) view.classList.toggle('view-cuad-editor', cuadEditorMode);
-
   if (cuadEditorMode) {
     toast('Modo editor activado — pulsa el lápiz de cada día para cambiar el turno', 'info');
-
-    // Iniciar temporizador de inactividad
-    resetCuadEditorTimeout();
-    view.removeEventListener('mousemove', resetCuadEditorTimeout);
-    view.removeEventListener('click', resetCuadEditorTimeout);
-    view.removeEventListener('keypress', resetCuadEditorTimeout);
-    view.addEventListener('mousemove', resetCuadEditorTimeout);
-    view.addEventListener('click', resetCuadEditorTimeout);
-    view.addEventListener('keypress', resetCuadEditorTimeout);
   } else {
-    if (cuadEditorTimeout) clearTimeout(cuadEditorTimeout);
-
     if (cuadPendingEdits.length) {
       const summary = cuadPendingEdits.map(e => `• ${e.iso} (${escapeHtml(e.person)}): ${escapeHtml(e.from || '—')} → ${escapeHtml(e.to)} — ${escapeHtml(e.when)}`).join('<br>');
       openModal({
@@ -1388,76 +1322,40 @@ function toggleCuadEditor() {
   renderCuad();
 }
 
-function libreCodeForDate(date) {
-  return isWeekendDate(date) ? '0' : 'L';
-}
-
-function cuadEditCardHtml(code, date, currentCode) {
-  const meta = shiftMeta(code, date);
-  const isLibre = code === 'L' || code === '0';
-  const isFestivo = code === 'TFS' && !isWeekendDate(date);
-  const short = isLibre ? 'Libre' : code;
-  const sub = meta?.subLabel ? `<span class="cuad-edit-sublabel">${escapeHtml(meta.subLabel)}</span>` : '';
-  const name = isLibre ? 'Día libre' : (meta?.subLabel || meta?.label || code);
-  const hours = isLibre ? (isWeekendDate(date) ? 'Fin de semana' : 'Entre semana') : (meta?.hours || '');
-  const isCurrent = code === currentCode;
-  const picked = isCurrent ? ' is-picked' : '';
-  return `
-    <button type="button" class="cuad-edit-card code-${code}${picked}" data-code="${escapeHtml(code)}" aria-pressed="${isCurrent ? 'true' : 'false'}">
-      <strong>${escapeHtml(short)}${sub}</strong>
-      <em>${escapeHtml(name)}</em>
-      <span>${escapeHtml(hours)}</span>
-    </button>`;
-}
-
 function openEditTurnoModal(iso) {
   const me = currentPerson();
   if (!me) { toast('No te he identificado en el cuadrante', 'error'); return; }
   const date = new Date(iso + 'T12:00:00');
   const currentCode = codeOn(me, iso) || '';
-  const currentMeta = currentCode ? shiftMeta(currentCode, date) : null;
-  const currentIsLibre = currentCode === 'L' || currentCode === '0';
-  const currentShort = currentIsLibre ? 'Libre' : (currentCode || '—');
-  const currentName = currentMeta ? shiftTitle(currentCode, date) : 'Sin asignar';
-  const cards = ['TM1', 'TM2', 'TT1', 'TFS', 'V', libreCodeForDate(date)].map((code) => cuadEditCardHtml(code, date, currentCode)).join('');
+  const currentLabel = currentCode ? `${currentCode} · ${shiftTitle(currentCode, date)}` : 'Sin asignar (—)';
+  const options = ['TM1','TM2','TT1','TFS','L','V','0',''].map(code => {
+    const meta = code ? shiftMeta(code, date) : null;
+    const label = !code ? '— Borrar / Sin turno' : `${code === '0' ? 'Libre' : code} · ${meta ? meta.label : ''} ${meta?.hours ? meta.hours : ''}`;
+    const selected = code === currentCode ? 'selected' : '';
+    return `<option value="${escapeHtml(code)}" ${selected}>${escapeHtml(label)}</option>`;
+  }).join('');
   const whenNow = new Date().toLocaleString('es-ES');
-  const dayLabel = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
   openModal({
-    title: `Editar turno · ${date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}`,
-    width: '520px',
+    title: `Editar turno · ${weekdayLong(date)}`,
+    width: '420px',
     bodyHtml: `
-      <div class="cuad-edit-head">
-        <p class="cuad-edit-who">${escapeHtml(me.orig)}</p>
-        <p class="cuad-edit-when">${escapeHtml(dayLabel)}</p>
+      <p class="desc" style="margin-bottom:10px;">Cambiando el turno de <strong>${escapeHtml(me.orig)}</strong> el <strong>${escapeHtml(iso)}</strong>.</p>
+      <p class="desc" style="margin-bottom:8px;">Actual: <strong>${escapeHtml(currentLabel)}</strong></p>
+      <div class="form-field">
+        <label for="cuad-edit-select">Nuevo turno</label>
+        <select id="cuad-edit-select">${options}</select>
       </div>
-      <div class="cuad-edit-now">
-        <span class="cuad-edit-kicker">Turno actual</span>
-        <span class="cuad-chip${currentCode ? ` code-${currentCode}` : ''}">${escapeHtml(currentShort)} · ${escapeHtml(currentName)}</span>
-      </div>
-      <p class="cuad-edit-hint">Elige el turno nuevo. El viernes los de mañana y tarde salen con una hora menos.</p>
-      <div class="cuad-edit-grid" id="cuad-edit-grid" role="listbox" aria-label="Turnos">${cards}</div>
+      <p class="desc" style="margin-top:10px;font-size:11px;opacity:.7">Se guardará en la BD y lo verán todos. Quedará registrado con fecha/hora.</p>
     `,
     footHtml: `
       <button class="btn btn-ghost" type="button" id="cuad-edit-cancel">Cancelar</button>
       <button class="btn btn-primary" type="button" id="cuad-edit-save">Guardar</button>
     `
   });
-  const grid = document.getElementById('cuad-edit-grid');
-  const pick = (btn) => {
-    grid.querySelectorAll('.cuad-edit-card').forEach((el) => {
-      el.classList.remove('is-picked');
-      el.setAttribute('aria-pressed', 'false');
-    });
-    btn.classList.add('is-picked');
-    btn.setAttribute('aria-pressed', 'true');
-  };
-  grid?.querySelectorAll('.cuad-edit-card').forEach((btn) => {
-    btn.addEventListener('click', () => pick(btn));
-  });
   document.getElementById('cuad-edit-cancel')?.addEventListener('click', closeModal);
   document.getElementById('cuad-edit-save')?.addEventListener('click', async () => {
-    const picked = grid?.querySelector('.cuad-edit-card.is-picked');
-    const newCode = picked ? (picked.getAttribute('data-code') || '') : currentCode;
+    const sel = document.getElementById('cuad-edit-select');
+    const newCode = sel ? sel.value : '';
     if (newCode === currentCode) { closeModal(); return; }
     const confirmHtml = `Vas a cambiar <strong>${escapeHtml(iso)}</strong> de <strong>${escapeHtml(currentCode || '—')}</strong> a <strong>${escapeHtml(newCode || '—')}</strong> para <strong>${escapeHtml(me.orig)}</strong> el <strong>${escapeHtml(whenNow)}</strong>.<br><br>¿Seguro?`;
     closeModal();

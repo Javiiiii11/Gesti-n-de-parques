@@ -154,7 +154,19 @@ function wireLlamadasForm() {
 
   updateLlamadaTipoVisibility();
 
-  // (Toggle extras removed as requested)
+  // Toggle extras
+  const toggleBtn = document.getElementById('ll-toggle-extras');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const extras = document.getElementById('ll-section-extras');
+      const text = document.getElementById('ll-toggle-extras-text');
+      if (extras) {
+        const isHidden = extras.style.display === 'none';
+        extras.style.display = isHidden ? 'block' : 'none';
+        if (text) text.textContent = isHidden ? 'Ocultar opciones extra' : 'Más opciones';
+      }
+    });
+  }
 
   // Submit
   if (form) {
@@ -174,6 +186,8 @@ function guardarLlamada() {
     const cliente = document.getElementById('ll-cliente')?.value.trim() || '';
     const prioridad = document.getElementById('ll-prioridad')?.value || 'normal';
     const notas = document.getElementById('ll-notas')?.value.trim() || '';
+    const correo = document.getElementById('ll-correo')?.value.trim() || '';
+    const localizador = document.getElementById('ll-localizador')?.value.trim() || '';
 
     if (!fecha || !hora) { toast('Indica fecha y hora de la llamada', 'error'); return; }
     if (!telefono) { toast('Indica el teléfono', 'error'); return; }
@@ -289,7 +303,10 @@ function resetLlamadaForm() {
   // Default date = today (restaurar tras reset)
   setDefaultLlamadaFecha();
 
-  // (Extras section is now always visible)
+  const extras = document.getElementById('ll-section-extras');
+  if (extras) extras.style.display = 'none';
+  const text = document.getElementById('ll-toggle-extras-text');
+  if (text) text.textContent = 'Más opciones';
   
   // Reset título y botones
   const title = document.getElementById('llamada-form-title');
@@ -562,6 +579,18 @@ function editarLlamada(id) {
   setVal('ll-cliente', c.cliente);
   setVal('ll-prioridad', c.prioridad || 'normal');
   setVal('ll-notas', c.notas);
+  setVal('ll-correo', c.correo);
+  setVal('ll-localizador', c.localizador);
+
+  // Mostrar extras si hay correo o localizador
+  const extras = document.getElementById('ll-section-extras');
+  if (extras) {
+    if (c.correo || c.localizador) {
+      extras.style.display = 'block';
+      const text = document.getElementById('ll-toggle-extras-text');
+      if (text) text.textContent = 'Ocultar opciones extra';
+    }
+  }
 
   // Actualizar título y botones
   const title = document.getElementById('llamada-form-title');
@@ -729,12 +758,7 @@ function showAlarmNotification(c, type) {
   // Browser notification
   if ('Notification' in window && Notification.permission === 'granted') {
     try {
-      const notif = new Notification(title, { body, icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="%23F5A623"/><text x="12" y="17" font-size="14" text-anchor="middle" fill="%230A0F1C" font-family="sans-serif" font-weight="bold">L</text></svg>' });
-      notif.onclick = function() {
-        window.focus();
-        if (typeof switchView === 'function') switchView('llamadas');
-        this.close();
-      };
+      new Notification(title, { body, icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="%23F5A623"/><text x="12" y="17" font-size="14" text-anchor="middle" fill="%230A0F1C" font-family="sans-serif" font-weight="bold">L</text></svg>' });
     } catch (e) { /* silent fail */ }
   }
 
