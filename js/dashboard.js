@@ -59,6 +59,34 @@ function getEffectiveWorkdaysCount(monthKey) {
   if (custom !== null) return custom;
   const [year, month] = String(monthKey || '').split('-').map(Number);
   if (!year || !month) return 22;
+  
+  try {
+    if (typeof currentPerson === 'function' && typeof upcomingWorkDays === 'function') {
+      const p = currentPerson();
+      if (p) {
+        const end = new Date(year, month, 0); // último día
+        const days = end.getDate();
+        let count = 0;
+        let hasAny = false;
+        
+        for (let d = 1; d <= days; d++) {
+          const iso = new Date(year, month - 1, d, 12, 0, 0).toISOString().split('T')[0];
+          const code = typeof codeOn === 'function' ? codeOn(p, iso) : null;
+          
+          if (code) {
+            hasAny = true; // Encontramos algún turno (L, V, TM1...) en este mes
+            const meta = typeof shiftMeta === 'function' ? shiftMeta(code, iso) : null;
+            if (meta && meta.work) {
+              count++;
+            }
+          }
+        }
+        
+        if (hasAny) return count;
+      }
+    }
+  } catch(e) {}
+  
   return countWorkdaysInMonth(year, month - 1);
 }
 
@@ -190,32 +218,76 @@ function isWeekend(date) {
   return day === 0 || day === 6;
 }
 
+function hasCuadranteForMonth(year, monthIndexZeroBased) {
+  if (typeof currentPerson === 'function' && typeof codeOn === 'function') {
+    const p = currentPerson();
+    if (p) {
+      const days = daysInMonth(year, monthIndexZeroBased);
+      for (let d = 1; d <= days; d++) {
+        const iso = new Date(year, monthIndexZeroBased, d, 12, 0, 0).toISOString().split('T')[0];
+        if (codeOn(p, iso)) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function isCuadranteWorkday(year, monthIndexZeroBased, day) {
+  if (typeof currentPerson === 'function' && typeof codeOn === 'function' && typeof shiftMeta === 'function') {
+    const p = currentPerson();
+    if (p) {
+      const iso = new Date(year, monthIndexZeroBased, day, 12, 0, 0).toISOString().split('T')[0];
+      const code = codeOn(p, iso);
+      if (code) {
+        const meta = shiftMeta(code, iso);
+        return !!(meta && meta.work);
+      }
+    }
+  }
+  return false;
+}
+
 function countWorkdaysInMonth(year, monthIndexZeroBased) {
   const totalDays = daysInMonth(year, monthIndexZeroBased);
+  const useCuadrante = hasCuadranteForMonth(year, monthIndexZeroBased);
   let count = 0;
   for (let day = 1; day <= totalDays; day++) {
-    const date = new Date(year, monthIndexZeroBased, day);
-    if (!isWeekend(date)) count++;
+    if (useCuadrante) {
+      if (isCuadranteWorkday(year, monthIndexZeroBased, day)) count++;
+    } else {
+      const date = new Date(year, monthIndexZeroBased, day);
+      if (!isWeekend(date)) count++;
+    }
   }
   return count;
 }
 
 function countWorkdaysElapsed(year, monthIndexZeroBased, currentDay) {
+  const useCuadrante = hasCuadranteForMonth(year, monthIndexZeroBased);
   let count = 0;
   for (let day = 1; day <= currentDay; day++) {
-    const date = new Date(year, monthIndexZeroBased, day);
-    if (!isWeekend(date)) count++;
+    if (useCuadrante) {
+      if (isCuadranteWorkday(year, monthIndexZeroBased, day)) count++;
+    } else {
+      const date = new Date(year, monthIndexZeroBased, day);
+      if (!isWeekend(date)) count++;
+    }
   }
   return count;
 }
 
 function countWorkdaysRemaining(year, monthIndexZeroBased, currentDay) {
   const totalDays = daysInMonth(year, monthIndexZeroBased);
+  const useCuadrante = hasCuadranteForMonth(year, monthIndexZeroBased);
   let count = 0;
   // Incluye el día de hoy si es laborable (aún puedes trabajar hoy)
   for (let day = currentDay; day <= totalDays; day++) {
-    const date = new Date(year, monthIndexZeroBased, day);
-    if (!isWeekend(date)) count++;
+    if (useCuadrante) {
+      if (isCuadranteWorkday(year, monthIndexZeroBased, day)) count++;
+    } else {
+      const date = new Date(year, monthIndexZeroBased, day);
+      if (!isWeekend(date)) count++;
+    }
   }
   return count;
 }
@@ -314,7 +386,15 @@ function renderDashboard() {
   // Meta y métricas calculadas sobre el mes del periodo seleccionado (solo efectivas)
   const mesReferencia = STATE.ventas.filter((venta) => isMismoMes(venta.fecha, referenceDate) && (typeof isVentaEfectiva === 'function' ? isVentaEfectiva(venta) : true));
   const currentMonthSales = sum(mesReferencia, 'importe_total');
-  const goalRemaining = Math.max(0, goal - currentMonthSales);
+  
+  const MILESTONES_PCT = [100, 120, 140, 160];
+  let activeTarget = goal;
+  if (goal > 0) {
+    const rawPct = (currentMonthSales / goal) * 100;
+    const nextMilestone = MILESTONES_PCT.find(m => rawPct < m) || 160;
+    activeTarget = (goal * nextMilestone) / 100;
+  }
+  const goalRemaining = Math.max(0, activeTarget - currentMonthSales);
   const goalProgress = goal > 0 ? Math.min(100, (currentMonthSales / goal) * 100) : 0;
 
   const referenceYear = referenceDate.getFullYear();
@@ -378,7 +458,7 @@ function renderDashboard() {
   const stats = [
     { label: 'Total en filtro', value: fmtEUR(filteredTotal), sub: `${fmtNum(filteredCount)} completadas de ${fmtNum(filtradas.length)} totales`, icon: 'M12 8v8M8 12h8' },
     { label: 'Parque más vendido', value: topParkName, sub: topParkEntry ? `${fmtNum(topParkEntries)} entradas · ${fmtEUR(topParkRevenue)}` : 'Sin ventas en el filtro', icon: 'M3 21l7-14 4 8 3-5 4 11H3z' },
-    { label: 'Media diaria del mes', value: fmtEUR(averageDailyMonthSales), sub: workdaysElapsed ? `${fmtNum(workdaysElapsed)} días laborables calculados` : 'Sin días laborables en el periodo', icon: 'M3 13h4l3 7 4-14 3 7h4' },
+    { label: 'Media diaria del mes', value: fmtEUR(averageDailyMonthSales), sub: workdaysElapsed ? `Calculado sobre ${fmtNum(workdaysElapsed)} días trabajados hasta hoy` : 'Sin días laborables en el periodo', icon: 'M3 13h4l3 7 4-14 3 7h4' },
     { label: 'Cuota / día restante', value: goal > 0 ? fmtEUR(dailyGoalRemaining) : '—', sub: goal > 0 ? (isCurrentReferenceMonth ? `Te quedan ${fmtNum(workdaysRemaining)} días laborables de ${fmtNum(actualMonthWorkdays)} este mes` : `Mes cerrado · ${fmtNum(actualMonthWorkdays)} días laborables`) : `Sin meta para ${goalMonthLabel}`, icon: 'M4 19h16M6 16V9M12 16V5M18 16v-4' },
     { label: 'Ventas totales del día', value: fmtEUR(totalHoy), sub: countHoy ? `${fmtNum(countHoy)} entradas en la fecha seleccionada` : 'Sin ventas en la fecha seleccionada', icon: 'M3 3v18h18' },
     { label: 'Ventas de la semana', value: fmtEUR(totalSemana), sub: countSemana ? `${fmtNum(countSemana)} entradas` : 'Sin ventas esta semana', icon: 'M16 2v4M8 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M12 14v4M10 16h4' },
@@ -391,6 +471,18 @@ function renderDashboard() {
       <div class="stat-sub">${escapeHtml(stat.sub)}</div>
     </div>
   `).join('');
+
+  // === FIRE / SPARKS PARTICLE SYSTEM ===
+  const containerObjetivo = document.getElementById('chart-objetivo')?.parentElement;
+  if (containerObjetivo) {
+    if (totalHoy >= 2000) {
+      containerObjetivo.classList.add('on-fire');
+      startFireParticles(containerObjetivo);
+    } else {
+      containerObjetivo.classList.remove('on-fire');
+      stopFireParticles();
+    }
+  }
 
   renderGoalChart(currentMonthSales, goal);
   renderGoalWidget({
@@ -615,6 +707,9 @@ function renderGoalChart(currentMonthSales, goal) {
   const pctText = rawPct.toFixed(1) + '%';
   const overlay = document.getElementById('goal-ring-overlay');
   if (overlay) {
+    overlay.style.cursor = 'pointer';
+    overlay.title = 'Hacer clic para cambiar la meta del mes';
+    overlay.onclick = () => openQuickGoalModal(goalMonthKey);
     overlay.innerHTML = `
       <span class="goal-ring-pct" style="color:${currentTierColor}">${pctText}</span>
       <span class="goal-ring-tier">${tierEmoji}</span>
@@ -698,9 +793,14 @@ function renderGoalWidget({
           <span>Ventas de ${escapeHtml(goalMonthLabel)}</span>
           <b>${fmtEUR(currentMonthSales)}</b>
         </div>
-        <div style="color:var(--text-muted); font-size:12.5px; margin-top:10px; text-align:center; padding:8px 0;">
-          Sin objetivo para ${escapeHtml(goalMonthLabel)}.<br>
-          <span style="color:var(--accent); cursor:pointer; font-weight:600;" onclick="openProfileSettings('${goalMonthKey}')">Configura la meta de este mes →</span>
+        <div style="background:var(--bg-sunken); border:1px dashed var(--border); border-radius:var(--radius-m); padding:20px 16px; margin-top:16px; text-align:center;">
+          <div style="font-size:2.2rem; margin-bottom:8px;">🎯</div>
+          <p style="margin:0 0 14px 0; color:var(--text-muted); font-size:13.5px; line-height:1.4;">
+            Sin objetivo establecido para <strong>${escapeHtml(goalMonthLabel)}</strong>.
+          </p>
+          <button class="btn btn-primary" onclick="openQuickGoalModal('${goalMonthKey}')">
+            🎯 Establecer Meta de ${escapeHtml(goalMonthLabel)}
+          </button>
         </div>
       </div>
     `;
@@ -723,32 +823,64 @@ function renderGoalWidget({
   const nextMilestone = MILESTONES.find((m) => rawPct < m.pct) || null;
 
   // Mensajes motivadores por estado (estilo corto y directo)
+  // Cada rango tiene sus propios mensajes - SOLO se usa el rango actual
   const MOTIVATION = {
-    below: [
-      { max: 25, msg: '🚀 Has vendido menos de lo previsto, ¡sube la cuota!' },
-      { max: 50, msg: '🚀 Vas a mitad de camino, ¡mantén el ritmo!' },
-      { max: 75, msg: '🔥 ¡Vas bien! La recta final es tuya 💪🏻' },
-      { max: 100, msg: '🎯 ¡A un paso del objetivo! ¡Último empujón!' },
+    // 0-25%: Inicio de mes
+    early: [
+      '🚀 Mes empezando, ¡a calentar motores!',
+      '⏳ Arrancando el mes, ¡cada venta cuenta!',
+      '📈 Poco a poco se construye el resultado.',
+    ],
+    // 25-50%: Progreso inicial
+    quarter: [
+      '🎯 Buen inicio, vas por el 25%. ¡Sigue así!',
+      '📊 Un cuarto del objetivo. ¡Ritmo constante!',
+      '💪 Base sólida. Ahora a consolidar.',
+    ],
+    // 50-75%: Mitad de camino
+    half: [
+      '🔥 ¡Mitad del objetivo! La recta final se acerca.',
+      '🏁 50% superado. ¡Buen ritmo, mantén el pulso!',
+      '⚡ A mitad de camino. ¡No aflojes ahora!',
+    ],
+    // 75-95%: Cerca de la meta
+    near: [
+      '🎯 ¡Cerca del 100%! Último empujón.',
+      '💥 A un paso de la meta. ¡Lo tienes!',
+      '🏆 La meta se ve. ¡Remata el mes!',
+    ],
+    // 95-100%: Muy cerca
+    final: [
+      '🎯 ¡A nada del 100%! Última venta y goal.',
+      '⚡ Casi casi. ¡El objetivo está ahí!',
     ],
     tier1: [
       '🎯 ¡Objetivo cumplido! Ahora a por el 120% 💪🏻',
-      '🎯 ¡Meta base conseguida! ¿Te quedas aquí o vas al 120%?',
-      '🎯 ¡100% cerrado! El siguiente nivel está a tu alcance.',
+      '🎯 ¡Meta base conseguida! ¿Vas al 120%?',
+      '🎯 ¡100% cerrado! Siguiente nivel a la vista.',
+      '🎯 Lo fácil ya está. ¡A por más!',
+      '🎯 Objetivo superado. ¡No te confíes! 😉',
     ],
     tier2: [
-      '🚀 ¡120%! Estás en otra liga. ¡Vas por delante! 💪🏻',
-      '🚀 ¡20% extra sobre el objetivo! Sigue así, el 140% cae solo.',
-      '🚀 ¡Máquina! 120% y subiendo. El 140% te espera.',
+      '🚀 ¡120%! Estás en otra liga 💪🏻',
+      '🚀 ¡20% extra! El 140% cae solo.',
+      '🚀 ¡Máquina! 120% y subiendo.',
+      '🚀 ¡Vaya racha! Cuota pequeña.',
+      '🚀 Imparable. ¡Por otro récord!',
     ],
     tier3: [
-      '⚡ ¡140%! Eres una bestia. ¿Puedes con el 160% también?',
-      '⚡ ¡Élite total! 140% superado. Muy pocos llegan aquí 🔥',
-      '⚡ ¡140% y contando! El 160% es tu siguiente obra maestra.',
+      '⚡ ¡140%! Bestia total. ¿El 160%?',
+      '⚡ ¡Élite! 140% superado 🔥',
+      '⚡ ¡140%! El 160% es tu siguiente obra.',
+      '⚡ Rendimiento increíble. Referente del mes.',
+      '⚡ Superando expectativas. ¡Talento puro!',
     ],
     tier4: [
-      '👑 ¡160%! Leyenda absoluta. Estás rompiendo todos los récords.',
-      '👑 ¡160%! A estas alturas ya no hay hitos, solo historia.',
-      '👑 ¡Mes épico! 160% superado. ¡Imparable! 🔥',
+      '👑 ¡160%! Leyenda absoluta 🔥',
+      '👑 ¡160%! Solo queda hacer historia.',
+      '👑 ¡Mes épico! Imparable.',
+      '👑 ¿160%? Inventar números nuevos.',
+      '👑 Maestro de ventas. Sin rival 🏆',
     ],
   };
 
@@ -759,26 +891,30 @@ function renderGoalWidget({
   const nextAmountStr = nextMilestone ? ` · Faltan <b>${fmtEUR(nextAmount)}</b> para el ${nextMilestone.label}` : '';
 
   function getMotivMsg() {
+    const getRndMsg = (pool) => pool[Math.floor(Math.random() * pool.length)];
+
     if (currentTier === 4) {
-      const pool = MOTIVATION.tier4;
-      return pool[Math.floor(rawPct / 10) % pool.length];
+      return getRndMsg(MOTIVATION.tier4);
     }
     if (currentTier === 3) {
-      const pool = MOTIVATION.tier3;
-      return `${pool[Math.floor(rawPct / 5) % pool.length]}${nextAmountStr}`;
+      return `${getRndMsg(MOTIVATION.tier3)}${nextAmountStr}`;
     }
     if (currentTier === 2) {
-      const pool = MOTIVATION.tier2;
-      return `${pool[Math.floor(rawPct / 5) % pool.length]}${nextAmountStr}`;
+      return `${getRndMsg(MOTIVATION.tier2)}${nextAmountStr}`;
     }
     if (currentTier === 1) {
-      const pool = MOTIVATION.tier1;
-      return `${pool[Math.floor(rawPct / 5) % pool.length]}${nextAmountStr}`;
+      return `${getRndMsg(MOTIVATION.tier1)}${nextAmountStr}`;
     }
-    // below 100%
-    const slot = MOTIVATION.below.find((s) => rawPct < s.max) || MOTIVATION.below[MOTIVATION.below.length - 1];
+    // below 100% - elegir rango según porcentaje real
+    let pool;
+    if (rawPct < 25) pool = MOTIVATION.early;
+    else if (rawPct < 50) pool = MOTIVATION.quarter;
+    else if (rawPct < 75) pool = MOTIVATION.half;
+    else if (rawPct < 95) pool = MOTIVATION.near;
+    else pool = MOTIVATION.final;
+
     const faltaBase = Math.max(0, goal - currentMonthSales);
-    return `${slot.msg} · Faltan <b>${fmtEUR(faltaBase)}</b> para el 100%`;
+    return `${getRndMsg(pool)} · Faltan <b>${fmtEUR(faltaBase)}</b> para el 100%`;
   }
 
   // ── BARRA DE PROGRESO POR TRAMOS (0-160%) ──────────────────────────────
@@ -1833,6 +1969,73 @@ document.addEventListener('DOMContentLoaded', () => {
   wireTopbarUserMenu();
 });
 window.openProfileSettings = openProfileSettings;
+
+function openQuickGoalModal(monthKey = null) {
+  const filters = typeof loadDashboardFilters === 'function' ? loadDashboardFilters() : {};
+  const targetMonthKey = monthKey || (typeof getGoalMonthKeyFromFilters === 'function' ? getGoalMonthKeyFromFilters(filters, new Date()) : toMonthInputValue(new Date()));
+  const monthLabel = formatMonthLabel(targetMonthKey);
+  const currentGoal = getMonthlyGoalForMonth(targetMonthKey);
+
+  openModal({
+    title: `🎯 Meta Mensual · ${monthLabel}`,
+    width: '400px',
+    bodyHtml: `
+      <form id="quick-goal-form" onsubmit="event.preventDefault(); saveQuickGoal('${targetMonthKey}');" style="display:flex; flex-direction:column; gap:16px;">
+        <p style="margin:0; font-size:0.9rem; color:var(--text-muted); line-height:1.4;">
+          Introduce el importe objetivo para <strong>${escapeHtml(monthLabel)}</strong>:
+        </p>
+
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <label for="quick-goal-amount" style="font-weight:600; font-size:0.85rem; color:var(--text-primary);">
+            Objetivo de Ventas (€)
+          </label>
+          <input type="number" id="quick-goal-amount" placeholder="Ej: 5000" value="${currentGoal > 0 ? currentGoal : ''}" min="0" step="50" required
+            style="width:100%; font-size:1.3rem; font-weight:700; text-align:center; padding:12px; border-radius:var(--radius-m); border:1px solid var(--border); background:var(--bg-sunken); color:var(--text-primary);">
+        </div>
+      </form>
+    `,
+    footHtml: `
+      <div style="display:flex; justify-content:flex-end; gap:8px; width:100%;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="saveQuickGoal('${targetMonthKey}')">💾 Guardar Meta</button>
+      </div>
+    `
+  });
+
+  setTimeout(() => {
+    const input = document.getElementById('quick-goal-amount');
+    if (input) {
+      input.focus();
+      input.select();
+    }
+  }, 100);
+}
+
+async function saveQuickGoal(monthKey) {
+  const amountEl = document.getElementById('quick-goal-amount');
+  
+  if (!amountEl) return;
+  const amount = Number(amountEl.value);
+
+  if (isNaN(amount) || amount < 0) {
+    toast('Por favor introduce una cifra válida', 'error');
+    return;
+  }
+
+  try {
+    const existingDays = getCustomWorkdaysForMonth(monthKey);
+    await saveMonthlyGoalForMonth(monthKey, amount, existingDays);
+    closeModal();
+    const monthLabel = formatMonthLabel(monthKey);
+    toast(`Meta de ${monthLabel} guardada correctamente (🎯 ${fmtEUR(amount)})`, 'success');
+    renderDashboard();
+  } catch (err) {
+    toast('Error al guardar la meta: ' + err.message, 'error');
+  }
+}
+
+window.openQuickGoalModal = openQuickGoalModal;
+window.saveQuickGoal = saveQuickGoal;
 window.togglePasswordVisibility = function (btn) {
   const input = btn.previousElementSibling;
   const eye = btn.querySelector('.pw-eye');
@@ -1850,3 +2053,208 @@ window.togglePasswordVisibility = function (btn) {
     }
   }
 };
+
+/* ============================================================================
+   FIRE / SPARKS PARTICLE SYSTEM — around the Goal Ring
+   Uses position:fixed with screen coordinates to avoid CSS positioning issues
+   ============================================================================ */
+let _fireInterval = null;
+let _fireCanvas = null;
+
+function startFireParticles(wrapEl) {
+  if (_fireInterval) return;
+  
+  const canvas = wrapEl.querySelector('canvas');
+  if (!canvas) return;
+  _fireCanvas = canvas;
+
+  function spawnParticle() {
+    if (!_fireCanvas || !document.body.contains(_fireCanvas)) { stopFireParticles(); return; }
+
+    const rect = _fireCanvas.getBoundingClientRect();
+    
+    // If canvas is not visible (other page active), skip spawning
+    if (rect.width === 0 || rect.height === 0 || rect.top > window.innerHeight || rect.bottom < 0) return;
+    
+    // Center of the canvas on screen
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    
+    // Ring radius — Chart.js doughnut uses ~78% of half the canvas
+    const ringRadius = Math.min(rect.width, rect.height) / 2 * 0.78;
+
+    // Get the arc percentage from the chart data
+    let arcPct = 0.37;
+    if (typeof chartObjetivo !== 'undefined' && chartObjetivo?.data?.datasets?.[0]?.data) {
+      const d = chartObjetivo.data.datasets[0].data;
+      const total = d.reduce((a, b) => a + b, 0);
+      if (total > 0) arcPct = d[0] / total;
+    }
+
+    // Angle along the filled arc (starts at top = -90°)
+    const startAngle = -Math.PI / 2;
+    const endAngle = startAngle + arcPct * Math.PI * 2;
+    
+    // 60% of particles concentrate near the TIP (end of the arc)
+    // 40% spread along the full arc for ambiance
+    let angle;
+    if (Math.random() < 0.6) {
+      // Near the tip: last 15% of the arc with slight overshoot
+      const tipStart = endAngle - (endAngle - startAngle) * 0.15;
+      angle = tipStart + Math.random() * ((endAngle - startAngle) * 0.18);
+    } else {
+      // Spread along the full arc
+      angle = startAngle + Math.random() * (endAngle - startAngle);
+    }
+
+    // Slight radius jitter
+    const r = ringRadius + (Math.random() - 0.5) * 14;
+    const px = cx + Math.cos(angle) * r;
+    const py = cy + Math.sin(angle) * r;
+
+    const size = 2 + Math.random() * 4;
+
+    const colors = [
+      '#FF4500', '#FF6A00', '#FF8C00', '#FFB347',
+      '#FFD700', '#FFEC8B', '#FF3E00', '#FFA500',
+      '#FFFF00', '#FFF5CC'
+    ];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+
+    const p = document.createElement('div');
+    p.className = 'fire-spark-particle';
+    p.style.cssText = `
+      position: fixed;
+      left: ${px - size / 2}px;
+      top: ${py - size / 2}px;
+      width: ${size}px;
+      height: ${size}px;
+      border-radius: 50%;
+      background: ${color};
+      box-shadow: 0 0 ${size + 3}px ${color}, 0 0 ${size + 8}px ${color}88;
+      pointer-events: none;
+      z-index: 9999;
+      will-change: transform, opacity;
+      filter: blur(0.5px);
+    `;
+    document.body.appendChild(p);
+
+    // Fly outward + upward
+    const duration = 500 + Math.random() * 700;
+    const outward = 12 + Math.random() * 22;
+    const moveX = Math.cos(angle) * outward + (Math.random() - 0.5) * 16;
+    const moveY = Math.sin(angle) * outward - (10 + Math.random() * 20);
+
+    const anim = p.animate([
+      { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+      { transform: `translate(${moveX}px, ${moveY}px) scale(0.1)`, opacity: 0 }
+    ], {
+      duration,
+      easing: 'ease-out',
+      fill: 'forwards'
+    });
+
+    anim.onfinish = () => p.remove();
+  }
+
+  // Initial burst
+  for (let i = 0; i < 30; i++) {
+    setTimeout(spawnParticle, i * 20);
+  }
+
+  // Steady spawning — high density
+  _fireInterval = setInterval(() => {
+    const count = 5 + Math.floor(Math.random() * 4);
+    for (let i = 0; i < count; i++) spawnParticle();
+  }, 60);
+}
+
+function stopFireParticles() {
+  if (_fireInterval) {
+    clearInterval(_fireInterval);
+    _fireInterval = null;
+  }
+  _fireCanvas = null;
+  document.querySelectorAll('.fire-spark-particle').forEach(el => el.remove());
+}
+
+const MILESTONES = [
+  { pct: 100, label: '100%', color: '#00E676', emoji: '🎯', tier: 1 },
+  { pct: 120, label: '120%', color: '#00C6FF', emoji: '🚀', tier: 2 },
+  { pct: 140, label: '140%', color: '#B27BFF', emoji: '⚡', tier: 3 },
+  { pct: 160, label: '160%', color: '#FFD600', emoji: '👑', tier: 4 },
+];
+
+const TIER_MESSAGES = {
+  1: [
+    '🎯 ¡Objetivo cumplido! Ahora a por el 120% 💪🏻',
+    '🎯 ¡Meta base conseguida! ¿Te quedas aquí o vas al 120%?',
+    '🎯 ¡100% cerrado! El siguiente nivel está a tu alcance.',
+    '🎯 Lo fácil ya está. Ahora toca lo divertido. ¡A por más!',
+    '🎯 Objetivo superado con éxito. Pero no hay que confiarse 😉',
+  ],
+  2: [
+    '🚀 ¡120%! Estás en otra liga. ¡Vas por delante! 💪🏻',
+    '🚀 ¡20% extra sobre el objetivo! Sigue así, el 140% cae solo.',
+    '🚀 ¡Máquina! 120% y subiendo. El 140% te espera.',
+    '🚀 ¡Vaya racha! Tu cuota ya se te ha quedado pequeña.',
+    '🚀 Imparable. Vas sobrado, ¡vamos a por otro récord!',
+  ],
+  3: [
+    '⚡ ¡140%! Eres una bestia. ¿Puedes con el 160% también?',
+    '⚡ ¡Élite total! 140% superado. Muy pocos llegan aquí 🔥',
+    '⚡ ¡140% y contando! El 160% es tu siguiente obra maestra.',
+  ],
+  4: [
+    '👑 ¡160%! ¡Eres la realeza de las ventas! 👑🔥',
+    '👑 ¡Legendario! 160% superado. Nadie te para.',
+    '👑 ¡Máximo nivel alcanzado! Eres imparable 💎',
+  ],
+};
+
+function getCurrentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function getCurrentMonthSales(monthKey) {
+  const mesReferencia = (STATE.ventas || []).filter((venta) => {
+    const ventaDate = new Date(venta.fecha);
+    const ventaMonthKey = `${ventaDate.getFullYear()}-${String(ventaDate.getMonth() + 1).padStart(2, '0')}`;
+    return ventaMonthKey === monthKey && (typeof isVentaEfectiva === 'function' ? isVentaEfectiva(venta) : true);
+  });
+  return mesReferencia.reduce((acc, venta) => acc + Number(venta.importe_total || 0), 0);
+}
+
+function checkGlobalMilestoneCelebration() {
+  const monthKey = getCurrentMonthKey();
+  const goal = getMonthlyGoalForMonth(monthKey);
+  if (goal <= 0) return;
+
+  const currentSales = getCurrentMonthSales(monthKey);
+  const rawPct = (currentSales / goal) * 100;
+
+  const reachedTiers = MILESTONES.filter((m) => rawPct >= m.pct).map((m) => m.tier);
+  if (reachedTiers.length === 0) return;
+
+  const celebratedKey = `parksales_milestones_celebrated_${monthKey}`;
+  let celebrated = [];
+  try {
+    celebrated = JSON.parse(sessionStorage.getItem(celebratedKey) || '[]');
+  } catch {
+    celebrated = [];
+  }
+
+  const newTiers = reachedTiers.filter((t) => !celebrated.includes(t));
+  if (newTiers.length === 0) return;
+
+  newTiers.forEach((tier) => {
+    const messages = TIER_MESSAGES[tier] || [];
+    const msg = messages[Math.floor(Math.random() * messages.length)];
+    toast(msg, 'success', 8000);
+  });
+
+  celebrated.push(...newTiers);
+  sessionStorage.setItem(celebratedKey, JSON.stringify([...new Set(celebrated)]));
+}
+

@@ -74,8 +74,7 @@ function updateSelwoBlock() {
   if (!esSelwo && fechaRow) fechaRow.style.display = 'none';
 
   if (esSelwo && fechaRow) {
-    const tipoSelwo = document.querySelector('input[name="v-selwo-tipo"]:checked')?.value || 'no_flexible';
-    fechaRow.style.display = tipoSelwo === 'flexible' ? '' : 'none';
+    fechaRow.style.display = '';
   }
 }
 
@@ -109,9 +108,7 @@ function initVentaForm() {
   // Radios de tipo Selwo: mostrar/ocultar fecha de visita
   document.querySelectorAll('input[name="v-selwo-tipo"]').forEach(el => {
     el.addEventListener('change', () => {
-      const fechaRow = document.getElementById('v-selwo-fecha-row');
       const tipoSelwo = document.querySelector('input[name="v-selwo-tipo"]:checked')?.value;
-      if (fechaRow) fechaRow.style.display = tipoSelwo === 'flexible' ? '' : 'none';
       // Poner fecha de hoy por defecto si se activa Flexible y está vacía
       if (tipoSelwo === 'flexible') {
         const fechaInput = document.getElementById('v-selwo-fecha');
@@ -180,16 +177,15 @@ function updateTicketPreview() {
   // Si es Hotel Selwo flexible, mostrar fecha de visita en el preview
   const tipoSelwo = document.querySelector('input[name="v-selwo-tipo"]:checked')?.value || 'no_flexible';
   const esSelwo = isSelwoSelected && isSelwoSelected();
-  if (esSelwo && tipoSelwo === 'flexible') {
+  if (esSelwo) {
     const fechaVal = document.getElementById('v-selwo-fecha')?.value;
+    const tLabel = tipoSelwo === 'flexible' ? '🗓️ Flexible' : '🔒 No Flexible';
     if (fechaVal) {
       const [y, m, d] = fechaVal.split('-');
-      setPreviewText('tp-type', `🗓️ Flexible — Visita: ${d}/${m}/${y}`);
+      setPreviewText('tp-type', `${tLabel} — Visita: ${d}/${m}/${y}`);
     } else {
-      setPreviewText('tp-type', '🗓️ Flexible — Elige fecha de visita');
+      setPreviewText('tp-type', `${tLabel} — Elige fecha de visita`);
     }
-  } else if (esSelwo) {
-    setPreviewText('tp-type', '🔒 No Flexible — Cuenta hoy');
   } else {
     setPreviewText('tp-type', '');
   }
@@ -475,31 +471,30 @@ async function guardarVenta({ keepOpen }) {
   submitBtns.forEach((b) => (b.disabled = true));
 
   try {
-    // Hotel Selwo: tipo flexible/no flexible y fecha de visita
+    // Hotel Selwo: siempre se necesita la fecha de visita (sea flexible o no flexible)
     if (tipo === 'entrada' && isSelwoSelected()) {
       const tipoSelwo = document.querySelector('input[name="v-selwo-tipo"]:checked')?.value || 'no_flexible';
       ventaPayload.selwo_tipo = tipoSelwo;
 
-      if (tipoSelwo === 'flexible') {
-        const fechaVisitaStr = document.getElementById('v-selwo-fecha')?.value;
-        if (!fechaVisitaStr) {
-          toast('Indica la fecha de visita para la entrada flexible', 'error');
-          submitBtns.forEach((b) => (b.disabled = false));
-          return;
-        }
-        // La venta cuenta el día de la visita: se guarda con esa fecha (hora 12:00 local)
-        const [y, m, d] = fechaVisitaStr.split('-').map(Number);
-        const fechaVisita = new Date(y, m - 1, d, 12, 0, 0);
-        ventaPayload.fecha_visita = fechaVisita.toISOString();
-        ventaPayload.fecha_registro = new Date().toISOString();
-        ventaPayload.fecha = fechaVisita.toISOString(); // cuenta en el día de la visita
-        // Estado especial: "Flexible Pendiente" hasta que llegue el día de visita
-        const hoy = new Date();
-        const esFechaFutura = fechaVisita > new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59);
-        if (esFechaFutura) {
-          ventaPayload.estado = 'selwo_flexible'; // badge especial hasta que llegue el día
-        }
-        // Si la fecha de visita es hoy o ya pasó, queda como 'completado' (el estado por defecto del formulario)
+      const fechaVisitaStr = document.getElementById('v-selwo-fecha')?.value;
+      if (!fechaVisitaStr) {
+        toast('Indica la fecha de visita para el Hotel Selwo', 'error');
+        submitBtns.forEach((b) => (b.disabled = false));
+        return;
+      }
+      
+      // La venta cuenta el día de la visita: se guarda con esa fecha (hora 12:00 local)
+      const [y, m, d] = fechaVisitaStr.split('-').map(Number);
+      const fechaVisita = new Date(y, m - 1, d, 12, 0, 0);
+      ventaPayload.fecha_visita = fechaVisita.toISOString();
+      ventaPayload.fecha_registro = new Date().toISOString();
+      ventaPayload.fecha = fechaVisita.toISOString(); // cuenta en el día de la visita
+      
+      // Estado especial: "Flexible Pendiente" hasta que llegue el día de visita (ambos funcionan igual ahora)
+      const hoy = new Date();
+      const esFechaFutura = fechaVisita > new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59);
+      if (esFechaFutura) {
+        ventaPayload.estado = 'selwo_flexible'; 
       }
     }
 
@@ -513,11 +508,18 @@ async function guardarVenta({ keepOpen }) {
 
     const estadoInfo = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(estado) : { label: estado };
 
-    // Toast especial para Hotel Selwo flexible
-    if (ventaPayload.selwo_tipo === 'flexible' && ventaPayload.fecha_visita) {
+    // Notificación/Toast
+    if (ventaPayload.selwo_tipo && ventaPayload.fecha_visita) {
       const fv = new Date(ventaPayload.fecha_visita);
       const fechaStr = fv.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
-      toast(`🗓️ Entrada flexible registrada — Contará el ${fechaStr} (${estadoInfo.label})`, 'success', 5000);
+      const lbl = ventaPayload.selwo_tipo === 'flexible' ? 'Entrada flexible' : 'Entrada no flexible';
+      toast(`🗓️ ${lbl} registrada — Contará el ${fechaStr} (${estadoInfo.label})`, 'success', 5000);
+      
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+          new Notification('Venta Hotel Registrada', { body: `Hotel Selwo: ${lbl} para el ${fechaStr}` });
+        } catch(e) {}
+      }
     } else {
       toast(`Venta registrada (${estadoInfo.label}) y apunte creado`, 'success');
     }
@@ -552,7 +554,7 @@ function resetVentaForm() {
   const noFlexRadio = document.getElementById('v-selwo-noflex');
   if (noFlexRadio) noFlexRadio.checked = true;
   const fechaRow = document.getElementById('v-selwo-fecha-row');
-  if (fechaRow) fechaRow.style.display = 'none';
+  if (fechaRow) fechaRow.style.display = 'none'; // Will be updated correctly when opening
   const fieldSelwo = document.getElementById('v-field-selwo');
   if (fieldSelwo) fieldSelwo.style.display = 'none';
   updateVentaFormVisibility();
@@ -566,4 +568,5 @@ function refreshAllViewsAfterDataChange() {
   if (typeof renderBonosTable === 'function') renderBonosTable();
   if (typeof renderEstadisticas === 'function') renderEstadisticas();
   if (typeof renderContactos === 'function') renderContactos();
+  if (typeof checkGlobalMilestoneCelebration === 'function') checkGlobalMilestoneCelebration();
 }

@@ -363,13 +363,6 @@
           </svg>
         </button>
 
-        <button class="btn-fab-quick" id="quick-add-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          <span>Nueva venta</span>
-        </button>
-
         <div class="topbar-user">
           <button class="topbar-user-btn" id="profile-settings-btn" title="Perfil y ajustes">
             <div class="user-avatar" id="user-avatar">?</div>
@@ -608,15 +601,15 @@
                       <label style="flex-direction:row;align-items:center;gap:8px;cursor:pointer;">
                         <input type="radio" name="v-selwo-tipo" id="v-selwo-noflex" value="no_flexible" checked style="width:auto;accent-color:#FF9A44;">
                         <span style="font-size:13px;font-weight:600;">🔒 No Flexible</span>
-                        <span style="font-size:11px;color:var(--text-muted);">Cuenta hoy</span>
+                        <span style="font-size:11px;color:var(--text-muted);">Requiere fecha</span>
                       </label>
                       <label style="flex-direction:row;align-items:center;gap:8px;cursor:pointer;">
                         <input type="radio" name="v-selwo-tipo" id="v-selwo-flex" value="flexible" style="width:auto;accent-color:#00C6FF;">
                         <span style="font-size:13px;font-weight:600;">🗓️ Flexible</span>
-                        <span style="font-size:11px;color:var(--text-muted);">Elige fecha de visita</span>
+                        <span style="font-size:11px;color:var(--text-muted);">Requiere fecha</span>
                       </label>
                     </div>
-                    <div id="v-selwo-fecha-row" style="display:none;">
+                    <div id="v-selwo-fecha-row">
                       <label for="v-selwo-fecha" style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">📅 Fecha de visita (la venta contará ese día)</label>
                       <input type="date" id="v-selwo-fecha" style="max-width:200px;">
                     </div>
@@ -1161,31 +1154,6 @@
                     </div>
                   </div>
 
-                  <!-- Toggle extras -->
-                  <div style="margin-top:10px; text-align:center;">
-                    <button type="button" class="btn btn-ghost btn-sm" id="ll-toggle-extras">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        style="width:14px;height:14px;vertical-align:middle;margin-right:4px;">
-                        <path d="M12 5v14M5 12h14" />
-                      </svg>
-                      <span id="ll-toggle-extras-text">Más opciones</span>
-                    </button>
-                  </div>
-
-                  <div id="ll-section-extras"
-                    style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
-                    <div class="form-grid">
-                      <div class="form-field">
-                        <label for="ll-correo">✉️ Correo</label>
-                        <input type="email" id="ll-correo" placeholder="cliente@ejemplo.com">
-                      </div>
-                      <div class="form-field">
-                        <label for="ll-localizador">🔖 Localizador</label>
-                        <input type="text" id="ll-localizador" placeholder="Opcional">
-                      </div>
-                    </div>
-                  </div>
-
                   <div class="btn-row" style="margin-top:16px;">
                     <button type="submit" class="btn btn-primary" id="llamada-submit-btn">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -1197,6 +1165,9 @@
                     </button>
                     <button type="button" class="btn btn-ghost" id="ll-cancel-edit" style="display:none;">
                       ✕ Cancelar edición
+                    </button>
+                    <button type="button" class="btn btn-ghost" id="ll-clear-form" style="margin-left:auto;">
+                      Limpiar
                     </button>
                   </div>
                 </form>
@@ -1731,9 +1702,11 @@
         <!-- ======================= EXPORTAR / IMPORTAR ======================= -->
         <section class="view" id="view-exportar">
           <div class="view-header">
-            <div>
-              <h2>Datos y Copias de Seguridad</h2>
-              <p class="desc">Gestiona tus informes, protege tus ventas y mantén tu sistema a salvo.</p>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h2>Datos y Copias de Seguridad</h2>
+                <p class="desc">Gestiona tus informes, protege tus ventas y mantén tu sistema a salvo.</p>
+              </div>
             </div>
           </div>
 
