@@ -1050,9 +1050,8 @@ function renderCalendar(person, hasData) {
     ].filter(Boolean).join(' ');
 
     const hours = meta?.hours ? `<span class="cuad-day-hours">${escapeHtml(meta.hours)}</span>` : '';
-    const subLabel = meta?.subLabel ? `<span class="cuad-day-sublabel">${escapeHtml(meta.subLabel)}</span>` : '';
     const label = displayCode
-      ? `<span class="cuad-day-code">${escapeHtml(displayCode === '0' || displayCode === 'L' ? 'Libre' : displayCode)}</span>${subLabel}`
+      ? `<span class="cuad-day-code">${escapeHtml(displayCode === '0' || displayCode === 'L' ? 'Libre' : displayCode)}</span>`
       : '<span class="cuad-day-code is-muted">—</span>';
     const hol = holiday ? '<span class="cuad-day-hol">Festivo</span>' : '';
 
@@ -1124,6 +1123,10 @@ function renderAgenda(person) {
     if (!code && isWeekendDate(date) && person && range && iso >= range.from && iso <= range.to) code = '0';
     const holiday = (cuadBundle.holidays || []).includes(iso);
     const isTfsFestivo = code === 'TFS' && !isWeekendDate(date);
+    // Botón para buscar cambios de fin de semana: solo tiene sentido en sábado o domingo
+    const swapBtn = isWeekendDate(date)
+      ? '<button type="button" class="btn btn-secondary btn-sm" id="cuad-swap-btn" style="margin-top:10px;width:100%;">⇄ Buscar cambio de este finde</button>'
+      : '';
     detail.innerHTML = `
       <div class="cuad-detail ${code ? `code-${code}` : ''}">
         <p class="cuad-kicker">${escapeHtml(relativeDayLabel(date))}</p>
@@ -1311,45 +1314,17 @@ function resetCuadEditorTimeout() {
   if (cuadEditorTimeout) clearTimeout(cuadEditorTimeout);
   if (cuadEditorMode) {
     cuadEditorTimeout = setTimeout(() => {
+      // Inactividad: se finaliza el modo editor sin menú de confirmación
+      // (los cambios ya están guardados en la BD desde que se confirma cada uno).
       if (cuadEditorMode) {
-        if (cuadPendingEdits.length > 0) {
-          // Hay cambios pendientes: mostrar modal en vez de cerrar solo
-          openModal({
-            title: 'Inactividad en modo editor',
-            width: '440px',
-            bodyHtml: `
-              <p class="desc">Llevas un rato sin editar y tienes <strong>${cuadPendingEdits.length} cambio${cuadPendingEdits.length > 1 ? 's' : ''}</strong> pendientes.</p>
-              <p class="desc" style="margin-top:8px;">¿Quieres guardarlos o descartarlos?</p>
-            `,
-            footHtml: `
-              <button class="btn btn-primary" type="button" id="cuad-idle-save">Guardar y salir</button>
-              <button class="btn btn-danger" type="button" id="cuad-idle-discard">Descartar y salir</button>
-              <button class="btn btn-secondary" type="button" id="cuad-idle-keep">Seguir editando</button>
-            `
-          });
-          document.getElementById('cuad-idle-save')?.addEventListener('click', () => {
-            closeModal();
-            toggleCuadEditor();
-          });
-          document.getElementById('cuad-idle-discard')?.addEventListener('click', () => {
-            closeModal();
-            cuadPendingEdits = [];
-            toggleCuadEditor();
-          });
-          document.getElementById('cuad-idle-keep')?.addEventListener('click', () => {
-            closeModal();
-            resetCuadEditorTimeout(); // Reiniciar temporizador
-          });
-        } else {
-          toggleCuadEditor();
-          toast('Modo editor desactivado por inactividad', 'info');
-        }
+        toggleCuadEditor({ silent: true, message: 'Modo editor desactivado por inactividad' });
       }
     }, 30000); // 30 segundos
   }
 }
 
-function toggleCuadEditor() {
+function toggleCuadEditor(opts) {
+  const silent = !!(opts && opts.silent === true); // sin modal de resumen (lo usa la confirmación al salir)
   cuadEditorMode = !cuadEditorMode;
   const btn = document.getElementById('cuad-editor-toggle');
   const label = document.getElementById('cuad-editor-label');
@@ -1372,7 +1347,7 @@ function toggleCuadEditor() {
   } else {
     if (cuadEditorTimeout) clearTimeout(cuadEditorTimeout);
 
-    if (cuadPendingEdits.length) {
+    if (cuadPendingEdits.length && !silent) {
       const summary = cuadPendingEdits.map(e => `• ${e.iso} (${escapeHtml(e.person)}): ${escapeHtml(e.from || '—')} → ${escapeHtml(e.to)} — ${escapeHtml(e.when)}`).join('<br>');
       openModal({
         title: 'Cambios realizados',
@@ -1381,11 +1356,76 @@ function toggleCuadEditor() {
         footHtml: `<button class="btn btn-primary" type="button" id="cuad-editor-summary-ok">Entendido</button>`
       });
       document.getElementById('cuad-editor-summary-ok')?.addEventListener('click', closeModal);
-      cuadPendingEdits = [];
     }
-    toast('Modo editor desactivado', 'info');
+    cuadPendingEdits = [];
+    toast((opts && opts.message) || 'Modo editor desactivado', 'info');
   }
   renderCuad();
+}
+
+/* Confirmación al salir de la pantalla con el modo editor activo */
+function cuadConfirmLeaveEditor(onLeave) {
+  const n = cuadPendingEdits.length;
+  const changesHtml = n
+    ? `<p class="desc" style="margin-top:8px;">Has hecho <strong>${n} cambio${n > 1 ? 's' : ''}</strong> en esta sesión:</p><div style="margin:10px 0;padding:10px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;font-size:12px;line-height:1.6">${cuadPendingEdits.map(e => `• ${e.iso} (${escapeHtml(e.person)}): ${escapeHtml(e.from || '—')} → ${escapeHtml(e.to)} — ${escapeHtml(e.when)}`).join('<br>')}</div><p class="desc">Están guardados en la BD.</p>`
+    : `<p class="desc" style="margin-top:8px;">No has hecho ningún cambio en esta sesión.</p>`;
+  openModal({
+    title: 'Salir del modo editor',
+    width: '520px',
+    bodyHtml: `<p class="desc">Tienes el <strong>modo editor</strong> activo. Si cambias de pantalla se desactivará.</p>${changesHtml}`,
+    footHtml: `
+      <button class="btn btn-secondary" type="button" id="cuad-leave-stay">Seguir editando</button>
+      <button class="btn btn-primary" type="button" id="cuad-leave-ok">Salir</button>
+    `
+  });
+  document.getElementById('cuad-leave-stay')?.addEventListener('click', () => {
+    closeModal();
+    resetCuadEditorTimeout();
+  });
+  document.getElementById('cuad-leave-ok')?.addEventListener('click', () => {
+    closeModal();
+    if (cuadEditorMode) toggleCuadEditor({ silent: true });
+    onLeave();
+  });
+}
+
+/* Cierra solo el menú "Editar turno" si no se toca nada durante un rato */
+const CUAD_EDIT_MODAL_IDLE_MS = 20000; // 20 segundos
+let cuadEditModalTimer = null;
+let cuadEditModalCleanup = null;
+
+function cuadWatchEditModalIdle() {
+  if (cuadEditModalCleanup) cuadEditModalCleanup();
+  const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel'];
+  const stillOpen = () => !!document.getElementById('cuad-edit-grid');
+  const cleanup = () => {
+    clearTimeout(cuadEditModalTimer);
+    cuadEditModalTimer = null;
+    events.forEach((ev) => document.removeEventListener(ev, onActivity, true));
+    if (cuadEditModalCleanup === cleanup) cuadEditModalCleanup = null;
+  };
+  const arm = () => {
+    clearTimeout(cuadEditModalTimer);
+    cuadEditModalTimer = setTimeout(onIdle, CUAD_EDIT_MODAL_IDLE_MS);
+  };
+  const onActivity = () => {
+    if (!stillOpen()) { cleanup(); return; }
+    arm();
+    resetCuadEditorTimeout(); // estar en el menú cuenta como actividad del modo editor
+  };
+  const onIdle = () => {
+    const open = stillOpen();
+    cleanup();
+    if (open) {
+      closeModal();
+      if (cuadEditorMode) {
+        toggleCuadEditor({ silent: true, message: 'Menú y modo editor cerrados por inactividad' });
+      }
+    }
+  };
+  events.forEach((ev) => document.addEventListener(ev, onActivity, true));
+  arm();
+  cuadEditModalCleanup = cleanup;
 }
 
 function libreCodeForDate(date) {
@@ -1397,14 +1437,13 @@ function cuadEditCardHtml(code, date, currentCode) {
   const isLibre = code === 'L' || code === '0';
   const isFestivo = code === 'TFS' && !isWeekendDate(date);
   const short = isLibre ? 'Libre' : code;
-  const sub = meta?.subLabel ? `<span class="cuad-edit-sublabel">${escapeHtml(meta.subLabel)}</span>` : '';
   const name = isLibre ? 'Día libre' : (meta?.subLabel || meta?.label || code);
   const hours = isLibre ? (isWeekendDate(date) ? 'Fin de semana' : 'Entre semana') : (meta?.hours || '');
   const isCurrent = code === currentCode;
   const picked = isCurrent ? ' is-picked' : '';
   return `
     <button type="button" class="cuad-edit-card code-${code}${picked}" data-code="${escapeHtml(code)}" aria-pressed="${isCurrent ? 'true' : 'false'}">
-      <strong>${escapeHtml(short)}${sub}</strong>
+      <strong>${escapeHtml(short)}</strong>
       <em>${escapeHtml(name)}</em>
       <span>${escapeHtml(hours)}</span>
     </button>`;
@@ -1443,6 +1482,7 @@ function openEditTurnoModal(iso) {
     `
   });
   const grid = document.getElementById('cuad-edit-grid');
+  cuadWatchEditModalIdle();
   const pick = (btn) => {
     grid.querySelectorAll('.cuad-edit-card').forEach((el) => {
       el.classList.remove('is-picked');
@@ -1454,8 +1494,12 @@ function openEditTurnoModal(iso) {
   grid?.querySelectorAll('.cuad-edit-card').forEach((btn) => {
     btn.addEventListener('click', () => pick(btn));
   });
-  document.getElementById('cuad-edit-cancel')?.addEventListener('click', closeModal);
+  document.getElementById('cuad-edit-cancel')?.addEventListener('click', () => {
+    if (cuadEditModalCleanup) cuadEditModalCleanup();
+    closeModal();
+  });
   document.getElementById('cuad-edit-save')?.addEventListener('click', async () => {
+    if (cuadEditModalCleanup) cuadEditModalCleanup();
     const picked = grid?.querySelector('.cuad-edit-card.is-picked');
     const newCode = picked ? (picked.getAttribute('data-code') || '') : currentCode;
     if (newCode === currentCode) { closeModal(); return; }

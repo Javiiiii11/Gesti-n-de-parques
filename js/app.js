@@ -23,38 +23,13 @@ function switchView(viewId) {
     viewId = 'dashboard';
   }
 
-  // Si estamos en cuadrante con editor activo y hay cambios pendientes, impedir salida
+  // Con el modo editor del cuadrante activo no se puede salir de la pantalla
+  // sin pasar por la confirmación (que muestra los cambios hechos).
   if (typeof cuadEditorMode !== 'undefined' && cuadEditorMode && viewId !== 'cuadrante') {
-    if (typeof cuadPendingEdits !== 'undefined' && cuadPendingEdits.length > 0) {
-      const currentView = document.querySelector('.view.active')?.id?.replace('view-', '');
-      if (currentView === 'cuadrante') {
-        openModal({
-          title: 'Tienes cambios sin confirmar',
-          width: '440px',
-          bodyHtml: `
-            <p class="desc">Has hecho <strong>${cuadPendingEdits.length} cambio${cuadPendingEdits.length > 1 ? 's' : ''}</strong> en el cuadrante.</p>
-            <p class="desc" style="margin-top:8px;">¿Quieres guardar los cambios antes de salir o descartarlos?</p>
-          `,
-          footHtml: `
-            <button class="btn btn-secondary" type="button" id="cuad-exit-keep">Seguir editando</button>
-            <button class="btn btn-primary" type="button" id="cuad-exit-save">Guardar y salir</button>
-            <button class="btn btn-danger" type="button" id="cuad-exit-discard">Descartar y salir</button>
-          `
-        });
-        document.getElementById('cuad-exit-keep')?.addEventListener('click', closeModal);
-        document.getElementById('cuad-exit-save')?.addEventListener('click', () => {
-          closeModal();
-          toggleCuadEditor(); // Esto guarda y cierra editor
-          setTimeout(() => switchView(viewId), 100);
-        });
-        document.getElementById('cuad-exit-discard')?.addEventListener('click', () => {
-          closeModal();
-          cuadPendingEdits = [];
-          toggleCuadEditor(); // Cierra editor sin mostrar resumen
-          setTimeout(() => switchView(viewId), 100);
-        });
-        return; // No cambiar de vista aún
-      }
+    const currentView = document.querySelector('.view.active')?.id?.replace('view-', '');
+    if (currentView === 'cuadrante' && typeof cuadConfirmLeaveEditor === 'function') {
+      cuadConfirmLeaveEditor(() => switchView(viewId));
+      return; // No cambiar de vista aún
     }
   }
 

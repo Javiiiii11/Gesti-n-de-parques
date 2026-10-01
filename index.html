@@ -202,7 +202,7 @@
           <span class="calls-nav-badge" id="calls-sidebar-badge" style="display:none;">0</span>
         </div>
         <div class="nav-item" data-view="horarios">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" 
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
@@ -361,6 +361,13 @@
             stroke-linejoin="round">
             <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
           </svg>
+        </button>
+
+        <button class="btn-fab-quick" id="quick-add-btn" title="Registrar venta rápida" onclick="switchView('venta-rapida')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          <span>Nueva venta</span>
         </button>
 
         <div class="topbar-user">
@@ -1211,6 +1218,23 @@
             </div>
             <div class="promos-card-actions"
               style="display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; width:100%; margin-left:auto;">
+              <a href="https://grprsc.sharepoint.com/:x:/r/sites/CALLCENTERPARQUEWARNER/_layouts/15/Doc.aspx?sourcedoc=%7B0CB2B8FF-1FE5-460A-BB09-E707783905F7%7D&file=Ventas%20hoteles%20.xlsx&action=default&mobileredirect=true"
+                target="_blank" class="btn btn-secondary" id="btn-contactos">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <rect x="4" y="2" width="16" height="20" rx="2" />
+                  <path d="M10 22v-6.57" />
+                  <path d="M14 22v-6.57" />
+                  <path d="M15 16a5 5 0 0 0-6 0" />
+                  <path d="M8 7h.01" />
+                  <path d="M12 7h.01" />
+                  <path d="M16 7h.01" />
+                  <path d="M8 11h.01" />
+                  <path d="M12 11h.01" />
+                  <path d="M16 11h.01" />
+                </svg>
+                Ventas hotel
+              </a>
               <a href="https://grprsc.sharepoint.com/:x:/r/sites/CALLCENTERPARQUEWARNER/_layouts/15/Doc.aspx?sourcedoc=%7B121AD38F-AE83-459E-8556-0C3D15DD6241%7D&file=CONTACTOS.xlsx&action=default&mobileredirect=true&isSPOFile=1&ovuser=dbb21a28-035f-42c1-b1b7-f8918f6416a4%2Ctadell%40grpr.com&wdExp=TEAMS-TREATMENT&web=1&CID=71cb238f-3a83-474f-9318-ecf568f7d78f&clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiI0OS8yNjA0MTYxNzIxNSJ9"
                 target="_blank" class="btn btn-secondary" id="btn-contactos">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"

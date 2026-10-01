@@ -1,4 +1,4 @@
-/* ============================================================================
+﻿/* ============================================================================
    dashboard.js — vista "Dashboard"
 ============================================================================ */
 
@@ -475,9 +475,14 @@ function renderDashboard() {
   // === FIRE / SPARKS PARTICLE SYSTEM ===
   const containerObjetivo = document.getElementById('chart-objetivo')?.parentElement;
   if (containerObjetivo) {
-    if (totalHoy >= 2000) {
-      containerObjetivo.classList.add('on-fire');
-      startFireParticles(containerObjetivo);
+    // Desde 1500 € empieza un fuego muy suave que crece hasta el efecto completo en 2000 €
+    const FIRE_START = 1500;
+    const FIRE_FULL = 2000;
+    if (totalHoy >= FIRE_START) {
+      const t = Math.min(1, (totalHoy - FIRE_START) / (FIRE_FULL - FIRE_START));
+      const intensity = totalHoy >= FIRE_FULL ? 1 : 0.1 + 0.9 * t;
+      containerObjetivo.classList.toggle('on-fire', totalHoy >= FIRE_FULL);
+      startFireParticles(containerObjetivo, intensity);
     } else {
       containerObjetivo.classList.remove('on-fire');
       stopFireParticles();
@@ -2060,8 +2065,10 @@ window.togglePasswordVisibility = function (btn) {
    ============================================================================ */
 let _fireInterval = null;
 let _fireCanvas = null;
+let _fireIntensity = 1; // 0..1 (1 = efecto completo, a partir de 2000 €)
 
-function startFireParticles(wrapEl) {
+function startFireParticles(wrapEl, intensity = 1) {
+  _fireIntensity = Math.max(0.05, Math.min(1, intensity));
   if (_fireInterval) return;
   
   const canvas = wrapEl.querySelector('canvas');
@@ -2112,14 +2119,16 @@ function startFireParticles(wrapEl) {
     const px = cx + Math.cos(angle) * r;
     const py = cy + Math.sin(angle) * r;
 
-    const size = 2 + Math.random() * 4;
+    const k = _fireIntensity;
+    const size = (2 + Math.random() * 4) * (0.6 + 0.4 * k);
 
+    // Ordenados de rojo a amarillo claro: con poca intensidad solo salen tonos rojizos/naranjas
     const colors = [
-      '#FF4500', '#FF6A00', '#FF8C00', '#FFB347',
-      '#FFD700', '#FFEC8B', '#FF3E00', '#FFA500',
-      '#FFFF00', '#FFF5CC'
+      '#FF3E00', '#FF4500', '#FF6A00', '#FF8C00', '#FFA500',
+      '#FFB347', '#FFD700', '#FFEC8B', '#FFFF00', '#FFF5CC'
     ];
-    const color = colors[Math.floor(Math.random() * colors.length)];
+    const maxColor = Math.ceil(colors.length * (0.4 + 0.6 * k));
+    const color = colors[Math.floor(Math.random() * maxColor)];
 
     const p = document.createElement('div');
     p.className = 'fire-spark-particle';
@@ -2141,9 +2150,10 @@ function startFireParticles(wrapEl) {
 
     // Fly outward + upward
     const duration = 500 + Math.random() * 700;
-    const outward = 12 + Math.random() * 22;
-    const moveX = Math.cos(angle) * outward + (Math.random() - 0.5) * 16;
-    const moveY = Math.sin(angle) * outward - (10 + Math.random() * 20);
+    const reach = 0.55 + 0.45 * k;
+    const outward = (12 + Math.random() * 22) * reach;
+    const moveX = Math.cos(angle) * outward + (Math.random() - 0.5) * 16 * reach;
+    const moveY = Math.sin(angle) * outward - (10 + Math.random() * 20) * reach;
 
     const anim = p.animate([
       { transform: 'translate(0, 0) scale(1)', opacity: 1 },
@@ -2158,13 +2168,15 @@ function startFireParticles(wrapEl) {
   }
 
   // Initial burst
-  for (let i = 0; i < 30; i++) {
+  const burst = Math.round(30 * _fireIntensity);
+  for (let i = 0; i < burst; i++) {
     setTimeout(spawnParticle, i * 20);
   }
 
   // Steady spawning — high density
   _fireInterval = setInterval(() => {
-    const count = 5 + Math.floor(Math.random() * 4);
+    const expected = (5 + Math.random() * 4) * _fireIntensity;
+    const count = Math.floor(expected) + (Math.random() < expected % 1 ? 1 : 0);
     for (let i = 0; i < count; i++) spawnParticle();
   }, 60);
 }
@@ -2203,12 +2215,14 @@ const TIER_MESSAGES = {
   3: [
     '⚡ ¡140%! Eres una bestia. ¿Puedes con el 160% también?',
     '⚡ ¡Élite total! 140% superado. Muy pocos llegan aquí 🔥',
-    '⚡ ¡140% y contando! El 160% es tu siguiente obra maestra.',
+    '⚡ ¡140% y sumando! El 160% es tu siguiente obra maestra.',
   ],
   4: [
-    '👑 ¡160%! ¡Eres la realeza de las ventas! 👑🔥',
+    '👑 ¡160%! ¡Eres el rey de las ventas! 👑🔥',
     '👑 ¡Legendario! 160% superado. Nadie te para.',
     '👑 ¡Máximo nivel alcanzado! Eres imparable 💎',
+    '👑 ¡160% alcanzado! Eres una leyenda 🏆',
+
   ],
 };
 
@@ -2257,4 +2271,3 @@ function checkGlobalMilestoneCelebration() {
   celebrated.push(...newTiers);
   sessionStorage.setItem(celebratedKey, JSON.stringify([...new Set(celebrated)]));
 }
-

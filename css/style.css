@@ -1155,6 +1155,100 @@ label:has(input[type="radio"]:checked) {
   }
 }
 
+/* --- BOTÓN "NUEVA VENTA" --- */
+.btn-fab-quick {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover, #ffb938));
+  color: #1A1200;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;          /* evita que el texto se parta en 2 líneas */
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(245, 166, 35, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  animation: bounceIn 0.5s ease-out;
+}
+
+/* Icono con tamaño fijo (funciona con <svg>, <i> o texto "+") */
+.btn-fab-quick svg,
+.btn-fab-quick i,
+.btn-fab-quick .icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+
+/* Brillo que barre el botón al pasar el ratón */
+.btn-fab-quick::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: skewX(-20deg);
+  pointer-events: none;
+}
+
+.btn-fab-quick:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+  box-shadow: 0 8px 20px rgba(245, 166, 35, 0.45);
+}
+
+.btn-fab-quick:hover::after {
+  left: 130%;
+  transition: left 0.6s ease;
+}
+
+.btn-fab-quick:hover svg,
+.btn-fab-quick:hover i,
+.btn-fab-quick:hover .icon {
+  transform: rotate(90deg);     /* el "+" gira al pasar el ratón */
+}
+
+.btn-fab-quick:active {
+  transform: translateY(0) scale(0.97);
+  box-shadow: 0 2px 8px rgba(245, 166, 35, 0.3);
+}
+
+.btn-fab-quick:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+@keyframes bounceIn {
+  0%   { opacity: 0; transform: scale(0.85) translateY(10px); }
+  60%  { opacity: 1; transform: scale(1.03) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+/* --- Resto de estilos --- */
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+}
+
 .view-container {
   padding: 24px;
   flex: 1;
