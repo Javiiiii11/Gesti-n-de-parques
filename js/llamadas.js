@@ -171,13 +171,18 @@ function guardarLlamada() {
     const fecha = document.getElementById('ll-fecha')?.value;
     const hora = document.getElementById('ll-hora')?.value;
     const telefono = document.getElementById('ll-telefono')?.value.trim() || '';
-    const cliente = document.getElementById('ll-cliente')?.value.trim() || '';
+    let cliente = document.getElementById('ll-cliente')?.value.trim() || '';
     const prioridad = document.getElementById('ll-prioridad')?.value || 'normal';
     const notas = document.getElementById('ll-notas')?.value.trim() || '';
+    const correo = '';
+    const localizador = '';
+
+    if (!cliente) {
+      cliente = 'Sin nombre del cliente (no se pidió)';
+    }
 
     if (!fecha || !hora) { toast('Indica fecha y hora de la llamada', 'error'); return; }
     if (!telefono) { toast('Indica el teléfono', 'error'); return; }
-    if (!cliente) { toast('Indica el nombre del cliente', 'error'); return; }
     if (tipo === 'entrada') {
       const parqueId = document.getElementById('ll-parque')?.value;
       if (!parqueId) { toast('Selecciona un parque', 'error'); return; }
