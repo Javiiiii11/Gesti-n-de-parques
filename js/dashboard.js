@@ -1,4 +1,4 @@
-﻿/* ============================================================================
+/* ============================================================================
    dashboard.js — vista "Dashboard"
 ============================================================================ */
 
@@ -827,37 +827,43 @@ function renderGoalWidget({
   // Siguiente hito al que aspirar
   const nextMilestone = MILESTONES.find((m) => rawPct < m.pct) || null;
 
-  // Mensajes motivadores por estado (estilo corto y directo)
-  // Cada rango tiene sus propios mensajes - SOLO se usa el rango actual
+  // Mensajes motivadores por estado — rangos PRECISOS, tono enérgico, iconos inicio+fin
   const MOTIVATION = {
-    // 0-25%: Inicio de mes
+    // 0% → 15%: Muy al principio del mes
     early: [
-      '🚀 Mes empezando, ¡a calentar motores!',
-      '⏳ Arrancando el mes, ¡cada venta cuenta!',
-      '📈 Poco a poco se construye el resultado.',
+      '🚀 Mes arrancando. ¡Primeras ventas, vamoss! 🔥',
+      '⏳ Encendiendo motores. ¡Cada venta ya suma, dale! 💪',
+      '📈 Paso a paso. ¡Las primeras son las importantes! ⚡',
     ],
-    // 25-50%: Progreso inicial
+    // 15% → 35%: Alrededor del 25% (un cuarto)
     quarter: [
-      '🎯 Buen inicio, vas por el 25%. ¡Sigue así!',
-      '📊 Un cuarto del objetivo. ¡Ritmo constante!',
-      '💪 Base sólida. Ahora a consolidar.',
+      '🎯 Por el 25% del objetivo. ¡Buen arranque, sigue! 🔥',
+      '📊 Un cuarto del goal ya hecho. ¡Ritmo constante, vamoss! 💪',
+      '💪 Base sólida. ¡Ahora a doblar esa cifra! ⚡',
     ],
-    // 50-75%: Mitad de camino
-    half: [
-      '🔥 ¡Mitad del objetivo! La recta final se acerca.',
-      '🏁 50% superado. ¡Buen ritmo, mantén el pulso!',
-      '⚡ A mitad de camino. ¡No aflojes ahora!',
+    // 35% → 60%: Cercano a la mitad (40%~50%)
+    midWay: [
+      '🔥 Casi mitad del objetivo. ¡Buen ritmo, no pares! 💪',
+      '🏁 Vamos por la mitad del objetivo del mes. ¡La segunda mitad es tuya, dale!! 🚀',
+      '⚡ Por el 40-50%. ¡Sigue así que lo tienes chupado! 🎯',
     ],
-    // 75-95%: Cerca de la meta
+    // 60% → 80%: Superada la mitad, camino al final
+    pastHalf: [
+      '💥 Más de la mitad superada. ¡Recta final, vamoss! 🔥',
+      '🚀 Por encima del 60%. ¡Estás imparable, dale! 💪',
+      '🎯 2/3 del camino recorridos. ¡Falta menos de lo que crees! ⚡',
+    ],
+    // 80% → 95%: Muy cerca de la meta
     near: [
-      '🎯 ¡Cerca del 100%! Último empujón.',
-      '💥 A un paso de la meta. ¡Lo tienes!',
-      '🏆 La meta se ve. ¡Remata el mes!',
+      '🎯 ¡Cerca del 100%! Último empujón, vamoss! 🔥',
+      '💥 A un pasito de la meta. ¡Lo tienes claro, dale caña! 💪',
+      '🏆 La meta se ve claramente. ¡Remata el mes ya! 🚀',
     ],
-    // 95-100%: Muy cerca
+    // 95% → 100%: A nada de cerrar
     final: [
-      '🎯 ¡A nada del 100%! Última venta y goal.',
-      '⚡ Casi casi. ¡El objetivo está ahí!',
+      '⚡ A nada del 100%. ¡Últimas ventas y lo tienes, vamoss !!! 🎯',
+      '🎯 Faltan un par de ventas. ¡Cierra ya el goal, dale! 🔥',
+      '🔥 Últimos metros. ¡Esa venta final está ahí, a por ella! 🏆',
     ],
     tier1: [
       '🎯 ¡Objetivo cumplido! Ahora a por el 120% 💪🏻',
@@ -910,13 +916,14 @@ function renderGoalWidget({
     if (currentTier === 1) {
       return `${getRndMsg(MOTIVATION.tier1)}${nextAmountStr}`;
     }
-    // below 100% - elegir rango según porcentaje real
+    // below 100% - Rangos PRECISOS, cada mensaje encaja con el % real
     let pool;
-    if (rawPct < 25) pool = MOTIVATION.early;
-    else if (rawPct < 50) pool = MOTIVATION.quarter;
-    else if (rawPct < 75) pool = MOTIVATION.half;
-    else if (rawPct < 95) pool = MOTIVATION.near;
-    else pool = MOTIVATION.final;
+    if (rawPct < 15) pool = MOTIVATION.early;            // 0-15%
+    else if (rawPct < 35) pool = MOTIVATION.quarter;     // 15-35%  (≈25% = un cuarto)
+    else if (rawPct < 60) pool = MOTIVATION.midWay;      // 35-60%  (40%~55% casi a mitad)
+    else if (rawPct < 80) pool = MOTIVATION.pastHalf;    // 60-80%  (superada la mitad)
+    else if (rawPct < 95) pool = MOTIVATION.near;        // 80-95%  (cerca del final)
+    else pool = MOTIVATION.final;                        // 95-100% (último empujón)
 
     const faltaBase = Math.max(0, goal - currentMonthSales);
     return `${getRndMsg(pool)} · Faltan <b>${fmtEUR(faltaBase)}</b> para el 100%`;
