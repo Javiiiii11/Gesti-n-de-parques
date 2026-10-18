@@ -26,6 +26,8 @@
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 34 34%22><defs><linearGradient id=%22l%22 x1=%220%22 y1=%220%22 x2=%2234%22 y2=%2234%22><stop offset=%220%%22 stop-color=%22%23FF9A44%22/><stop offset=%22100%%22 stop-color=%22%23FC6076%22/></linearGradient></defs><rect width=%2234%22 height=%2234%22 rx=%2210%22 fill=%22url(%23l)%22/><circle cx=%2217%22 cy=%2217%22 r=%227%22 stroke=%22white%22 stroke-width=%222%22 stroke-dasharray=%223 3%22/><circle cx=%2217%22 cy=%2217%22 r=%223%22 fill=%22white%22/><path d=%22M17 17 L22 27 M17 17 L12 27%22 stroke=%22white%22 stroke-width=%222%22 stroke-linecap=%22round%22/></svg>">
   <link rel="stylesheet" href="css/style.css?v=27">
+  <!-- Temáticas estacionales (Halloween, Navidad...) -->
+  <link rel="stylesheet" href="Tematicas/Halloween/halloween.css?v=1">
 
   <!-- Chart.js para gráficos interactivos (con fallback de CDN secundario) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
@@ -1218,23 +1220,6 @@
             </div>
             <div class="promos-card-actions"
               style="display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; width:100%; margin-left:auto;">
-              <a href="https://grprsc.sharepoint.com/:x:/r/sites/CALLCENTERPARQUEWARNER/_layouts/15/Doc.aspx?sourcedoc=%7B0CB2B8FF-1FE5-460A-BB09-E707783905F7%7D&file=Ventas%20hoteles%20.xlsx&action=default&mobileredirect=true"
-                target="_blank" class="btn btn-secondary" id="btn-contactos">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                  stroke-linejoin="round">
-                  <rect x="4" y="2" width="16" height="20" rx="2" />
-                  <path d="M10 22v-6.57" />
-                  <path d="M14 22v-6.57" />
-                  <path d="M15 16a5 5 0 0 0-6 0" />
-                  <path d="M8 7h.01" />
-                  <path d="M12 7h.01" />
-                  <path d="M16 7h.01" />
-                  <path d="M8 11h.01" />
-                  <path d="M12 11h.01" />
-                  <path d="M16 11h.01" />
-                </svg>
-                Ventas hotel
-              </a>
               <a href="https://grprsc.sharepoint.com/:x:/r/sites/CALLCENTERPARQUEWARNER/_layouts/15/Doc.aspx?sourcedoc=%7B121AD38F-AE83-459E-8556-0C3D15DD6241%7D&file=CONTACTOS.xlsx&action=default&mobileredirect=true&isSPOFile=1&ovuser=dbb21a28-035f-42c1-b1b7-f8918f6416a4%2Ctadell%40grpr.com&wdExp=TEAMS-TREATMENT&web=1&CID=71cb238f-3a83-474f-9318-ecf568f7d78f&clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiI0OS8yNjA0MTYxNzIxNSJ9"
                 target="_blank" class="btn btn-secondary" id="btn-contactos">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -1312,18 +1297,48 @@
             </div>
           </div>
 
-          <!-- Sección de Bonos -->
-          <div style="margin-bottom: 32px;">
-            <div class="card card-pad promos-card">
+          <!-- Sección de Hotel y Bonos (Dividida al 50%) -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 32px;">
+            <!-- Tarjeta Ventas Hotel (Izquierda) -->
+            <div class="card card-pad promos-card" style="margin-bottom: 0;">
+              <div class="promos-card-header">
+                <span class="promos-icon">🏨</span>
+                <div>
+                  <h3 class="section-title" style="margin:0;">Ventas Hotel</h3>
+                  <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Accede al archivo Excel de control de reservas de hotel.</p>
+                </div>
+              </div>
+              <div class="promos-card-actions">
+                <a href="https://grprsc.sharepoint.com/:x:/r/sites/CALLCENTERPARQUEWARNER/_layouts/15/Doc.aspx?sourcedoc=%7B0CB2B8FF-1FE5-460A-BB09-E707783905F7%7D&file=Ventas%20hoteles%20.xlsx&action=default&mobileredirect=true"
+                  target="_blank" class="btn btn-primary" id="btn-ventas-hotel">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <rect x="4" y="2" width="16" height="20" rx="2" />
+                    <path d="M10 22v-6.57" />
+                    <path d="M14 22v-6.57" />
+                    <path d="M15 16a5 5 0 0 0-6 0" />
+                    <path d="M8 7h.01" />
+                    <path d="M12 7h.01" />
+                    <path d="M16 7h.01" />
+                    <path d="M8 11h.01" />
+                    <path d="M12 11h.01" />
+                    <path d="M16 11h.01" />
+                  </svg>
+                  Ventas hotel
+                </a>
+              </div>
+            </div>
+
+            <!-- Tarjeta Bono Parques (Derecha) -->
+            <div class="card card-pad promos-card" style="margin-bottom: 0;">
               <div class="promos-card-header">
                 <span class="promos-icon">🎟️</span>
                 <div>
                   <h3 class="section-title" style="margin:0;">Bono Parques</h3>
-                  <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Consulta la información y el área
-                    privada de todos los bonos.</p>
+                  <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Consulta la información y el área privada de todos los bonos.</p>
                 </div>
               </div>
-              <div class="promos-card-actions">
+              <div class="promos-card-actions" style="gap: 8px;">
                 <a href="https://www.bonoparques.es/bonos/elige-tu-bono" target="_blank" class="btn btn-secondary"
                   id="bonos-home-btn">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -2163,6 +2178,10 @@
   <script src="js/conocimiento/chat-ia-knowledge.js"></script>
   <script src="js/conocimiento/chat-ia-halloween.js"></script>
   <script src="js/chat-ia.js?v=3"></script>
+  <!-- Temáticas estacionales (Halloween, Navidad...) -->
+  <script src="Tematicas/tematicas.config.js?v=1"></script>
+  <script src="Tematicas/Halloween/halloween.js?v=1"></script>
+  <script src="Tematicas/tematicas.js?v=1"></script>
   <script src="js/app.js?v=5"></script>
 </body>
 

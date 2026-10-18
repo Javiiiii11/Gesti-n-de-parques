@@ -1,0 +1,1266 @@
+/* ============================================================================
+   Temáticas ParkSales · HALLOWEEN THEME STYLES
+   Diseño de terror elegante: naranja calabaza + morado místico + resplandores
+   Completamente aislado bajo el selector `.theme-halloween`
+============================================================================ */
+
+/* -------------------------------------------------------------------------- */
+/* 1. PALETA DE COLORES Y VARIABLES GLOBALES                                  */
+/* -------------------------------------------------------------------------- */
+
+body.theme-halloween {
+  --bg: #090614;
+  --bg-elevated: #110b24;
+  --bg-card: #180f33;
+  --bg-hover: #26164d;
+  --border: #3b226b;
+  --border-soft: #271647;
+  --text-primary: #F7F5FC;
+  --text-secondary: #A99CC2;
+  --text-muted: #736491;
+
+  --accent: #FF7A00;
+  /* Naranja Jack-o'-Lantern */
+  --accent-hover: #FFA033;
+  --accent-soft: rgba(255, 122, 0, 0.16);
+
+  --halloween-purple: #9D4EDD;
+  --halloween-purple-glow: rgba(157, 78, 221, 0.25);
+  --halloween-green: #39FF14;
+  --halloween-green-soft: rgba(57, 255, 20, 0.15);
+  --halloween-orange-glow: rgba(255, 122, 0, 0.28);
+
+  --shadow-card: 0 4px 24px -2px rgba(0, 0, 0, 0.65), 0 0 16px -3px var(--halloween-orange-glow);
+}
+
+/* ============================================================================
+   MODO CLARO TEMÁTICO DE HALLOWEEN
+   Degradados naranja-morado sobre base cálida — mismo lenguaje que el oscuro
+============================================================================ */
+
+body.theme-halloween.light-mode {
+  --bg: #F5EEE8;
+  --bg-elevated: #FFFBF7;
+  --bg-card: #FFFFFF;
+  --bg-hover: #FFEDD5;
+  --border: rgba(234, 88, 12, 0.22);
+  --border-soft: rgba(234, 88, 12, 0.10);
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+
+  --accent: #EA580C;
+  --accent-hover: #C2410C;
+  --accent-soft: rgba(234, 88, 12, 0.12);
+
+  --halloween-purple: #7E22CE;
+  --halloween-purple-glow: rgba(126, 34, 206, 0.14);
+  --halloween-orange-glow: rgba(234, 88, 12, 0.22);
+  --shadow-card: 0 2px 8px rgba(234, 88, 12, 0.08), 0 4px 18px -4px rgba(126, 34, 206, 0.08);
+}
+
+/* Fondo principal — halos naranja y morado sobre base cálida cremosa */
+body.theme-halloween.light-mode #app {
+  background:
+    radial-gradient(ellipse 70% 45% at 12% 0%,  rgba(234, 88, 12, 0.13) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 40% at 90% 5%,  rgba(126, 34, 206, 0.10) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 35% at 50% 100%, rgba(234, 88, 12, 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 80% 60%,  rgba(126, 34, 206, 0.07) 0%, transparent 50%),
+    linear-gradient(160deg, #F5EEE8 0%, #EDE8F2 50%, #EAE5F5 100%) !important;
+}
+
+/* Barra lateral — degradado naranja→morado cremoso */
+body.theme-halloween.light-mode .sidebar {
+  background:
+    linear-gradient(180deg,
+      rgba(234, 88, 12, 0.08) 0%,
+      rgba(255, 255, 255, 0.0) 35%,
+      rgba(126, 34, 206, 0.06) 100%),
+    #FEFCFA !important;
+  border-right: 1px solid rgba(234, 88, 12, 0.18) !important;
+  box-shadow: 2px 0 20px rgba(234, 88, 12, 0.08), 2px 0 8px rgba(126, 34, 206, 0.06) !important;
+}
+
+/* Nombre de la app: texto degradado naranja→morado */
+body.theme-halloween.light-mode .sidebar-brand span {
+  background: linear-gradient(90deg, #C2410C 0%, #7E22CE 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+body.theme-halloween.light-mode .nav-item {
+  color: #334155 !important;
+}
+
+body.theme-halloween.light-mode .nav-item:hover {
+  background: linear-gradient(90deg, rgba(234, 88, 12, 0.10) 0%, rgba(126, 34, 206, 0.06) 100%) !important;
+  color: #EA580C !important;
+}
+
+/* Nav activo: mismo degradado naranja→morado que el modo oscuro */
+body.theme-halloween.light-mode .nav-item.active {
+  background: linear-gradient(90deg, rgba(234, 88, 12, 0.18) 0%, rgba(126, 34, 206, 0.10) 100%) !important;
+  border-left: 3px solid #EA580C !important;
+  color: #C2410C !important;
+  font-weight: 700 !important;
+  box-shadow: inset 0 0 14px rgba(234, 88, 12, 0.08) !important;
+}
+
+body.theme-halloween.light-mode .nav-item.active svg {
+  color: #EA580C !important;
+  filter: drop-shadow(0 0 5px rgba(234, 88, 12, 0.45)) !important;
+}
+
+body.theme-halloween.light-mode .nav-separator span {
+  color: #64748B !important;
+  font-weight: 800 !important;
+}
+
+/* Barra superior — vidrio esmerilado con tinte naranja-morado */
+body.theme-halloween.light-mode .topbar {
+  background:
+    linear-gradient(90deg,
+      rgba(234, 88, 12, 0.07) 0%,
+      rgba(255, 253, 250, 0.97) 25%,
+      rgba(255, 253, 250, 0.97) 75%,
+      rgba(126, 34, 206, 0.06) 100%) !important;
+  border-bottom: 1px solid rgba(234, 88, 12, 0.16) !important;
+  box-shadow: 0 2px 10px rgba(234, 88, 12, 0.08), 0 1px 4px rgba(126, 34, 206, 0.05) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* Título del topbar: degradado naranja→morado */
+body.theme-halloween.light-mode #topbar-title {
+  background: linear-gradient(90deg, #C2410C 0%, #7E22CE 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+body.theme-halloween.light-mode .topbar-user-btn {
+  background: linear-gradient(135deg, #FFF7ED 0%, #F5F3FF 100%) !important;
+  border: 1px solid rgba(234, 88, 12, 0.2) !important;
+  color: #0F172A !important;
+}
+
+body.theme-halloween.light-mode .topbar-user-btn:hover {
+  background: linear-gradient(135deg, #FFEDD5 0%, #EDE9FE 100%) !important;
+  border-color: #EA580C !important;
+  box-shadow: 0 0 10px rgba(234, 88, 12, 0.18) !important;
+}
+
+body.theme-halloween.light-mode .search-box input {
+  background: linear-gradient(135deg, #FFFBF7 0%, #FAF9FF 100%) !important;
+  border: 1px solid rgba(234, 88, 12, 0.18) !important;
+  color: #0F172A !important;
+}
+
+body.theme-halloween.light-mode .search-box input:focus {
+  background: #FFFFFF !important;
+  border-color: #EA580C !important;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.18), 0 0 12px rgba(234, 88, 12, 0.10) !important;
+}
+
+/* Tarjetas — superficie blanca cálida, borde naranja, sombra naranja+morado */
+body.theme-halloween.light-mode .card,
+body.theme-halloween.light-mode .stat-card {
+  background: linear-gradient(145deg, #FFFFFF 0%, #FFFBF7 60%, #FAF5FF 100%) !important;
+  border: 1px solid rgba(234, 88, 12, 0.18) !important;
+  box-shadow:
+    0 1px 4px rgba(15, 23, 42, 0.05),
+    0 4px 16px -4px rgba(234, 88, 12, 0.08) !important;
+}
+
+body.theme-halloween.light-mode .card:hover,
+body.theme-halloween.light-mode .stat-card:hover {
+  border-color: rgba(234, 88, 12, 0.45) !important;
+  box-shadow:
+    0 4px 20px -2px rgba(234, 88, 12, 0.20),
+    0 0 14px -4px rgba(126, 34, 206, 0.14),
+    0 2px 6px rgba(15, 23, 42, 0.05) !important;
+  /* Sin transform: sin elevación, igual comportamiento que el modo oscuro */
+}
+
+/* Barra lateral de stat-card: degradado sólido naranja→morado */
+body.theme-halloween.light-mode .stat-card::before {
+  background: linear-gradient(to bottom, #EA580C 0%, #9333EA 100%) !important;
+}
+
+body.theme-halloween.light-mode .stat-card .stat-label {
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+body.theme-halloween.light-mode .stat-card .stat-value {
+  color: #0F172A !important;
+  font-weight: 700 !important;
+}
+
+body.theme-halloween.light-mode .stat-card .stat-sub {
+  color: #64748B !important;
+}
+
+/* Paneles del Dashboard */
+body.theme-halloween.light-mode .dashboard-toolbar {
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFFBF7 100%) !important;
+  border: 1px solid rgba(234, 88, 12, 0.14) !important;
+  box-shadow: 0 1px 4px rgba(234, 88, 12, 0.06) !important;
+}
+
+/* Título del dashboard: degradado naranja→morado */
+body.theme-halloween.light-mode .dashboard-toolbar h2 {
+  background: linear-gradient(90deg, #C2410C 0%, #7E22CE 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+body.theme-halloween.light-mode .dashboard-toolbar .desc {
+  color: #475569 !important;
+}
+
+body.theme-halloween.light-mode .dashboard-panel {
+  background: linear-gradient(145deg, #FFFFFF 0%, #FFFBF7 70%, #FAF5FF 100%) !important;
+  border: 1px solid rgba(234, 88, 12, 0.14) !important;
+  box-shadow: 0 1px 4px rgba(234, 88, 12, 0.05) !important;
+}
+
+body.theme-halloween.light-mode .dashboard-panel h3 {
+  color: #0F172A !important;
+}
+
+body.theme-halloween.light-mode .dashboard-panel .chart-sub {
+  color: #64748B !important;
+}
+
+body.theme-halloween.light-mode .goal-mini-card {
+  background: linear-gradient(135deg, #FFFBF7 0%, #FAF5FF 100%) !important;
+  border: 1px solid rgba(234, 88, 12, 0.14) !important;
+}
+
+body.theme-halloween.light-mode .goal-mini-card span {
+  color: #64748B !important;
+}
+
+body.theme-halloween.light-mode .goal-mini-card b {
+  color: #0F172A !important;
+}
+
+/* Campos de formulario y selectores */
+body.theme-halloween.light-mode input:not([type="checkbox"]):not([type="radio"]),
+body.theme-halloween.light-mode select,
+body.theme-halloween.light-mode textarea:not(.notes-textarea):not(#notas-rapidas-textarea) {
+  background: linear-gradient(135deg, #FFFBF7 0%, #FAF9FF 100%) !important;
+  border: 1px solid rgba(234, 88, 12, 0.20) !important;
+  color: #0F172A !important;
+}
+
+body.theme-halloween.light-mode input:not([type="checkbox"]):not([type="radio"]):focus,
+body.theme-halloween.light-mode select:focus,
+body.theme-halloween.light-mode textarea:not(.notes-textarea):not(#notas-rapidas-textarea):focus {
+  background: #FFFFFF !important;
+  border-color: #EA580C !important;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.18), 0 0 10px rgba(234, 88, 12, 0.10) !important;
+}
+
+/* Área de texto de Notas Rápidas: limpia, sin recuadro interior */
+body.theme-halloween .notes-textarea,
+body.theme-halloween.light-mode .notes-textarea,
+body.theme-halloween #notas-rapidas-textarea,
+body.theme-halloween.light-mode #notas-rapidas-textarea {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+body.theme-halloween.light-mode label {
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+/* Tablas con contraste nítido y tinte Halloween */
+body.theme-halloween.light-mode .table-scroll {
+  border-color: rgba(234, 88, 12, 0.16) !important;
+}
+
+body.theme-halloween.light-mode table.data-table {
+  background: linear-gradient(180deg, #FFFBF7 0%, #FFFFFF 100%) !important;
+}
+
+body.theme-halloween.light-mode .data-table thead th {
+  background: linear-gradient(90deg, #FFF7ED 0%, #F5F3FF 100%) !important;
+  color: #475569 !important;
+  border-bottom: 1px solid rgba(234, 88, 12, 0.18) !important;
+}
+
+body.theme-halloween.light-mode .data-table tbody td {
+  border-bottom: 1px solid rgba(234, 88, 12, 0.08) !important;
+  color: #0F172A !important;
+}
+
+body.theme-halloween.light-mode .data-table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(234, 88, 12, 0.06) 0%, rgba(126, 34, 206, 0.04) 100%) !important;
+}
+
+/* Botones — degradados naranja→morado igual que el oscuro */
+body.theme-halloween.light-mode .btn-primary,
+body.theme-halloween.light-mode .btn-fab-quick {
+  background: linear-gradient(135deg, #EA580C 0%, #9333EA 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 12px rgba(234, 88, 12, 0.35), 0 0 8px rgba(126, 34, 206, 0.15) !important;
+  border: none !important;
+}
+
+body.theme-halloween.light-mode .btn-primary:hover,
+body.theme-halloween.light-mode .btn-fab-quick:hover {
+  background: linear-gradient(135deg, #F97316 0%, #7E22CE 100%) !important;
+  box-shadow: 0 4px 18px rgba(234, 88, 12, 0.45), 0 0 16px rgba(126, 34, 206, 0.25) !important;
+  transform: translateY(-1px) !important;
+}
+
+body.theme-halloween.light-mode .btn-secondary {
+  background: linear-gradient(135deg, #F8F5FF 0%, #FFF7ED 100%) !important;
+  border: 1px solid rgba(234, 88, 12, 0.20) !important;
+  color: #334155 !important;
+}
+
+body.theme-halloween.light-mode .btn-secondary:hover {
+  background: linear-gradient(135deg, #EDE9FE 0%, #FFEDD5 100%) !important;
+  border-color: #EA580C !important;
+  color: #C2410C !important;
+}
+
+/* Banner Halloween — fondo oscuro tematizado igual que el modo oscuro */
+body.theme-halloween.light-mode .hw-dashboard-banner {
+  background: linear-gradient(135deg, #110926 0%, #1E0D3A 55%, #2D1008 100%) !important;
+  border: 2px solid rgba(234, 88, 12, 0.55) !important;
+  box-shadow: 0 8px 32px rgba(234, 88, 12, 0.18), 0 0 20px rgba(126, 34, 206, 0.12) !important;
+}
+
+/* Imagen del banner en modo claro: más opaca y sin luminosity para que se vea la foto */
+body.theme-halloween.light-mode .hw-banner-bg {
+  opacity: 0.65 !important;
+  mix-blend-mode: normal !important;
+  filter: saturate(1.3) contrast(1.05) brightness(0.85) !important;
+}
+
+/* Overlay del banner en modo claro: degradado más oscuro a la izquierda para el texto */
+body.theme-halloween.light-mode .hw-banner-overlay {
+  background: linear-gradient(90deg,
+    rgba(17, 9, 38, 0.92) 0%,
+    rgba(17, 9, 38, 0.75) 40%,
+    rgba(17, 9, 38, 0.25) 100%) !important;
+}
+
+body.theme-halloween.light-mode .hw-banner-title {
+  color: #FFFFFF !important;
+}
+
+body.theme-halloween.light-mode .hw-banner-desc {
+  color: #E2E8F0 !important;
+}
+
+/* ============================================================================
+   DECORACIONES VISIBLES EN MODO CLARO (INVERTIDAS PARA ALTO CONTRASTE)
+============================================================================ */
+
+/* Telaraña de esquina: invertida a oscura para máxima visibilidad sobre fondo claro */
+body.theme-halloween.light-mode .hw-corner-web {
+  color: #1A0D2E !important;
+  opacity: 0.88 !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12)) !important;
+}
+
+body.theme-halloween.light-mode .hw-corner-web svg path {
+  stroke: #1A0D2E !important;
+  stroke-opacity: 0.88 !important;
+  stroke-width: 1.5px !important;
+}
+
+body.theme-halloween.light-mode .hw-corner-web svg ellipse,
+body.theme-halloween.light-mode .hw-corner-web svg circle {
+  fill: #1A0D2E !important;
+  fill-opacity: 1 !important;
+}
+
+/* Murciélagos en modo claro: siluetas oscuras visibles con mix-blend-mode multiply para no tapar texto */
+body.theme-halloween.light-mode .hw-bat {
+  color: #3B0D6B !important;
+  opacity: 0.28 !important;
+  mix-blend-mode: multiply !important;
+  filter: drop-shadow(0 2px 4px rgba(59, 13, 107, 0.25)) !important;
+}
+
+body.theme-halloween.light-mode .hw-bat svg {
+  fill: #3B0D6B !important;
+}
+
+/* Calabazas en esquinas de tarjetas: 100% visibles, vibrantes y con sombra limpia */
+body.theme-halloween.light-mode .hw-card-corner-pumpkin {
+  opacity: 0.95 !important;
+  filter: drop-shadow(0 3px 8px rgba(234, 88, 12, 0.45)) !important;
+}
+
+body.theme-halloween.light-mode .card:hover .hw-card-corner-pumpkin,
+body.theme-halloween.light-mode .stat-card:hover .hw-card-corner-pumpkin {
+  opacity: 1 !important;
+  transform: scale(1.22) rotate(-8deg) !important;
+  filter: drop-shadow(0 4px 14px rgba(234, 88, 12, 0.65)) !important;
+}
+
+/* Calabaza en el logotipo del sidebar */
+body.theme-halloween.light-mode .hw-brand-pumpkin {
+  filter: drop-shadow(0 2px 8px rgba(234, 88, 12, 0.6)) !important;
+}
+
+
+/* Badge del Topbar */
+body.theme-halloween.light-mode .hw-topbar-pill {
+  background: linear-gradient(135deg, rgba(234, 88, 12, 0.12) 0%, rgba(126, 34, 206, 0.10) 100%) !important;
+  border: 1.5px solid rgba(234, 88, 12, 0.45) !important;
+  color: #C2410C !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 10px rgba(234, 88, 12, 0.15), 0 0 8px rgba(126, 34, 206, 0.08) !important;
+}
+
+/* Botón de sonido */
+body.theme-halloween.light-mode .hw-sound-btn {
+  background: linear-gradient(135deg, #FFFBF7 0%, #F5F3FF 100%) !important;
+  border: 1px solid rgba(234, 88, 12, 0.22) !important;
+  color: #0F172A !important;
+}
+
+body.theme-halloween.light-mode .hw-sound-btn:hover {
+  border-color: #EA580C !important;
+  color: #C2410C !important;
+  background: linear-gradient(135deg, #FFEDD5 0%, #EDE9FE 100%) !important;
+  box-shadow: 0 0 10px rgba(234, 88, 12, 0.2) !important;
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* 3. RESPLANDOR Y BORDES TEMÁTICOS EN TARJETAS                              */
+/* -------------------------------------------------------------------------- */
+
+body.theme-halloween .card,
+body.theme-halloween .stat-card {
+  position: relative;
+  transition: box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+body.theme-halloween .card:hover,
+body.theme-halloween .stat-card:hover {
+  border-color: rgba(255, 122, 0, 0.5) !important;
+  box-shadow: 0 4px 20px -2px rgba(255, 122, 0, 0.28),
+    0 0 16px -2px rgba(157, 78, 221, 0.24),
+    0 6px 28px -4px rgba(0, 0, 0, 0.7) !important;
+}
+
+body.theme-halloween .btn-primary,
+body.theme-halloween .btn-fab-quick {
+  background: linear-gradient(135deg, #FF7A00 0%, #E64A00 100%);
+  box-shadow: 0 4px 14px rgba(255, 122, 0, 0.35);
+  border: none;
+}
+
+body.theme-halloween .btn-primary:hover,
+body.theme-halloween .btn-fab-quick:hover {
+  background: linear-gradient(135deg, #FFA033 0%, #FF5A00 100%);
+  box-shadow: 0 6px 20px rgba(255, 122, 0, 0.5);
+  transform: translateY(-1px);
+}
+
+/* Nav items activos en Sidebar */
+body.theme-halloween .nav-item.active {
+  background: linear-gradient(90deg, rgba(255, 122, 0, 0.18) 0%, rgba(157, 78, 221, 0.1) 100%);
+  border-left: 3px solid #FF7A00;
+  color: #FFA033;
+}
+
+body.theme-halloween .nav-item.active svg {
+  color: #FF7A00;
+  filter: drop-shadow(0 0 6px rgba(255, 122, 0, 0.6));
+}
+
+/* Barra lateral de stat-card en modo oscuro: degradado sólido naranja→morado (sobreescribe la base discontinua) */
+body.theme-halloween:not(.light-mode) .stat-card::before {
+  background: linear-gradient(to bottom, #FF7A00 0%, #9D4EDD 100%) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 4. LOGOTIPO Y MARCA CON CALABAZA HALLOWEEN                                 */
+/* -------------------------------------------------------------------------- */
+
+.hw-brand-pumpkin {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  margin-left: -4px;
+  margin-right: 6px;
+  filter: drop-shadow(0 0 8px rgba(255, 122, 0, 0.7));
+  animation: hw-float-subtle 3s ease-in-out infinite;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+@keyframes hw-float-subtle {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-3px) rotate(3deg);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 5. TELARAÑAS DE ESQUINA (POINTER-EVENTS: NONE)                             */
+/* -------------------------------------------------------------------------- */
+
+.hw-corner-web {
+  position: fixed;
+  width: 140px;
+  height: 140px;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.6;
+  color: #D8B4FE;
+  transition: opacity 0.3s ease;
+}
+
+.hw-corner-web.top-left {
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+}
+
+.hw-corner-web.top-right {
+  top: 0;
+  right: 0;
+  transform: scaleX(-1);
+  transform-origin: top right;
+}
+
+.hw-spider-swing {
+  transform-origin: 145px 145px;
+  animation: hw-spider-swing-anim 4.5s ease-in-out infinite;
+}
+
+@keyframes hw-spider-swing-anim {
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(8deg);
+  }
+
+  75% {
+    transform: rotate(-7deg);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 6. MURCIÉLAGOS VOLANDO EN EL FONDO (ANIMACIÓN LIGERA)                      */
+/* -------------------------------------------------------------------------- */
+
+.hw-bats-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none !important;
+  overflow: hidden;
+  z-index: 50;
+}
+
+/* Todos los murciélagos: pointer-events none, visibles pero semi-transparentes */
+.hw-bat {
+  position: absolute;
+  width: 32px;
+  height: 20px;
+  color: #9D4EDD;
+  opacity: 0.55;
+  filter: drop-shadow(0 0 6px rgba(157, 78, 221, 0.55));
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  pointer-events: none !important;
+  will-change: transform;
+}
+
+/* 1. Izquierda → Derecha con bajada diagonal (Rápido: 14s) */
+.hw-bat-1 {
+  top: 6%;
+  left: -70px;
+  width: 36px;
+  height: 23px;
+  opacity: 0.6;
+  animation-name: hw-fly-lr-diag-down;
+  animation-duration: 14s;
+  animation-delay: 0s;
+}
+
+/* 2. Derecha → Izquierda ondulante (Medio: 22s) */
+.hw-bat-2 {
+  top: 15%;
+  right: -70px;
+  left: auto;
+  width: 28px;
+  height: 18px;
+  opacity: 0.48;
+  animation-name: hw-fly-rl;
+  animation-duration: 22s;
+  animation-delay: 3s;
+}
+
+/* 3. Derecha → Izquierda en picado diagonal (Muy rápido: 12s) */
+.hw-bat-3 {
+  top: 24%;
+  right: -70px;
+  left: auto;
+  width: 24px;
+  height: 15px;
+  opacity: 0.52;
+  animation-name: hw-fly-rl-diag-down;
+  animation-duration: 12s;
+  animation-delay: 6s;
+}
+
+/* 4. Izquierda → Derecha planeando suave (Lento y misterioso: 32s) */
+.hw-bat-4 {
+  top: 38%;
+  left: -70px;
+  width: 22px;
+  height: 14px;
+  opacity: 0.42;
+  animation-name: hw-fly-lr;
+  animation-duration: 32s;
+  animation-delay: 8s;
+}
+
+/* 5. Derecha → Izquierda ascendente diagonal (Rápido-medio: 17s) */
+.hw-bat-5 {
+  top: 50%;
+  right: -70px;
+  left: auto;
+  width: 32px;
+  height: 20px;
+  opacity: 0.45;
+  animation-name: hw-fly-rl-diag-up;
+  animation-duration: 17s;
+  animation-delay: 13s;
+}
+
+/* 6. Izquierda → Derecha swoop enérgico con subida y bajada (Rápido: 15s) */
+.hw-bat-6 {
+  top: 60%;
+  left: -70px;
+  width: 30px;
+  height: 19px;
+  opacity: 0.52;
+  animation-name: hw-fly-lr-swoop;
+  animation-duration: 15s;
+  animation-delay: 2s;
+}
+
+/* 7. Izquierda → Derecha diagonal ascendente (Medio: 19s) */
+.hw-bat-7 {
+  top: 72%;
+  left: -70px;
+  width: 36px;
+  height: 23px;
+  opacity: 0.58;
+  animation-name: hw-fly-lr-diag-up;
+  animation-duration: 19s;
+  animation-delay: 5s;
+}
+
+/* 8. Derecha → Izquierda planeo bajo fantasmal (Muy lento: 35s) */
+.hw-bat-8 {
+  top: 82%;
+  right: -70px;
+  left: auto;
+  width: 20px;
+  height: 13px;
+  opacity: 0.38;
+  animation-name: hw-fly-rl-glide;
+  animation-duration: 35s;
+  animation-delay: 11s;
+}
+
+/* 9. Izquierda → Derecha ondulante (Rápido-medio: 16s) */
+.hw-bat-9 {
+  top: 89%;
+  left: -70px;
+  width: 28px;
+  height: 18px;
+  opacity: 0.5;
+  animation-name: hw-fly-lr;
+  animation-duration: 16s;
+  animation-delay: 9s;
+}
+
+/* --- ANIMACIONES DE VUELO EN DISTINTAS DIRECCIONES --- */
+
+/* 1. Izquierda a Derecha: Ondulante horizontal */
+@keyframes hw-fly-lr {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.9) rotate(6deg);
+  }
+  25% {
+    transform: translate3d(28vw, 16px, 0) scale(1) rotate(-4deg);
+  }
+  50% {
+    transform: translate3d(58vw, -14px, 0) scale(0.95) rotate(5deg);
+  }
+  75% {
+    transform: translate3d(85vw, 18px, 0) scale(1.05) rotate(-3deg);
+  }
+  100% {
+    transform: translate3d(calc(100vw + 140px), -6px, 0) scale(0.9) rotate(4deg);
+  }
+}
+
+/* 2. Izquierda a Derecha: Diagonal hacia abajo */
+@keyframes hw-fly-lr-diag-down {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.9) rotate(12deg);
+  }
+  30% {
+    transform: translate3d(35vw, 6vh, 0) scale(1) rotate(8deg);
+  }
+  65% {
+    transform: translate3d(70vw, 14vh, 0) scale(0.95) rotate(10deg);
+  }
+  100% {
+    transform: translate3d(calc(100vw + 140px), 24vh, 0) scale(0.9) rotate(12deg);
+  }
+}
+
+/* 3. Izquierda a Derecha: Diagonal hacia arriba */
+@keyframes hw-fly-lr-diag-up {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.9) rotate(-10deg);
+  }
+  30% {
+    transform: translate3d(32vw, -7vh, 0) scale(1) rotate(-8deg);
+  }
+  65% {
+    transform: translate3d(68vw, -15vh, 0) scale(0.95) rotate(-11deg);
+  }
+  100% {
+    transform: translate3d(calc(100vw + 140px), -24vh, 0) scale(0.9) rotate(-10deg);
+  }
+}
+
+/* 4. Izquierda a Derecha: Swoop (picado y remontada rápida) */
+@keyframes hw-fly-lr-swoop {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.85) rotate(4deg);
+  }
+  20% {
+    transform: translate3d(24vw, 10vh, 0) scale(1.1) rotate(16deg);
+  }
+  45% {
+    transform: translate3d(50vw, -8vh, 0) scale(0.95) rotate(-14deg);
+  }
+  70% {
+    transform: translate3d(78vw, 6vh, 0) scale(1.05) rotate(10deg);
+  }
+  100% {
+    transform: translate3d(calc(100vw + 140px), -4vh, 0) scale(0.9) rotate(4deg);
+  }
+}
+
+/* 5. Derecha a Izquierda: Ondulante horizontal */
+@keyframes hw-fly-rl {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.9) rotate(-6deg);
+  }
+  25% {
+    transform: translate3d(-28vw, -16px, 0) scale(1) rotate(4deg);
+  }
+  50% {
+    transform: translate3d(-58vw, 14px, 0) scale(0.95) rotate(-5deg);
+  }
+  75% {
+    transform: translate3d(-85vw, -18px, 0) scale(1.05) rotate(3deg);
+  }
+  100% {
+    transform: translate3d(calc(-100vw - 140px), 6px, 0) scale(0.9) rotate(-4deg);
+  }
+}
+
+/* 6. Derecha a Izquierda: Diagonal hacia abajo */
+@keyframes hw-fly-rl-diag-down {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.9) rotate(-12deg);
+  }
+  30% {
+    transform: translate3d(-35vw, 6vh, 0) scale(1) rotate(-8deg);
+  }
+  65% {
+    transform: translate3d(-70vw, 14vh, 0) scale(0.95) rotate(-10deg);
+  }
+  100% {
+    transform: translate3d(calc(-100vw - 140px), 24vh, 0) scale(0.9) rotate(-12deg);
+  }
+}
+
+/* 7. Derecha a Izquierda: Diagonal hacia arriba */
+@keyframes hw-fly-rl-diag-up {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.9) rotate(10deg);
+  }
+  30% {
+    transform: translate3d(-32vw, -7vh, 0) scale(1) rotate(8deg);
+  }
+  65% {
+    transform: translate3d(-68vw, -15vh, 0) scale(0.95) rotate(11deg);
+  }
+  100% {
+    transform: translate3d(calc(-100vw - 140px), -24vh, 0) scale(0.9) rotate(10deg);
+  }
+}
+
+/* 8. Derecha a Izquierda: Planeo suave misterioso */
+@keyframes hw-fly-rl-glide {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.85) rotate(-4deg);
+  }
+  35% {
+    transform: translate3d(-40vw, 8px, 0) scale(0.9) rotate(3deg);
+  }
+  70% {
+    transform: translate3d(-75vw, -10px, 0) scale(0.88) rotate(-3deg);
+  }
+  100% {
+    transform: translate3d(calc(-100vw - 140px), 4px, 0) scale(0.85) rotate(-4deg);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 7. BADGE Y CONTROLES EN TOPBAR                                             */
+/* -------------------------------------------------------------------------- */
+
+.hw-topbar-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, rgba(255, 122, 0, 0.16) 0%, rgba(157, 78, 221, 0.18) 100%);
+  border: 1px solid rgba(255, 122, 0, 0.4);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #FFA033;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-right: 8px;
+  box-shadow: 0 0 10px rgba(255, 122, 0, 0.2);
+  user-select: none;
+}
+
+.hw-topbar-pill .hw-pill-flame {
+  font-size: 13px;
+  animation: hw-flame-flicker 1.8s ease-in-out infinite;
+}
+
+@keyframes hw-flame-flicker {
+
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 3px #FF7A00);
+  }
+
+  50% {
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 8px #FFA033);
+  }
+}
+
+.hw-sound-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: var(--radius-s);
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 15px;
+  margin-right: 12px;
+}
+
+.hw-sound-btn:hover {
+  border-color: #FF7A00;
+  color: #FFA033;
+  background: rgba(255, 122, 0, 0.12);
+  box-shadow: 0 0 10px rgba(255, 122, 0, 0.3);
+}
+
+.hw-sound-btn.active {
+  border-color: #39FF14;
+  color: #39FF14;
+  background: rgba(57, 255, 20, 0.12);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 8. BANNER ESPECIAL DE HALLOWEEN EN DASHBOARD                              */
+/* -------------------------------------------------------------------------- */
+
+.hw-dashboard-banner {
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-l);
+  border: 1px solid rgba(255, 122, 0, 0.45);
+  background: #110926;
+  box-shadow: 0 10px 32px -4px rgba(0, 0, 0, 0.7), 0 0 24px -2px rgba(255, 122, 0, 0.25);
+}
+
+.hw-banner-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.32;
+  filter: saturate(1.2) contrast(1.1);
+  mix-blend-mode: luminosity;
+  pointer-events: none;
+}
+
+.hw-banner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #100824 0%, rgba(16, 8, 36, 0.85) 50%, rgba(16, 8, 36, 0.3) 100%);
+  pointer-events: none;
+}
+
+.hw-banner-content {
+  position: relative;
+  z-index: 2;
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.hw-banner-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #FFA033;
+  background: rgba(255, 122, 0, 0.18);
+  border: 1px solid rgba(255, 122, 0, 0.35);
+  padding: 3px 10px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.hw-banner-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0 0 6px 0;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+.hw-banner-desc {
+  font-size: 13px;
+  color: #C8BEDE;
+  margin: 0;
+  max-width: 620px;
+  line-height: 1.5;
+}
+
+.hw-banner-countdown {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(16, 9, 36, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(157, 78, 221, 0.4);
+  padding: 10px 18px;
+  border-radius: var(--radius-m);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.hw-countdown-unit {
+  text-align: center;
+}
+
+.hw-countdown-val {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: #FFA033;
+  display: block;
+  text-shadow: 0 0 10px rgba(255, 122, 0, 0.5);
+}
+
+.hw-countdown-lbl {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: #A99CC2;
+  letter-spacing: 0.06em;
+}
+
+.hw-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* 9. DECORACIONES DE CALABAZAS EN TARJETAS KPI (PUMPKIN1 A PUMPKIN9)        */
+/* -------------------------------------------------------------------------- */
+
+.hw-card-corner-pumpkin {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  opacity: 0.65;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease, filter 0.3s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.card:hover .hw-card-corner-pumpkin,
+.stat-card:hover .hw-card-corner-pumpkin {
+  opacity: 1;
+  transform: scale(1.18) rotate(-6deg);
+  filter: drop-shadow(0 0 10px rgba(255, 122, 0, 0.7));
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* 11. PANTALLA DE ACCESO (AUTH SCREEN) TEMATIZADA                           */
+/* -------------------------------------------------------------------------- */
+
+body.theme-halloween #auth-screen {
+  background: radial-gradient(circle at 50% 30%, rgba(157, 78, 221, 0.18) 0%, transparent 60%),
+    radial-gradient(circle at 80% 80%, rgba(255, 122, 0, 0.12) 0%, transparent 50%),
+    #07040E;
+}
+
+body.theme-halloween #auth-screen .auth-card {
+  border-color: rgba(255, 122, 0, 0.35);
+  box-shadow: 0 8px 36px rgba(0, 0, 0, 0.8), 0 0 25px rgba(255, 122, 0, 0.2);
+  background: linear-gradient(180deg, #180e30 0%, #110924 100%);
+  position: relative;
+  overflow: visible;
+}
+
+.hw-auth-pumpkin-badge {
+  position: absolute;
+  top: -24px;
+  right: -16px;
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 14px rgba(255, 122, 0, 0.8));
+  animation: hw-float-subtle 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+
+
+
+
+
+/* -------------------------------------------------------------------------- */
+/* 13. RESPONSIVE DESIGN                                                      */
+/* -------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  .hw-corner-web {
+    width: 90px;
+    height: 90px;
+  }
+
+
+  .hw-banner-content {
+    padding: 18px;
+  }
+
+  .hw-banner-title {
+    font-size: 18px;
+  }
+
+  .hw-banner-countdown {
+    width: 100%;
+    justify-content: space-around;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 14. COPILOT FLOTANTE - EDICIÓN FANTASMA HALLOWEEN                          */
+/* -------------------------------------------------------------------------- */
+
+body.theme-halloween #copilot-fab > svg {
+  display: none !important;
+}
+
+body.theme-halloween #copilot-fab .copilot-fab-pulse {
+  display: none !important;
+}
+
+body.theme-halloween #copilot-fab {
+  gap: 2px;
+  filter: drop-shadow(0 0 14px rgba(157, 78, 221, 0.45));
+}
+
+.hw-copilot-ghost-wrap {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+
+.hw-copilot-ghost-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 16px rgba(157, 78, 221, 0.65)) drop-shadow(0 0 10px rgba(80, 230, 255, 0.45));
+  animation: hw-ghost-float 3s ease-in-out infinite;
+  user-select: none;
+  pointer-events: none;
+}
+
+@keyframes hw-ghost-float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(3deg);
+  }
+}
+
+.hw-copilot-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 60px;
+  height: 60px;
+  margin-top: -30px;
+  margin-left: -30px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(157, 78, 221, 0.45) 0%, rgba(80, 230, 255, 0.22) 55%, transparent 75%);
+  animation: hw-copilot-pulse-anim 2.6s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes hw-copilot-pulse-anim {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.85;
+  }
+  70% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+}
+
+.hw-copilot-badge {
+  position: absolute;
+  bottom: 0px;
+  right: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #0a1628;
+  border: 1.5px solid rgba(80, 230, 255, 0.75);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 8px rgba(80, 230, 255, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5px;
+  animation: hw-badge-pop 2.8s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.hw-copilot-badge svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+@keyframes hw-badge-pop {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.1);
+  }
+}
+
+/* Hover en el botón Copilot Fantasma */
+body.theme-halloween #copilot-fab:hover .hw-copilot-ghost-wrap {
+  transform: scale(1.16) translateY(-4px);
+}
+
+body.theme-halloween #copilot-fab:hover .hw-copilot-ghost-img {
+  filter: drop-shadow(0 6px 22px rgba(157, 78, 221, 0.9))
+    drop-shadow(0 0 16px rgba(80, 230, 255, 0.75))
+    drop-shadow(0 0 10px rgba(255, 122, 0, 0.55));
+}
+
+body.theme-halloween #copilot-fab:active .hw-copilot-ghost-wrap {
+  transform: scale(0.94);
+}
+
+/* Label de Copilot en Halloween */
+body.theme-halloween .copilot-fab-label {
+  color: #FFA033 !important;
+  text-shadow: 0 0 8px rgba(255, 122, 0, 0.7), 0 0 14px rgba(157, 78, 221, 0.6) !important;
+  font-weight: 800 !important;
+}
+
+/* En modo claro */
+body.theme-halloween.light-mode .copilot-fab-label {
+  color: #C2410C !important;
+  text-shadow: 0 1px 4px rgba(255, 255, 255, 0.95), 0 0 8px rgba(234, 88, 12, 0.4) !important;
+}
+
+body.theme-halloween.light-mode .hw-copilot-badge {
+  background: #FFFFFF;
+  border-color: #EA580C;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 0 8px rgba(234, 88, 12, 0.4);
+}

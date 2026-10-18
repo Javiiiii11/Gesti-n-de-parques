@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="currentColor">
+  <!-- Corner Spiderweb -->
+  <path d="M0,0 L200,0" stroke-width="1.2" stroke-opacity="0.35" />
+  <path d="M0,0 L0,200" stroke-width="1.2" stroke-opacity="0.35" />
+  <path d="M0,0 L185,75" stroke-width="1" stroke-opacity="0.4" />
+  <path d="M0,0 L145,145" stroke-width="1.2" stroke-opacity="0.45" />
+  <path d="M0,0 L75,185" stroke-width="1" stroke-opacity="0.4" />
+
+  <!-- Radiating arcs layer 1 -->
+  <path d="M40,0 Q35,15 28,28 Q15,35 0,40" stroke-width="1" stroke-opacity="0.3" />
+  <!-- Radiating arcs layer 2 -->
+  <path d="M80,0 Q70,30 57,57 Q30,70 0,80" stroke-width="1" stroke-opacity="0.35" />
+  <!-- Radiating arcs layer 3 -->
+  <path d="M125,0 Q110,48 88,88 Q48,110 0,125" stroke-width="1.1" stroke-opacity="0.35" />
+  <!-- Radiating arcs layer 4 -->
+  <path d="M170,0 Q150,65 120,120 Q65,150 0,170" stroke-width="1.1" stroke-opacity="0.35" />
+  <!-- Radiating arcs layer 5 -->
+  <path d="M200,10 Q175,80 141,141 Q80,175 10,200" stroke-width="1" stroke-opacity="0.25" />
+
+  <!-- Hanging Thread and Spider -->
+  <path d="M145,145 L145,185" stroke-width="0.8" stroke-opacity="0.5" stroke-dasharray="2 1" />
+  <!-- Spider Body -->
+  <ellipse cx="145" cy="189" rx="3.5" ry="4.5" fill="currentColor" fill-opacity="0.75" />
+  <circle cx="145" cy="185.5" r="2.2" fill="currentColor" fill-opacity="0.8" />
+  <!-- Spider Legs -->
+  <path d="M143,187 Q137,184 135,188" stroke-width="0.9" stroke-opacity="0.7" fill="none" />
+  <path d="M147,187 Q153,184 155,188" stroke-width="0.9" stroke-opacity="0.7" fill="none" />
+  <path d="M142,189 Q136,189 134,193" stroke-width="0.9" stroke-opacity="0.7" fill="none" />
+  <path d="M148,189 Q154,189 156,193" stroke-width="0.9" stroke-opacity="0.7" fill="none" />
+  <path d="M143,191 Q138,195 137,199" stroke-width="0.9" stroke-opacity="0.7" fill="none" />
+  <path d="M147,191 Q152,195 153,199" stroke-width="0.9" stroke-opacity="0.7" fill="none" />
+</svg>
