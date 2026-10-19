@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <defs>
+    <radialGradient id="cookieGrad" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#DDA15E" />
+      <stop offset="60%" stop-color="#BC6C25" />
+      <stop offset="100%" stop-color="#8F4A13" />
+    </radialGradient>
+  </defs>
+
+  <!-- Gingerbread Body -->
+  <g>
+    <!-- Head -->
+    <circle cx="40" cy="22" r="14" fill="url(#cookieGrad)" />
+    <!-- Body -->
+    <rect x="33" y="32" width="14" height="22" rx="7" fill="url(#cookieGrad)" />
+    <!-- Arms -->
+    <path d="M16,36 Q40,32 64,36" stroke="url(#cookieGrad)" stroke-width="10" stroke-linecap="round" fill="none" />
+    <!-- Legs -->
+    <path d="M28,66 L35,46 L45,46 L52,66" stroke="url(#cookieGrad)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+    <!-- White Icing Details -->
+    <!-- Head icing swirl -->
+    <path d="M32,14 Q36,10 40,14 Q44,10 48,14" stroke="#FFF" stroke-width="2" stroke-linecap="round" fill="none" />
+    <!-- Eyes -->
+    <circle cx="36" cy="20" r="1.8" fill="#3D1E06" />
+    <circle cx="44" cy="20" r="1.8" fill="#3D1E06" />
+    <!-- Smile -->
+    <path d="M36,25 Q40,29 44,25" stroke="#FFF" stroke-width="1.8" stroke-linecap="round" fill="none" />
+    <!-- Red Bowtie -->
+    <path d="M40,33 L35,30 L35,36 Z" fill="#E63946" />
+    <path d="M40,33 L45,30 L45,36 Z" fill="#E63946" />
+    <circle cx="40" cy="33" r="1.5" fill="#FFD166" />
+    <!-- Gumdrop Buttons -->
+    <circle cx="40" cy="40" r="2.2" fill="#2EC4B6" />
+    <circle cx="40" cy="47" r="2.2" fill="#E63946" />
+    <!-- Wrist & Ankle Icing Wiggles -->
+    <path d="M15,34 Q18,36 15,38" stroke="#FFF" stroke-width="1.8" fill="none" stroke-linecap="round" />
+    <path d="M65,34 Q62,36 65,38" stroke="#FFF" stroke-width="1.8" fill="none" stroke-linecap="round" />
+    <path d="M26,65 Q28,63 30,65" stroke="#FFF" stroke-width="1.8" fill="none" stroke-linecap="round" />
+    <path d="M50,65 Q52,63 54,65" stroke="#FFF" stroke-width="1.8" fill="none" stroke-linecap="round" />
+  </g>
+</svg>

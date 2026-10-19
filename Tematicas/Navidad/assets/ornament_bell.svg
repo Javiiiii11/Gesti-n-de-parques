@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <defs>
+    <radialGradient id="bellGrad" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FFF3B0" />
+      <stop offset="50%" stop-color="#FFD166" />
+      <stop offset="85%" stop-color="#E09F3E" />
+      <stop offset="100%" stop-color="#9E2A2B" />
+    </radialGradient>
+    <linearGradient id="hollyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#40916C" />
+      <stop offset="100%" stop-color="#1B4332" />
+    </linearGradient>
+  </defs>
+
+  <!-- Left Bell (tilted) -->
+  <g transform="rotate(-15 32 45)">
+    <!-- Clapper -->
+    <circle cx="32" cy="62" r="5" fill="#B07D2B" />
+    <!-- Bell Flare -->
+    <path d="M22,28 C22,28 20,48 14,54 C12,56 16,58 32,58 C48,58 52,56 50,54 C44,48 42,28 42,28 Z" fill="url(#bellGrad)" />
+    <!-- Bell rim highlight -->
+    <ellipse cx="32" cy="56" rx="16" ry="3.5" fill="none" stroke="#FFE49E" stroke-width="1.8" />
+  </g>
+
+  <!-- Right Bell (tilted) -->
+  <g transform="rotate(20 48 45)">
+    <!-- Clapper -->
+    <circle cx="48" cy="62" r="5" fill="#B07D2B" />
+    <!-- Bell Flare -->
+    <path d="M38,28 C38,28 36,48 30,54 C28,56 32,58 48,58 C64,58 68,56 66,54 C60,48 58,28 58,28 Z" fill="url(#bellGrad)" />
+    <!-- Bell rim highlight -->
+    <ellipse cx="48" cy="56" rx="16" ry="3.5" fill="none" stroke="#FFE49E" stroke-width="1.8" />
+  </g>
+
+  <!-- Holly Leaves & Red Bow on top -->
+  <!-- Holly Leaf Left -->
+  <path d="M40,24 C32,20 28,15 26,10 C32,12 36,16 40,24 Z" fill="url(#hollyGrad)" />
+  <!-- Holly Leaf Right -->
+  <path d="M40,24 C48,20 52,15 54,10 C48,12 44,16 40,24 Z" fill="url(#hollyGrad)" />
+
+  <!-- Red Satin Bow -->
+  <path d="M40,24 C32,15 22,22 30,28 C36,32 39,26 40,24 Z" fill="#E63946" />
+  <path d="M40,24 C48,15 58,22 50,28 C44,32 41,26 40,24 Z" fill="#E63946" />
+  <!-- Holly Berries in center -->
+  <circle cx="38" cy="23" r="3.2" fill="#E63946" />
+  <circle cx="43" cy="22" r="3" fill="#D90429" />
+  <circle cx="40" cy="27" r="2.8" fill="#EF233C" />
+  <circle cx="39" cy="22" r="1" fill="#FFF" opacity="0.8" />
+</svg>

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 90" fill="none">
+  <defs>
+    <linearGradient id="hatRed" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#FF334B" />
+      <stop offset="45%" stop-color="#E60026" />
+      <stop offset="100%" stop-color="#990017" />
+    </linearGradient>
+    <linearGradient id="furWhite" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="70%" stop-color="#F1F5F9" />
+      <stop offset="100%" stop-color="#CBD5E1" />
+    </linearGradient>
+    <filter id="hatShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Red Cap Cone drooped to the right -->
+  <g filter="url(#hatShadow)">
+    <path d="M18,65 Q25,25 55,15 Q75,8 82,30 Q88,48 78,60 C68,52 35,52 18,65 Z" fill="url(#hatRed)" />
+    <!-- Shadow folds on the curve -->
+    <path d="M55,15 Q68,22 75,38 Q65,32 50,22 Z" fill="#7A0012" opacity="0.4" />
+  </g>
+
+  <!-- Fluffy White Trim at Base -->
+  <g filter="url(#hatShadow)">
+    <rect x="10" y="56" width="72" height="18" rx="9" fill="url(#furWhite)" />
+    <!-- Fluff texture bumps -->
+    <circle cx="15" cy="65" r="7" fill="url(#furWhite)" />
+    <circle cx="28" cy="64" r="8" fill="url(#furWhite)" />
+    <circle cx="44" cy="65" r="8.5" fill="url(#furWhite)" />
+    <circle cx="60" cy="64" r="8" fill="url(#furWhite)" />
+    <circle cx="75" cy="65" r="7" fill="url(#furWhite)" />
+  </g>
+
+  <!-- Fluffy White Pom-Pom on tip -->
+  <g filter="url(#hatShadow)">
+    <circle cx="82" cy="58" r="10" fill="url(#furWhite)" />
+    <circle cx="80" cy="54" r="7" fill="#FFFFFF" opacity="0.8" />
+  </g>
+</svg>

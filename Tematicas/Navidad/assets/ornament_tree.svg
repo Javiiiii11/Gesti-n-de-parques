@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <defs>
+    <linearGradient id="treeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#40916C" />
+      <stop offset="60%" stop-color="#2D6A4F" />
+      <stop offset="100%" stop-color="#1B4332" />
+    </linearGradient>
+    <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF3B0" />
+      <stop offset="60%" stop-color="#FFD166" />
+      <stop offset="100%" stop-color="#F4A261" />
+    </linearGradient>
+  </defs>
+
+  <!-- Trunk -->
+  <rect x="36" y="65" width="8" height="9" rx="2" fill="#7F4F24" />
+
+  <!-- Tree Layers -->
+  <!-- Bottom Tier -->
+  <path d="M40,36 L66,66 L14,66 Z" fill="url(#treeGrad)" />
+  <!-- Middle Tier -->
+  <path d="M40,24 L60,48 L20,48 Z" fill="url(#treeGrad)" />
+  <!-- Top Tier -->
+  <path d="M40,12 L54,32 L26,32 Z" fill="url(#treeGrad)" />
+
+  <!-- Snow on branches -->
+  <path d="M26,32 Q40,36 54,32" stroke="#FFF" stroke-width="2" fill="none" opacity="0.8" />
+  <path d="M20,48 Q40,53 60,48" stroke="#FFF" stroke-width="2.2" fill="none" opacity="0.8" />
+  <path d="M14,66 Q40,71 66,66" stroke="#FFF" stroke-width="2.5" fill="none" opacity="0.85" />
+
+  <!-- Colorful Mini Ornaments -->
+  <circle cx="35" cy="27" r="2.2" fill="#FF4D6D" />
+  <circle cx="46" cy="28" r="2" fill="#FFD166" />
+  <circle cx="28" cy="43" r="2.5" fill="#48CAE4" />
+  <circle cx="42" cy="40" r="2.2" fill="#E63946" />
+  <circle cx="52" cy="44" r="2.4" fill="#FFD166" />
+  <circle cx="24" cy="59" r="2.6" fill="#E63946" />
+  <circle cx="38" cy="56" r="2.5" fill="#48CAE4" />
+  <circle cx="56" cy="60" r="2.6" fill="#FFB703" />
+
+  <!-- Golden Shining Star on Top -->
+  <polygon points="40,5 42,11 48,11 43,15 45,21 40,17 35,21 37,15 32,11 38,11" fill="url(#starGrad)" />
+</svg>

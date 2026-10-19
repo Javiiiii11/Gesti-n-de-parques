@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 32" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="snowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.98" />
+      <stop offset="65%" stop-color="#F0F7FF" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#D7E7FA" stop-opacity="0.90" />
+    </linearGradient>
+    <linearGradient id="snowShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#BFDBFE" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#93C5FD" stop-opacity="0.8" />
+    </linearGradient>
+  </defs>
+
+  <!-- Base soft shadow -->
+  <path d="M0,0 L400,0 L400,10 Q375,14 350,11 Q320,8 290,13 Q255,18 220,11 Q180,5 145,12 Q105,20 70,12 Q35,7 0,11 Z" fill="url(#snowShadow)" />
+
+  <!-- Main snow fluff mounds with gentle dips -->
+  <path d="M0,0 L400,0 
+           L400,8 
+           Q385,15 365,11 
+           Q345,7 325,12 
+           Q305,17 285,10 
+           Q260,3 235,11 
+           Q210,19 185,13 
+           Q160,7 135,14 
+           Q110,21 85,12 
+           Q60,4 35,11 
+           Q18,16 0,8 Z" fill="url(#snowGrad)" />
+
+  <!-- Delicate small icicles dripping from the edge -->
+  <!-- Icicle 1 -->
+  <path d="M55,10 Q58,18 60,24 Q62,18 64,10 Z" fill="#E2EDFC" opacity="0.9" />
+  <path d="M57,10 L60,21 L61,10 Z" fill="#FFFFFF" opacity="0.95" />
+
+  <!-- Icicle 2 -->
+  <path d="M148,13 Q150,22 153,28 Q155,22 157,13 Z" fill="#E2EDFC" opacity="0.9" />
+  <path d="M150,13 L153,25 L154,13 Z" fill="#FFFFFF" opacity="0.95" />
+
+  <!-- Icicle 3 -->
+  <path d="M242,10 Q244,17 246,22 Q248,17 250,10 Z" fill="#E2EDFC" opacity="0.85" />
+
+  <!-- Icicle 4 -->
+  <path d="M335,11 Q337,21 340,27 Q342,21 344,11 Z" fill="#E2EDFC" opacity="0.9" />
+  <path d="M337,11 L340,24 L341,11 Z" fill="#FFFFFF" opacity="0.95" />
+
+  <!-- Subtle crystal glints / sparkles on snow -->
+  <circle cx="95" cy="5" r="1.2" fill="#FFFFFF" opacity="0.9" />
+  <circle cx="205" cy="6" r="1.4" fill="#FFFFFF" opacity="0.9" />
+  <circle cx="310" cy="5" r="1.2" fill="#FFFFFF" opacity="0.9" />
+</svg>

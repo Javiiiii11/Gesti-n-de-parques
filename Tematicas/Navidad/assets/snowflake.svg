@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="currentColor">
+  <!-- Crystalline Snowflake -->
+  <g stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+    <!-- Main axes -->
+    <line x1="50" y1="5" x2="50" y2="95" />
+    <line x1="5" y1="50" x2="95" y2="50" />
+    <line x1="18.18" y1="18.18" x2="81.82" y2="81.82" />
+    <line x1="18.18" y1="81.82" x2="81.82" y2="18.18" />
+
+    <!-- Branch V-shapes Top -->
+    <path d="M50,20 L40,10 M50,20 L60,10" fill="none" />
+    <path d="M50,32 L38,22 M50,32 L62,22" fill="none" />
+    <!-- Branch V-shapes Bottom -->
+    <path d="M50,80 L40,90 M50,80 L60,90" fill="none" />
+    <path d="M50,68 L38,78 M50,68 L62,78" fill="none" />
+    <!-- Branch V-shapes Left -->
+    <path d="M20,50 L10,40 M20,50 L10,60" fill="none" />
+    <path d="M32,50 L22,38 M32,50 L22,62" fill="none" />
+    <!-- Branch V-shapes Right -->
+    <path d="M80,50 L90,40 M80,50 L90,60" fill="none" />
+    <path d="M68,50 L78,38 M68,50 L78,62" fill="none" />
+
+    <!-- Diagonal branches -->
+    <path d="M28,28 L18,28 M28,28 L28,18" fill="none" />
+    <path d="M72,72 L82,72 M72,72 L72,82" fill="none" />
+    <path d="M28,72 L18,72 M28,72 L28,82" fill="none" />
+    <path d="M72,28 L82,28 M72,28 L72,18" fill="none" />
+  </g>
+  <!-- Central Ice Core -->
+  <circle cx="50" cy="50" r="4.5" fill="currentColor" />
+  <circle cx="50" cy="50" r="2" fill="white" />
+</svg>

@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" fill="none">
+  <defs>
+    <radialGradient id="pineGrad" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#2D6A4F" />
+      <stop offset="100%" stop-color="#1B4332" />
+    </radialGradient>
+    <radialGradient id="berryGrad" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FF4D6D" />
+      <stop offset="100%" stop-color="#C9184A" />
+    </radialGradient>
+    <radialGradient id="lightGold" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFF3B0" />
+      <stop offset="60%" stop-color="#FFD166" />
+      <stop offset="100%" stop-color="#E76F51" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Base Pine branches arching from corner (0,0) -->
+  <g stroke="#1B4332" stroke-linecap="round">
+    <!-- Branch 1 along top -->
+    <path d="M0,0 Q60,15 120,8 Q170,5 210,0" stroke-width="3" stroke-opacity="0.8" />
+    <!-- Branch 2 along left -->
+    <path d="M0,0 Q15,60 8,120 Q5,170 0,210" stroke-width="3" stroke-opacity="0.8" />
+    <!-- Branch 3 diagonal swoop -->
+    <path d="M0,0 Q50,45 105,85 Q145,115 175,135" stroke-width="3" stroke-opacity="0.7" />
+  </g>
+
+  <!-- Pine Needle Sprays Top Edge -->
+  <g fill="none" stroke="#2D6A4F" stroke-width="2" stroke-linecap="round">
+    <path d="M20,0 L35,18 M30,5 L48,15 M40,2 L55,22 M60,7 L78,20 M75,4 L92,18 M95,6 L115,16 M125,5 L145,15 M150,3 L172,12 M175,2 L198,10" />
+    <path d="M25,0 L38,12 M45,3 L62,14 M65,4 L85,15 M90,5 L108,12 M115,4 L132,10 M140,2 L158,8" stroke="#40916C" stroke-width="1.6" />
+  </g>
+
+  <!-- Pine Needle Sprays Left Edge -->
+  <g fill="none" stroke="#2D6A4F" stroke-width="2" stroke-linecap="round">
+    <path d="M0,20 L18,35 M5,30 L15,48 M2,40 L22,55 M7,60 L20,78 M4,75 L18,92 M6,95 L16,115 M5,125 L15,145 M3,150 L12,172 M2,175 L10,198" />
+    <path d="M0,25 L12,38 M3,45 L14,62 M4,65 L15,85 M5,90 L12,108 M4,115 L10,132 M2,140 L8,158" stroke="#40916C" stroke-width="1.6" />
+  </g>
+
+  <!-- Snowy dusting on branches -->
+  <path d="M10,0 Q50,16 110,10 Q160,8 200,0" stroke="#FFFFFF" stroke-width="1.8" stroke-opacity="0.75" fill="none" stroke-linecap="round" />
+  <path d="M0,10 Q16,50 10,110 Q8,160 0,200" stroke="#FFFFFF" stroke-width="1.8" stroke-opacity="0.75" fill="none" stroke-linecap="round" />
+
+  <!-- Holly Berries Clusters -->
+  <g>
+    <!-- Cluster 1 -->
+    <circle cx="58" cy="18" r="4" fill="url(#berryGrad)" />
+    <circle cx="64" cy="15" r="3.5" fill="url(#berryGrad)" />
+    <circle cx="61" cy="22" r="3.2" fill="url(#berryGrad)" />
+    <circle cx="59" cy="17" r="1.2" fill="#FFFFFF" opacity="0.8" />
+
+    <!-- Cluster 2 -->
+    <circle cx="18" cy="58" r="4" fill="url(#berryGrad)" />
+    <circle cx="15" cy="64" r="3.5" fill="url(#berryGrad)" />
+    <circle cx="22" cy="61" r="3.2" fill="url(#berryGrad)" />
+    <circle cx="17" cy="57" r="1.2" fill="#FFFFFF" opacity="0.8" />
+
+    <!-- Cluster 3 Center -->
+    <circle cx="95" cy="55" r="4.2" fill="url(#berryGrad)" />
+    <circle cx="102" cy="52" r="3.8" fill="url(#berryGrad)" />
+    <circle cx="98" cy="61" r="3.5" fill="url(#berryGrad)" />
+    <circle cx="96" cy="54" r="1.2" fill="#FFFFFF" opacity="0.8" />
+  </g>
+
+  <!-- Twinkling Christmas Fairy Lights -->
+  <g class="xmas-lights">
+    <!-- Gold glow 1 -->
+    <circle cx="38" cy="24" r="7" fill="url(#lightGold)" opacity="0.85" />
+    <circle cx="38" cy="24" r="2.5" fill="#FFFBEA" />
+    <!-- Cyan glow 2 -->
+    <circle cx="24" cy="38" r="7" fill="#64DFDF" opacity="0.35" />
+    <circle cx="24" cy="38" r="2.5" fill="#E0FBFC" />
+    <!-- Ruby glow 3 -->
+    <circle cx="118" cy="14" r="6" fill="#FF4D6D" opacity="0.4" />
+    <circle cx="118" cy="14" r="2.2" fill="#FFF0F3" />
+    <!-- Gold glow 4 -->
+    <circle cx="14" cy="118" r="6" fill="url(#lightGold)" opacity="0.8" />
+    <circle cx="14" cy="118" r="2.2" fill="#FFFBEA" />
+    <!-- Cyan glow 5 -->
+    <circle cx="145" cy="75" r="6" fill="#64DFDF" opacity="0.35" />
+    <circle cx="145" cy="75" r="2.2" fill="#E0FBFC" />
+  </g>
+</svg>

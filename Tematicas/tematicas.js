@@ -12,19 +12,27 @@
     const halloweenActivo = (typeof tematica_halloween !== 'undefined' && tematica_halloween === true) ||
                             (typeof window.tematica_halloween !== 'undefined' && window.tematica_halloween === true);
 
+    // 2. Comprobar temática de Navidad
+    const navidadActiva = (typeof tematica_navidad !== 'undefined' && tematica_navidad === true) ||
+                          (typeof window.tematica_navidad !== 'undefined' && window.tematica_navidad === true);
+
     if (halloweenActivo) {
+      if (typeof window.destroyNavidadTheme === 'function') {
+        window.destroyNavidadTheme();
+      }
       if (typeof window.initHalloweenTheme === 'function') {
         window.initHalloweenTheme();
       }
       return;
     }
 
-    // 2. Comprobar futura temática de Navidad
-    const navidadActiva = (typeof tematica_navidad !== 'undefined' && tematica_navidad === true) ||
-                          (typeof window.tematica_navidad !== 'undefined' && window.tematica_navidad === true);
-
     if (navidadActiva) {
-      // Reservado para la futura temática navideña
+      if (typeof window.destroyHalloweenTheme === 'function') {
+        window.destroyHalloweenTheme();
+      }
+      if (typeof window.initNavidadTheme === 'function') {
+        window.initNavidadTheme();
+      }
       return;
     }
 
@@ -32,19 +40,38 @@
     if (typeof window.destroyHalloweenTheme === 'function') {
       window.destroyHalloweenTheme();
     }
-    document.documentElement.classList.remove('theme-halloween');
-    document.body.classList.remove('theme-halloween');
+    if (typeof window.destroyNavidadTheme === 'function') {
+      window.destroyNavidadTheme();
+    }
+    document.documentElement.classList.remove('theme-halloween', 'theme-navidad');
+    document.body.classList.remove('theme-halloween', 'theme-navidad');
   }
 
-  // Función global para que Javier o cualquier desarrollador pueda probar en vivo
+  // Función global para probar Halloween en vivo
   window.setTematicaHalloween = function (activar) {
     window.tematica_halloween = !!activar;
     if (activar) {
+      window.tematica_navidad = false;
+      if (typeof window.destroyNavidadTheme === 'function') window.destroyNavidadTheme();
       if (typeof window.initHalloweenTheme === 'function') window.initHalloweenTheme();
       if (typeof toast === 'function') toast('🎃 Temática de Halloween ACTIVADA', 'info', 2500);
     } else {
       if (typeof window.destroyHalloweenTheme === 'function') window.destroyHalloweenTheme();
       if (typeof toast === 'function') toast('Temática de Halloween DESACTIVADA', 'info', 2500);
+    }
+  };
+
+  // Función global para probar Navidad en vivo
+  window.setTematicaNavidad = function (activar) {
+    window.tematica_navidad = !!activar;
+    if (activar) {
+      window.tematica_halloween = false;
+      if (typeof window.destroyHalloweenTheme === 'function') window.destroyHalloweenTheme();
+      if (typeof window.initNavidadTheme === 'function') window.initNavidadTheme();
+      if (typeof toast === 'function') toast('🎄 Temática de Navidad ACTIVADA', 'info', 2500);
+    } else {
+      if (typeof window.destroyNavidadTheme === 'function') window.destroyNavidadTheme();
+      if (typeof toast === 'function') toast('Temática de Navidad DESACTIVADA', 'info', 2500);
     }
   };
 

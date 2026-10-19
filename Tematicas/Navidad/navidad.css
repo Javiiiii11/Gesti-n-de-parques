@@ -1,0 +1,698 @@
+/* ============================================================================
+   Temáticas ParkSales · NAVIDAD THEME STYLESHEET
+   Paleta y atmósfera invernal: Azul Noche Polar, Nieve Candelaria,
+   Rojo Rubí Festivo, Oro Cálido y Verde Pino Abeto.
+   Completamente modular y no invasivo.
+   ============================================================================ */
+
+/* -------------------------------------------------------------------------- */
+/* 1. MODO OSCURO (DARK MODE - POR DEFECTO)                                   */
+/* -------------------------------------------------------------------------- */
+
+body.theme-navidad {
+  --xmas-red: #E63946;
+  --xmas-red-glow: rgba(230, 57, 70, 0.4);
+  --xmas-gold: #FFD166;
+  --xmas-gold-glow: rgba(255, 209, 102, 0.45);
+  --xmas-pine: #2D6A4F;
+  --xmas-ice: #90E0EF;
+  --xmas-ice-glow: rgba(144, 224, 239, 0.35);
+  --xmas-snow: #F8FAFC;
+
+  background-color: #060A17 !important;
+  background-image: 
+    radial-gradient(circle at 15% 20%, rgba(30, 58, 138, 0.22) 0%, transparent 45%),
+    radial-gradient(circle at 85% 75%, rgba(45, 106, 79, 0.16) 0%, transparent 50%),
+    radial-gradient(circle at 50% 90%, rgba(230, 57, 70, 0.10) 0%, transparent 40%) !important;
+  background-attachment: fixed !important;
+}
+
+/* Sidebar Navideño */
+body.theme-navidad .sidebar {
+  background: linear-gradient(180deg, #091024 0%, #060B18 100%) !important;
+  border-right: 1px solid rgba(144, 224, 239, 0.16) !important;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+body.theme-navidad .sidebar-nav .nav-item.active,
+body.theme-navidad .sidebar-nav .nav-link.active {
+  background: linear-gradient(135deg, rgba(230, 57, 70, 0.25) 0%, rgba(45, 106, 79, 0.3) 100%) !important;
+  border-left: 3px solid #FFD166 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(230, 57, 70, 0.25) !important;
+}
+
+body.theme-navidad .sidebar-nav .nav-item:hover:not(.active),
+body.theme-navidad .sidebar-nav .nav-link:hover:not(.active) {
+  background: rgba(144, 224, 239, 0.08) !important;
+  color: #F8FAFC !important;
+}
+
+/* Topbar Navideño */
+body.theme-navidad .topbar {
+  background: rgba(8, 14, 30, 0.88) !important;
+  border-bottom: 1px solid rgba(144, 224, 239, 0.18) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 2. MODO CLARO (LIGHT MODE)                                                 */
+/* -------------------------------------------------------------------------- */
+
+body.theme-navidad.light-mode {
+  background-color: #F0F5FA !important;
+  background-image: 
+    radial-gradient(circle at 10% 15%, rgba(219, 234, 254, 0.7) 0%, transparent 45%),
+    radial-gradient(circle at 90% 80%, rgba(254, 226, 226, 0.5) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(240, 253, 244, 0.6) 0%, transparent 60%) !important;
+}
+
+body.theme-navidad.light-mode .sidebar {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%) !important;
+  border-right: 1px solid rgba(147, 197, 253, 0.35) !important;
+  box-shadow: 4px 0 20px rgba(15, 23, 42, 0.06) !important;
+}
+
+body.theme-navidad.light-mode .topbar {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-bottom: 1px solid rgba(147, 197, 253, 0.35) !important;
+}
+
+body.theme-navidad.light-mode .card,
+body.theme-navidad.light-mode .stat-card,
+body.theme-navidad.light-mode .filter-card {
+  background: #FFFFFF !important;
+  border-color: rgba(147, 197, 253, 0.35) !important;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06), 0 0 12px rgba(147, 197, 253, 0.15) !important;
+}
+
+body.theme-navidad.light-mode .card:hover,
+body.theme-navidad.light-mode .stat-card:hover {
+  border-color: rgba(230, 57, 70, 0.45) !important;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.10), 0 0 20px rgba(255, 209, 102, 0.35) !important;
+}
+
+/* Banner Navidad — optimizado para Modo Claro (foto nítida, luminosa y legible) */
+body.theme-navidad.light-mode .xmas-dashboard-banner {
+  background: #FFFFFF !important;
+  border: 1.5px solid rgba(147, 197, 253, 0.45) !important;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08), 0 0 20px rgba(147, 197, 253, 0.15) !important;
+}
+
+body.theme-navidad.light-mode .xmas-banner-bg {
+  opacity: 1 !important;
+  filter: brightness(1.02) contrast(1.06) saturate(1.18) !important;
+}
+
+body.theme-navidad.light-mode .xmas-banner-overlay {
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.85) 42%,
+    rgba(255, 255, 255, 0.30) 75%,
+    rgba(255, 255, 255, 0.05) 100%) !important;
+}
+
+body.theme-navidad.light-mode .xmas-banner-title {
+  color: #0F172A !important;
+  text-shadow: none !important;
+}
+
+body.theme-navidad.light-mode .xmas-banner-desc {
+  color: #334155 !important;
+  font-weight: 500 !important;
+  text-shadow: none !important;
+}
+
+body.theme-navidad.light-mode .xmas-banner-tag {
+  background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%) !important;
+  color: #DC2626 !important;
+  border: 1px solid rgba(220, 38, 38, 0.35) !important;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.18) !important;
+}
+
+body.theme-navidad.light-mode .xmas-banner-countdown {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1.5px solid rgba(220, 38, 38, 0.45) !important;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.12) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+body.theme-navidad.light-mode .xmas-countdown-val {
+  color: #DC2626 !important;
+  font-weight: 800 !important;
+  text-shadow: none !important;
+}
+
+body.theme-navidad.light-mode .xmas-countdown-lbl {
+  color: #64748B !important;
+  font-weight: 700 !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 3. RESPLANDOR Y BORDES CRISTALINOS EN TARJETAS                            */
+/* -------------------------------------------------------------------------- */
+
+body.theme-navidad .card,
+body.theme-navidad .stat-card,
+body.theme-navidad .filter-card {
+  position: relative;
+  background: linear-gradient(180deg, rgba(14, 24, 48, 0.85) 0%, rgba(9, 16, 34, 0.92) 100%) !important;
+  border: 1px solid rgba(144, 224, 239, 0.22) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(144, 224, 239, 0.08) !important;
+  backdrop-filter: blur(8px);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  overflow: visible !important; /* Para que la nieve superior descanse perfectamente */
+}
+
+body.theme-navidad .card:hover,
+body.theme-navidad .stat-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 209, 102, 0.45) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 24px rgba(255, 209, 102, 0.25) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 4. EFECTO DE NIEVE EN CAÍDA (BACKGROUND SNOW)                             */
+/* -------------------------------------------------------------------------- */
+
+.xmas-snow-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 998;
+  overflow: hidden;
+}
+
+.xmas-snowflake {
+  position: absolute;
+  top: -24px;
+  color: #FFFFFF;
+  animation-name: xmas-snow-fall, xmas-snow-sway;
+  animation-timing-function: linear, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+  will-change: transform;
+}
+
+.xmas-snowflake-dot {
+  background: radial-gradient(circle, #FFFFFF 40%, rgba(224, 242, 254, 0.8) 100%);
+  border-radius: 50%;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
+}
+
+.xmas-snowflake-crystal svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 4px rgba(186, 230, 253, 0.8));
+}
+
+@keyframes xmas-snow-fall {
+  0% {
+    top: -25px;
+  }
+  100% {
+    top: 105vh;
+  }
+}
+
+@keyframes xmas-snow-sway {
+  0%, 100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  50% {
+    transform: translateX(24px) rotate(180deg);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 5. NIEVE EN EL BORDE SUPERIOR DE LAS TARJETAS (.xmas-snow-cap)             */
+/* -------------------------------------------------------------------------- */
+
+.xmas-snow-cap {
+  position: absolute;
+  top: -7px;
+  left: -1px;
+  right: -1px;
+  height: 16px;
+  pointer-events: none;
+  z-index: 5;
+  overflow: visible;
+  line-height: 0;
+}
+
+.xmas-snow-cap-img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.25));
+  transition: filter 0.3s ease;
+}
+
+.card:hover .xmas-snow-cap-img,
+.stat-card:hover .xmas-snow-cap-img {
+  filter: drop-shadow(0 3px 8px rgba(144, 224, 239, 0.6)) drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+}
+
+/* -------------------------------------------------------------------------- */
+/* 6. ADORNOS NAVIDEÑOS EN ESQUINAS DE TARJETAS                              */
+/* -------------------------------------------------------------------------- */
+
+.xmas-card-ornament {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 6;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease, filter 0.3s ease;
+}
+
+.card:hover .xmas-card-ornament,
+.stat-card:hover .xmas-card-ornament {
+  opacity: 1;
+  transform: scale(1.18) rotate(8deg);
+  filter: drop-shadow(0 0 12px rgba(255, 209, 102, 0.85));
+}
+
+/* -------------------------------------------------------------------------- */
+/* 7. GUIRNALDAS DE PINO Y LUCES EN ESQUINAS                                  */
+/* -------------------------------------------------------------------------- */
+
+.xmas-corner-garland {
+  position: fixed;
+  top: 0;
+  width: 140px;
+  height: 140px;
+  pointer-events: none;
+  z-index: 990;
+  opacity: 0.88;
+  transition: opacity 0.3s ease;
+}
+
+.xmas-corner-garland.top-left {
+  left: 0;
+}
+
+.xmas-corner-garland.top-right {
+  right: 0;
+  transform: scaleX(-1);
+}
+
+.xmas-garland-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+}
+
+/* -------------------------------------------------------------------------- */
+/* 8. GORRO DE PAPÁ NOEL EN LOGOTIPO Y ACCESO                                 */
+/* -------------------------------------------------------------------------- */
+
+.xmas-brand-hat {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  margin-right: 6px;
+  margin-top: -8px;
+  filter: drop-shadow(0 2px 6px rgba(230, 57, 70, 0.5));
+  animation: xmas-hat-tilt 4s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+@keyframes xmas-hat-tilt {
+  0%, 100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+
+.xmas-auth-badge {
+  position: absolute;
+  top: -22px;
+  right: -16px;
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 14px rgba(144, 224, 239, 0.6));
+  animation: xmas-bob 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes xmas-bob {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 9. BADGE Y SONIDO EN TOPBAR                                               */
+/* -------------------------------------------------------------------------- */
+
+.xmas-topbar-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(230, 57, 70, 0.25) 0%, rgba(45, 106, 79, 0.3) 100%);
+  border: 1px solid rgba(255, 209, 102, 0.45);
+  color: #FFD166;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: var(--radius-full, 9999px);
+  box-shadow: 0 0 12px rgba(255, 209, 102, 0.2);
+  user-select: none;
+}
+
+.xmas-pill-tree {
+  font-size: 13px;
+  animation: xmas-tree-bounce 2.5s ease-in-out infinite;
+}
+
+@keyframes xmas-tree-bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15) rotate(5deg);
+  }
+}
+
+.xmas-sound-btn {
+  background: rgba(14, 24, 48, 0.7);
+  border: 1px solid rgba(144, 224, 239, 0.3);
+  color: #FFFFFF;
+  font-size: 13px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.xmas-sound-btn:hover {
+  border-color: #FFD166;
+  background: rgba(230, 57, 70, 0.3);
+  box-shadow: 0 0 12px rgba(255, 209, 102, 0.4);
+}
+
+.xmas-sound-btn.active {
+  border-color: #FFD166;
+  color: #FFD166;
+  box-shadow: 0 0 14px rgba(255, 209, 102, 0.5);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 10. BANNER ILUSTRADO Y CUENTA ATRÁS EN DASHBOARD                           */
+/* -------------------------------------------------------------------------- */
+
+.xmas-dashboard-banner {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  border-radius: var(--radius-l, 14px);
+  overflow: hidden;
+  margin-bottom: 22px;
+  border: 1px solid rgba(144, 224, 239, 0.35);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(144, 224, 239, 0.15);
+}
+
+.xmas-banner-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 38%;
+  filter: brightness(0.85);
+  transition: transform 0.6s ease;
+}
+
+.xmas-dashboard-banner:hover .xmas-banner-bg {
+  transform: scale(1.02);
+}
+
+.xmas-banner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(6, 10, 23, 0.92) 0%, rgba(6, 10, 23, 0.75) 45%, rgba(6, 10, 23, 0.3) 100%);
+}
+
+.xmas-banner-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 32px;
+  gap: 20px;
+}
+
+.xmas-banner-tag {
+  display: inline-block;
+  background: linear-gradient(135deg, rgba(230, 57, 70, 0.85) 0%, rgba(188, 24, 35, 0.95) 100%);
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: var(--radius-full, 9999px);
+  margin-bottom: 8px;
+  letter-spacing: 0.04em;
+  box-shadow: 0 2px 8px rgba(230, 57, 70, 0.5);
+}
+
+.xmas-banner-title {
+  font-family: var(--font-display, inherit);
+  font-size: 23px;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0 0 6px 0;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+.xmas-banner-desc {
+  font-size: 13px;
+  color: #E2E8F0;
+  max-width: 580px;
+  margin: 0;
+  line-height: 1.5;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+}
+
+.xmas-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.xmas-banner-countdown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(6, 10, 23, 0.85);
+  border: 1px solid rgba(255, 209, 102, 0.45);
+  backdrop-filter: blur(8px);
+  padding: 8px 16px;
+  border-radius: var(--radius-m, 10px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+}
+
+.xmas-countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.xmas-countdown-val {
+  font-size: 19px;
+  font-weight: 800;
+  color: #FFFFFF;
+  line-height: 1.1;
+  text-shadow: 0 0 10px rgba(255, 209, 102, 0.6);
+}
+
+.xmas-countdown-lbl {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: #CBD5E1;
+  letter-spacing: 0.06em;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 11. COPILOT FLOTANTE - EDICIÓN NAVIDEÑA (GALLETA DE JENGIBRE COPILOT)      */
+/* -------------------------------------------------------------------------- */
+
+body.theme-navidad #copilot-fab > svg {
+  display: none !important;
+}
+
+body.theme-navidad #copilot-fab .copilot-fab-pulse {
+  display: none !important;
+}
+
+body.theme-navidad #copilot-fab {
+  gap: 2px;
+  filter: drop-shadow(0 0 16px rgba(255, 209, 102, 0.5));
+}
+
+.xmas-copilot-wrap {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+
+.xmas-copilot-ginger-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 14px rgba(188, 108, 37, 0.6)) drop-shadow(0 0 10px rgba(255, 209, 102, 0.5));
+  animation: xmas-ginger-float 3s ease-in-out infinite;
+  user-select: none;
+  pointer-events: none;
+}
+
+@keyframes xmas-ginger-float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(4deg);
+  }
+}
+
+.xmas-copilot-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 60px;
+  height: 60px;
+  margin-top: -30px;
+  margin-left: -30px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 209, 102, 0.45) 0%, rgba(80, 230, 255, 0.22) 55%, transparent 75%);
+  animation: xmas-copilot-pulse-anim 2.6s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes xmas-copilot-pulse-anim {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.85;
+  }
+  70% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+}
+
+.xmas-copilot-badge {
+  position: absolute;
+  bottom: 0px;
+  right: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #060B18;
+  border: 1.5px solid rgba(255, 209, 102, 0.85);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 8px rgba(255, 209, 102, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5px;
+  animation: xmas-badge-pop 2.8s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.xmas-copilot-badge svg {
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes xmas-badge-pop {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.15) rotate(5deg);
+  }
+}
+
+/* Hover & Active en el botón Copilot Galleta de Jengibre */
+body.theme-navidad #copilot-fab:hover .xmas-copilot-wrap {
+  transform: scale(1.16) translateY(-4px);
+}
+
+body.theme-navidad #copilot-fab:hover .xmas-copilot-ginger-img {
+  filter: drop-shadow(0 6px 22px rgba(255, 209, 102, 0.95))
+    drop-shadow(0 0 18px rgba(80, 230, 255, 0.8))
+    drop-shadow(0 0 12px rgba(230, 57, 70, 0.65));
+}
+
+body.theme-navidad #copilot-fab:active .xmas-copilot-wrap {
+  transform: scale(0.94);
+}
+
+/* Label de Copilot en Navidad */
+body.theme-navidad .copilot-fab-label {
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  background: linear-gradient(135deg, #FFD166 0%, #FFB703 50%, #50E6FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 12px rgba(255, 209, 102, 0.35);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 12. RESPONSIVE DESIGN                                                      */
+/* -------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  .xmas-corner-garland {
+    width: 90px;
+    height: 90px;
+  }
+
+  .xmas-banner-content {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 18px;
+  }
+
+  .xmas-banner-title {
+    font-size: 19px;
+  }
+
+  .xmas-banner-countdown {
+    width: 100%;
+    justify-content: space-around;
+  }
+}

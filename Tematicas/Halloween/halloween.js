@@ -390,14 +390,11 @@
   }
 
   /* -------------------------------------------------------------------------- */
-  /* 6. DECORAR TARJETAS KPI CON CALABAZAS (PUMPKIN3 A PUMPKIN8)               */
+  /* 6. DECORAR TARJETAS KPI Y CAJAS DE LOS AROS DEL DASHBOARD CON CALABAZAS   */
   /* -------------------------------------------------------------------------- */
 
   function decorateKpiCards() {
-    const statsContainer = document.getElementById('dashboard-stats');
-    if (!statsContainer) return;
-
-    const cards = statsContainer.querySelectorAll('.card, .stat-card');
+    const allCards = document.querySelectorAll('#dashboard-stats .card, #dashboard-stats .stat-card, .dashboard-main-grid .card, .dashboard-panel, .card, .stat-card');
     const pumpkins = [
       'Pumpkin3.png',
       'Pumpkin4.png',
@@ -407,7 +404,7 @@
       'Pumpkin8.png'
     ];
 
-    cards.forEach((card, index) => {
+    allCards.forEach((card, index) => {
       if (!card.querySelector('.hw-card-corner-pumpkin')) {
         const pumpkinImg = document.createElement('img');
         const pFile = pumpkins[index % pumpkins.length];

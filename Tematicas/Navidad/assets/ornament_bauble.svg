@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <defs>
+    <radialGradient id="baubleGlow" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FF6B6B" />
+      <stop offset="40%" stop-color="#E63946" />
+      <stop offset="85%" stop-color="#990017" />
+      <stop offset="100%" stop-color="#59000D" />
+    </radialGradient>
+    <linearGradient id="goldHanger" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE49E" />
+      <stop offset="50%" stop-color="#FFD166" />
+      <stop offset="100%" stop-color="#C79800" />
+    </linearGradient>
+  </defs>
+
+  <!-- Hanging Ring -->
+  <circle cx="40" cy="10" r="6" stroke="url(#goldHanger)" stroke-width="2.5" fill="none" />
+  <!-- Cap -->
+  <rect x="33" y="14" width="14" height="7" rx="2" fill="url(#goldHanger)" />
+
+  <!-- Bauble Body -->
+  <circle cx="40" cy="46" r="28" fill="url(#baubleGlow)" />
+
+  <!-- Gold Glitter Pattern Band -->
+  <path d="M14,46 Q27,53 40,46 Q53,39 66,46" stroke="url(#goldHanger)" stroke-width="3" fill="none" />
+  <path d="M16,40 Q28,47 40,40 Q52,33 64,40" stroke="#FFF" stroke-width="1.2" stroke-dasharray="2 2" fill="none" opacity="0.8" />
+  <path d="M16,52 Q28,59 40,52 Q52,45 64,52" stroke="#FFF" stroke-width="1.2" stroke-dasharray="2 2" fill="none" opacity="0.8" />
+
+  <!-- Specular Highlight -->
+  <ellipse cx="28" cy="34" rx="7" ry="4" transform="rotate(-30 28 34)" fill="#FFFFFF" opacity="0.65" />
+  <circle cx="23" cy="29" r="2" fill="#FFFFFF" opacity="0.9" />
+</svg>

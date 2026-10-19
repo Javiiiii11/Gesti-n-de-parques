@@ -1,0 +1,232 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
+  <defs>
+    <!-- 3D Baked Gingerbread Gradients -->
+    <radialGradient id="gbSkin3D" cx="38%" cy="32%" r="68%">
+      <stop offset="0%" stop-color="#EDB374" />
+      <stop offset="35%" stop-color="#D48A43" />
+      <stop offset="75%" stop-color="#A55A1D" />
+      <stop offset="100%" stop-color="#73380B" />
+    </radialGradient>
+
+    <!-- Warm Cookie Edge Shadow -->
+    <linearGradient id="gbEdgeShade" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.3" />
+      <stop offset="50%" stop-color="#D48A43" stop-opacity="0" />
+      <stop offset="100%" stop-color="#542403" stop-opacity="0.6" />
+    </linearGradient>
+
+    <!-- Santa Hat Velvet Red -->
+    <linearGradient id="gbHatRed" x1="15%" y1="0%" x2="85%" y2="100%">
+      <stop offset="0%" stop-color="#FF3B56" />
+      <stop offset="45%" stop-color="#E60026" />
+      <stop offset="85%" stop-color="#9E0016" />
+      <stop offset="100%" stop-color="#5E000B" />
+    </linearGradient>
+
+    <!-- Fluffy Snow White Fur -->
+    <linearGradient id="gbWhiteFur" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="65%" stop-color="#F1F5F9" />
+      <stop offset="100%" stop-color="#CBD5E1" />
+    </linearGradient>
+
+    <!-- Official Microsoft Copilot Ribbon Gradients -->
+    <!-- Loop 1: Cyan / Blue / Azure -->
+    <linearGradient id="cpRibbonCyanBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="35%" stop-color="#0284C7" />
+      <stop offset="70%" stop-color="#0369A1" />
+      <stop offset="100%" stop-color="#1E3A8A" />
+    </linearGradient>
+
+    <!-- Loop 2: Yellow / Orange / Magenta / Red -->
+    <linearGradient id="cpRibbonWarm" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047" />
+      <stop offset="25%" stop-color="#F97316" />
+      <stop offset="65%" stop-color="#EF4444" />
+      <stop offset="100%" stop-color="#C026D3" />
+    </linearGradient>
+
+    <!-- Center Intersect Loop -->
+    <linearGradient id="cpRibbonIntersect" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="50%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#A855F7" />
+    </linearGradient>
+
+    <!-- Cosmic Holiday Magic Swirl Gradient (like copilot ghost) -->
+    <linearGradient id="xmasMagicSwirl" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD166" stop-opacity="0.9" />
+      <stop offset="35%" stop-color="#FF4D6D" stop-opacity="0.75" />
+      <stop offset="70%" stop-color="#7209B7" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#4CC9F0" stop-opacity="0.85" />
+    </linearGradient>
+
+    <!-- Soft Drop Shadows -->
+    <filter id="charShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000000" flood-opacity="0.45" />
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#FFD166" flood-opacity="0.3" />
+    </filter>
+
+    <filter id="glowFairy" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 1. BACKGROUND GLOWING HOLIDAY MAGIC SWIRL (Just like copilot ghost!) -->
+  <g filter="url(#glowFairy)">
+    <!-- Magic Ring Trail Behind -->
+    <path d="M40,140 C15,110 20,60 55,42 C85,25 155,30 185,55 C220,85 225,145 195,175 C170,200 115,205 80,185" 
+          stroke="url(#xmasMagicSwirl)" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.85" />
+    <path d="M45,138 C25,112 28,68 60,50 C88,34 150,38 178,60 C210,88 215,140 188,168" 
+          stroke="#FFF" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6" />
+    <!-- Floating Sparkles & Stars -->
+    <circle cx="30" cy="85" r="2.5" fill="#FFD166" opacity="0.9" />
+    <circle cx="48" cy="40" r="1.8" fill="#FFF" opacity="0.8" />
+    <circle cx="198" cy="65" r="3" fill="#4CC9F0" opacity="0.85" />
+    <circle cx="215" cy="115" r="2.2" fill="#FFD166" opacity="0.9" />
+    <circle cx="205" cy="155" r="2.8" fill="#FF4D6D" opacity="0.8" />
+    <circle cx="75" cy="195" r="2" fill="#FFF" opacity="0.85" />
+    <!-- Golden Star 1 -->
+    <polygon points="28,125 30,131 36,131 31,135 33,141 28,137 23,141 25,135 20,131 26,131" fill="#FFD166" />
+    <!-- Golden Star 2 -->
+    <polygon points="205,85 207,90 212,90 208,93 210,98 205,95 200,98 202,93 198,90 203,90" fill="#FFD166" />
+  </g>
+
+  <!-- 2. MAIN CHUBBY GINGERBREAD CHARACTER BODY (Ultra-smooth rounded Pixar curves) -->
+  <g filter="url(#charShadow)">
+    
+    <!-- Chubby Left Arm (Curved, open, inviting) -->
+    <path d="M72,118 C52,112 30,122 36,138 C42,150 62,142 80,132 Z" fill="url(#gbSkin3D)" />
+    <!-- Left Hand Thumb -->
+    <circle cx="36" cy="130" r="7.5" fill="url(#gbSkin3D)" />
+
+    <!-- Chubby Right Arm (Curved waving upwards) -->
+    <path d="M148,118 C168,112 195,120 192,138 C188,150 165,142 142,132 Z" fill="url(#gbSkin3D)" />
+    <!-- Right Hand Thumb -->
+    <circle cx="190" cy="128" r="7.5" fill="url(#gbSkin3D)" />
+
+    <!-- Chubby Left Leg -->
+    <path d="M85,160 C75,178 72,204 88,206 C104,208 106,182 108,162 Z" fill="url(#gbSkin3D)" />
+
+    <!-- Chubby Right Leg -->
+    <path d="M132,162 C134,182 136,208 152,206 C168,204 165,178 155,160 Z" fill="url(#gbSkin3D)" />
+
+    <!-- Plump Round Torso / Tummy -->
+    <ellipse cx="120" cy="142" rx="42" ry="40" fill="url(#gbSkin3D)" />
+
+    <!-- Round Chubby Head -->
+    <circle cx="120" cy="85" r="42" fill="url(#gbSkin3D)" />
+
+    <!-- 3D Edge Shading Highlight Overlay on Body -->
+    <circle cx="120" cy="85" r="42" fill="url(#gbEdgeShade)" opacity="0.5" />
+    <ellipse cx="120" cy="142" rx="42" ry="40" fill="url(#gbEdgeShade)" opacity="0.4" />
+
+    <!-- WHITE SUGAR ICING SWIRLS & DETAILS -->
+    <!-- Head Frosted Hair Waves (curvy frosting) -->
+    <path d="M92,58 Q106,46 120,58 Q134,46 148,58" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.95" />
+    <path d="M102,52 Q112,44 122,50 Q130,44 138,52" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.8" />
+
+    <!-- Arm Icing Squiggles -->
+    <path d="M42,128 Q48,136 44,144" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" fill="none" />
+    <path d="M182,126 Q176,134 180,142" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" fill="none" />
+
+    <!-- Ankle Icing Squiggles -->
+    <path d="M80,195 Q88,190 96,196" stroke="#FFFFFF" stroke-width="4.2" stroke-linecap="round" fill="none" />
+    <path d="M144,196 Q152,190 160,195" stroke="#FFFFFF" stroke-width="4.2" stroke-linecap="round" fill="none" />
+
+    <!-- 3. ADORABLE PIXAR-STYLE FACE (Just like copilot ghost!) -->
+    <!-- Rosy Frosted Pink Cheeks -->
+    <ellipse cx="94" cy="95" rx="7.5" ry="5.5" fill="#FF4D6D" opacity="0.45" />
+    <ellipse cx="146" cy="95" rx="7.5" ry="5.5" fill="#FF4D6D" opacity="0.45" />
+
+    <!-- Left Big Eye -->
+    <g>
+      <ellipse cx="103" cy="82" rx="6.5" ry="8.5" fill="#1C0A00" />
+      <!-- Warm Iris Sparkle Glow -->
+      <ellipse cx="103" cy="84" rx="5.5" ry="5" fill="#7C2D12" opacity="0.8" />
+      <!-- Star Glint 1 -->
+      <circle cx="101" cy="79" r="2.6" fill="#FFFFFF" />
+      <circle cx="105" cy="85" r="1.3" fill="#FFFFFF" />
+    </g>
+
+    <!-- Right Big Eye -->
+    <g>
+      <ellipse cx="137" cy="82" rx="6.5" ry="8.5" fill="#1C0A00" />
+      <!-- Warm Iris Sparkle Glow -->
+      <ellipse cx="137" cy="84" rx="5.5" ry="5" fill="#7C2D12" opacity="0.8" />
+      <!-- Star Glint 1 -->
+      <circle cx="135" cy="79" r="2.6" fill="#FFFFFF" />
+      <circle cx="139" cy="85" r="1.3" fill="#FFFFFF" />
+    </g>
+
+    <!-- Sweet Open Smile with Pink Tongue -->
+    <path d="M110,95 Q120,107 130,95 Z" fill="#3B1003" />
+    <!-- Tongue -->
+    <path d="M114,99 Q120,106 126,99 Q120,97 114,99 Z" fill="#FF4D6D" />
+    <!-- White Sugar Tooth Glint -->
+    <path d="M113,95 Q120,97 127,95" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" fill="none" />
+
+    <!-- 4. OFFICIAL MICROSOFT COPILOT LOGO ON CHEST (Vibrant, 3D, Crisp!) -->
+    <g transform="translate(120, 134) scale(1.05)" filter="url(#glowFairy)">
+      <!-- Soft ambient backdrop for the logo so it pops vividly against gingerbread -->
+      <ellipse cx="0" cy="0" rx="22" ry="17" fill="#0F172A" opacity="0.25" />
+
+      <!-- Copilot Upper-Left Loop (Cyan to Blue Azure) -->
+      <path d="M-13,6 C-21,6 -27,-1 -27,-9 C-27,-21 -14,-25 -4,-15 C4,-7 4,6 -13,6 Z" 
+            fill="url(#cpRibbonCyanBlue)" />
+
+      <!-- Copilot Lower-Right Loop (Yellow to Orange to Crimson Magenta) -->
+      <path d="M13,6 C21,6 27,-1 27,-9 C27,-21 14,-25 4,-15 C-4,-7 -4,6 13,6 Z" 
+            fill="url(#cpRibbonWarm)" />
+
+      <!-- Copilot Central Overlap Intersect (Electric Indigo/Purple) -->
+      <path d="M-4,-15 C4,-7 4,6 -13,6 C-4,6 4,-3 -4,-15 Z" 
+            fill="url(#cpRibbonIntersect)" opacity="0.9" />
+
+      <!-- Glossy 3D Highlight Curvature on Ribbon -->
+      <path d="M-24,-11 C-24,-19 -14,-22 -5,-14" 
+            stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.75" />
+      <path d="M16,4 C23,4 25,0 25,-8" 
+            stroke="#FFF3B0" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.8" />
+    </g>
+
+    <!-- Shiny Gumdrop Candy Buttons on Belly -->
+    <!-- Button 1: Emerald Spruce Green -->
+    <circle cx="120" cy="157" r="4.5" fill="#06D6A0" />
+    <circle cx="118.5" cy="155.5" r="1.6" fill="#FFFFFF" opacity="0.9" />
+
+    <!-- Button 2: Ruby Crimson Red -->
+    <circle cx="120" cy="169" r="4.5" fill="#E63946" />
+    <circle cx="118.5" cy="167.5" r="1.6" fill="#FFFFFF" opacity="0.9" />
+
+    <!-- 5. FESTIVE RED VELVET SANTA HAT (Tilted cutely, 3D shaded) -->
+    <g transform="rotate(-10 120 48)">
+      <!-- Red Cone Curved to the Right -->
+      <path d="M88,52 C90,26 122,14 142,20 C156,24 172,38 166,54 C152,47 106,46 88,52 Z" 
+            fill="url(#gbHatRed)" />
+      <!-- Velvet Shadow Fold -->
+      <path d="M124,19 C138,26 146,38 140,49 C128,40 114,30 124,19 Z" 
+            fill="#5E000B" opacity="0.5" />
+
+      <!-- Marshmallow White Fluffy Hat Brim -->
+      <rect x="80" y="46" width="86" height="18" rx="9" fill="url(#gbWhiteFur)" />
+      <!-- Puffy Fur Mounds -->
+      <circle cx="87" cy="55" r="7.5" fill="url(#gbWhiteFur)" />
+      <circle cx="102" cy="54" r="8" fill="url(#gbWhiteFur)" />
+      <circle cx="118" cy="55" r="8.5" fill="url(#gbWhiteFur)" />
+      <circle cx="134" cy="54" r="8.5" fill="url(#gbWhiteFur)" />
+      <circle cx="150" cy="55" r="8" fill="url(#gbWhiteFur)" />
+      <circle cx="163" cy="55" r="7.5" fill="url(#gbWhiteFur)" />
+
+      <!-- Fluffy White Pom-Pom on Tip -->
+      <circle cx="170" cy="52" r="11" fill="url(#gbWhiteFur)" />
+      <circle cx="168" cy="49" r="6" fill="#FFFFFF" opacity="0.85" />
+    </g>
+
+  </g>
+</svg>
