@@ -1,5 +1,5 @@
-/* ============================================================================
-   app.js — arranque de la aplicación, enrutado de vistas y UI global
+﻿/* ============================================================================
+   app.js â€” arranque de la aplicaciÃ³n, enrutado de vistas y UI global
 ============================================================================ */
 
 const VIEW_TITLES = {
@@ -7,29 +7,29 @@ const VIEW_TITLES = {
   'venta-rapida': 'Registrar venta',
   'historial': 'Historial de ventas',
   'contactos': 'Apuntes / Contactos',
-  'notas-rapidas': 'Notas rápidas',
+  'notas-rapidas': 'Notas rÃ¡pidas',
   'cuadrante': 'Mi cuadrante',
   'llamadas': 'Llamadas',
   'horarios': 'Horarios y Archivos',
   'parques': 'Parques / Bonos',
-  'estadisticas': 'Estadísticas',
+  'estadisticas': 'EstadÃ­sticas',
   'exportar': 'Exportar / Importar',
   'chat-ia': 'Chat IA',
 };
 
 function switchView(viewId) {
-  // Bloquear acceso directo a parques sin contraseña
+  // Bloquear acceso directo a parques sin contraseÃ±a
   if (viewId === 'parques' && sessionStorage.getItem('parksales_parques_unlocked') !== '1') {
     viewId = 'dashboard';
   }
 
   // Con el modo editor del cuadrante activo no se puede salir de la pantalla
-  // sin pasar por la confirmación (que muestra los cambios hechos).
+  // sin pasar por la confirmaciÃ³n (que muestra los cambios hechos).
   if (typeof cuadEditorMode !== 'undefined' && cuadEditorMode && viewId !== 'cuadrante') {
     const currentView = document.querySelector('.view.active')?.id?.replace('view-', '');
     if (currentView === 'cuadrante' && typeof cuadConfirmLeaveEditor === 'function') {
       cuadConfirmLeaveEditor(() => switchView(viewId));
-      return; // No cambiar de vista aún
+      return; // No cambiar de vista aÃºn
     }
   }
 
@@ -122,11 +122,11 @@ function setUserChip(user) {
   }
 }
 
-// bootApp puede recibir más de una invocación durante el arranque de sesión
-// (login manual + evento onAuthStateChange de Supabase casi simultáneos).
+// bootApp puede recibir mÃ¡s de una invocaciÃ³n durante el arranque de sesiÃ³n
+// (login manual + evento onAuthStateChange de Supabase casi simultÃ¡neos).
 // APP_BOOTED evita que la fase de "cableado" de listeners (initVentaForm,
-// initHistorialView, etc.) se ejecute más de una vez, ya que cada llamada
-// añade nuevos listeners sin quitar los anteriores: si se cableaban dos
+// initHistorialView, etc.) se ejecute mÃ¡s de una vez, ya que cada llamada
+// aÃ±ade nuevos listeners sin quitar los anteriores: si se cableaban dos
 // veces, cada clic en "Guardar venta" disparaba guardarVenta() dos veces
 // y la venta quedaba duplicada en la base de datos.
 let APP_BOOTED = false;
@@ -154,9 +154,9 @@ async function bootApp(user) {
 
   setUserChip(user);
 
-  // Cada paso de inicialización va protegido: un fallo puntual (p. ej. que
-  // una librería externa como Chart.js no haya cargado por falta de red)
-  // no debe impedir que el resto de la aplicación quede utilizable.
+  // Cada paso de inicializaciÃ³n va protegido: un fallo puntual (p. ej. que
+  // una librerÃ­a externa como Chart.js no haya cargado por falta de red)
+  // no debe impedir que el resto de la aplicaciÃ³n quede utilizable.
   const safe = (fn, label) => { try { fn(); } catch (err) { console.error(`Error inicializando ${label}:`, err); } };
 
   if (APP_BOOTED) {
@@ -180,12 +180,12 @@ async function bootApp(user) {
   safe(renderBonosTable, 'tabla de bonos');
   safe(initVentaForm, 'formulario de venta');
   safe(initHistorialView, 'vista de historial');
-  safe(initEstadisticasView, 'vista de estadísticas');
-  safe(initExportView, 'vista de exportación');
-  safe(initAutoBackup, 'copia de seguridad automática');
+  safe(initEstadisticasView, 'vista de estadÃ­sticas');
+  safe(initExportView, 'vista de exportaciÃ³n');
+  safe(initAutoBackup, 'copia de seguridad automÃ¡tica');
   safe(wireParquesView, 'vista de parques');
   safe(wireContactosView, 'vista de contactos');
-  safe(initNotasRapidas, 'bloc de notas rápidas');
+  safe(initNotasRapidas, 'bloc de notas rÃ¡pidas');
   safe(initLlamadasView, 'vista de llamadas');
   safe(initHorarios, 'vista de horarios');
   safe(initPomodoro, 'temporizador y pendientes');
@@ -195,8 +195,8 @@ async function bootApp(user) {
   safe(renderContactos, 'renderizado de contactos');
   safe(renderDashboard, 'renderizado de dashboard');
 
-  // Comprobar periódicamente si han llegado fechas de visitas flexibles (cada 30 min)
-  setInterval(() => safe(checkAndAutoCompleteFlexibles, 'verificación periódica flexibles'), 30 * 60 * 1000);
+  // Comprobar periÃ³dicamente si han llegado fechas de visitas flexibles (cada 30 min)
+  setInterval(() => safe(checkAndAutoCompleteFlexibles, 'verificaciÃ³n periÃ³dica flexibles'), 30 * 60 * 1000);
 
   document.getElementById('app').classList.add('ready');
 
@@ -205,6 +205,14 @@ async function bootApp(user) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // ComprobaciÃ³n de seguridad por PC / dispositivo
+  // (solo se detiene si el PC no estÃ¡ autorizado; un bloqueo temporal de
+  //  inactividad NO impide arrancar la app, para que la sesiÃ³n se recuerde)
+  if (window.SEGURIDAD_PC && window.SEGURIDAD_PC.pcAutorizado === false) {
+    console.warn('[ParkSales] InicializaciÃ³n detenida: PC no autorizado.');
+    return;
+  }
+
   initAuthScreen();
   wireLogout();
   if (typeof wireAuthState === 'function') wireAuthState();
@@ -216,6 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
   wireGlobalSearch();
 
   initTopbarPomo();
+  setupSessionTimeout();
 
   const savedTheme = localStorage.getItem('parksales_theme');
   if (savedTheme === 'light') document.body.classList.add('light-mode');
@@ -252,7 +261,109 @@ function initTopbarPomo() {
 }
 
 /* -------------------------------------------------------------------------- */
-/* COPILOT FLOTANTE — abre Microsoft Copilot en ventana popup centrada        */
+/* SESSION TIMEOUT — bloquea la web (404 igual que Alt+B) tras 30 s inactivo  */
+/* -------------------------------------------------------------------------- */
+function setupSessionTimeout() {
+  if (window.__sessionTimeoutWired) return;
+  window.__sessionTimeoutWired = true;
+
+  const INACTIVITY_TIMEOUT = 30 * 1000; // 30 segundos
+  let lastActivity = Date.now();
+  let armed = false;
+
+  function estaBloqueado() {
+    return document.documentElement.classList.contains('pc-bloqueado');
+  }
+
+  function bloquearPorInactividad() {
+    if (estaBloqueado()) return;
+    if (window.PARKSALES_PANICO && typeof window.PARKSALES_PANICO.activar === 'function') {
+      window.PARKSALES_PANICO.activar();
+    } else {
+      // Respaldo si el módulo de seguridad no está disponible
+      document.documentElement.classList.add('pc-bloqueado');
+      document.title = '404 - File not found';
+    }
+  }
+
+  function marcarActividad() {
+    lastActivity = Date.now();
+  }
+
+  function armar() {
+    if (armed) return;
+    armed = true;
+    lastActivity = Date.now();
+    // Si la página viene de una recarga, se bloquea al instante.
+    if (esRecargaDePagina()) {
+      bloquearPorInactividad();
+    }
+  }
+
+  // El temporizador solo empieza cuando la app está cargada (usuario dentro)
+  const appEl = document.getElementById('app');
+  function intentarArmar() {
+    if (appEl && appEl.classList.contains('ready')) {
+      armar();
+      return true;
+    }
+    return false;
+  }
+
+  if (!intentarArmar() && appEl) {
+    const obsReady = new MutationObserver(() => {
+      if (intentarArmar()) obsReady.disconnect();
+    });
+    obsReady.observe(appEl, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  // Comprobación periódica robusta: si pasan 30 s sin actividad, se bloquea
+  setInterval(() => {
+    if (!armed || estaBloqueado()) return;
+    if (Date.now() - lastActivity >= INACTIVITY_TIMEOUT) {
+      bloquearPorInactividad();
+    }
+  }, 1000);
+
+  // Al desbloquearse (Alt+B), reiniciar el contador
+  const obsDoc = new MutationObserver(() => {
+    if (!estaBloqueado()) lastActivity = Date.now();
+  });
+  obsDoc.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+  const events = ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'];
+  events.forEach((event) => {
+    document.addEventListener(event, marcarActividad, { passive: true });
+  });
+
+  const originalSwitchView = window.switchView;
+  if (originalSwitchView) {
+    window.switchView = function(viewId) {
+      marcarActividad();
+      return originalSwitchView.apply(this, arguments);
+    };
+  }
+}
+
+/* Detects a browser reload (F5 / Ctrl+R / refresh button) */
+function esRecargaDePagina() {
+  try {
+    // La recarga automática de normalización (para quitar el POST) no cuenta
+    if (sessionStorage.getItem('parksales_normalizing') === '1') {
+      sessionStorage.removeItem('parksales_normalizing');
+      return false;
+    }
+  } catch (e) { /* ignore */ }
+  try {
+    const nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+    if (nav) return nav.type === 'reload';
+    if (performance.navigation) return performance.navigation.type === 1; // legacy: TYPE_RELOAD
+  } catch (e) { /* ignore */ }
+  return false;
+}
+
+/* -------------------------------------------------------------------------- */
+/* COPILOT FLOTANTE â€” abre Microsoft Copilot en ventana popup centrada        */
 /* -------------------------------------------------------------------------- */
 
 function abrirCopilot() {
@@ -265,9 +376,9 @@ function abrirCopilot() {
 
   const popup = window.open(url, 'copilot-popup', features);
 
-  // Si el navegador bloqueó el popup, abrir en pestaña nueva como fallback
+  // Si el navegador bloqueÃ³ el popup, abrir en pestaÃ±a nueva como fallback
   if (!popup || popup.closed || typeof popup.closed === 'undefined') {
     window.open(url, '_blank', 'noopener,noreferrer');
-    toast('💡 Activa las ventanas emergentes para una mejor experiencia con Copilot.', 'info', 4000);
+    toast('ðŸ’¡ Activa las ventanas emergentes para una mejor experiencia con Copilot.', 'info', 4000);
   }
 }

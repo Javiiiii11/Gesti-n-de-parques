@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
+  <script src="js/acceso-pcs.js?v=4"></script>
   <script>
     // Detección instantánea de enlace de invitación/recuperación de Supabase.
     // Se ejecuta antes de pintar nada para evitar que se vea la pantalla de
@@ -18,6 +19,22 @@
           document.documentElement.classList.add('ps-invite-flow');
         }
       } catch (err) { /* sessionStorage puede fallar en modo privado */ }
+    })();
+  </script>
+  <script>
+    // Limpia credenciales que hayan podido acabar en la URL (nunca deben verse).
+    (function () {
+      try {
+        var u = new URL(window.location.href);
+        var dirty = false;
+        ['username', 'password', 'pass', 'pwd'].forEach(function (k) {
+          if (u.searchParams.has(k)) { u.searchParams.delete(k); dirty = true; }
+        });
+        if (dirty) {
+          var qs = u.searchParams.toString();
+          window.history.replaceState({}, document.title, u.pathname + (qs ? '?' + qs : '') + (u.hash || ''));
+        }
+      } catch (err) { /* ignore */ }
     })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -69,7 +86,7 @@
       <h1>Acceso</h1>
       <p class="sub">Inicia sesión con tu correo y contraseña. El alta se realiza solo mediante el administrador.</p>
 
-      <form class="auth-form" id="auth-form" method="post">
+      <form class="auth-form" id="auth-form" onsubmit="return false;">
         <div class="form-field">
           <label for="auth-email">Correo</label>
           <input type="email" id="auth-email" name="username" placeholder="tu@correo.com" required
@@ -108,7 +125,7 @@
         <!-- Paso 2: crear contraseña (tras validar el código) -->
         <div id="invite-step-password" style="display:none;">
           <p class="sub">Invitación validada. Crea tu contraseña para entrar.</p>
-          <form class="auth-form" id="invite-password-form" method="post">
+          <form class="auth-form" id="invite-password-form" onsubmit="return false;">
             <input type="email" name="username" autocomplete="username" hidden>
             <div class="form-field">
               <label for="invite-password">Nueva contraseña</label>
@@ -441,6 +458,10 @@
               Recuperación de Cookies (Admin)
             </button>
             <div class="tbm-separator"><span>CUENTA</span></div>
+            <div class="tbm-item" style="cursor: default; opacity: 0.85; font-size: 11.5px; display: flex; align-items: center; justify-content: space-between; padding: 8px 12px;">
+              <span>💻 Este PC:</span>
+              <span id="user-menu-pc-id" style="font-family: monospace; font-weight: 600; color: #FF9A44;">—</span>
+            </div>
             <button class="tbm-item danger" id="logout-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                 stroke-linejoin="round">
@@ -580,7 +601,7 @@
                 <div id="quick-parse-preview" style="display:none;"></div>
               </div>
             </div>
-            <form class="card card-pad" id="venta-form">
+            <form class="card card-pad" id="venta-form" onsubmit="return false;">
               <div class="form-field full" style="margin-bottom: 16px;">
                 <label>Tipo de venta</label>
                 <div style="display:flex; gap:16px;">
@@ -681,7 +702,6 @@
                   <textarea id="v-anotaciones-bono" rows="3" placeholder="Apuntes sobre el bono..."></textarea>
                 </div>
               </div>
-
 
 
               <div class="btn-row">
@@ -1111,7 +1131,7 @@
                 </div>
               </div>
               <div class="ll-form-col">
-                <form class="card card-pad" id="llamada-form">
+                <form class="card card-pad" id="llamada-form" onsubmit="return false;">
                   <div class="form-field full" style="margin-bottom: 12px;">
                     <h3 id="llamada-form-title" style="margin:0 0 12px 0;">📞 Programar llamada</h3>
                     <div style="display:flex; gap:16px;">
@@ -2027,7 +2047,7 @@
                 <button type="submit" form="chat-ia-form" class="btn btn-primary">Generar correo</button>
               </div>
 
-              <form id="chat-ia-form" class="chat-ia-hidden-form"></form>
+              <form id="chat-ia-form" class="chat-ia-hidden-form" onsubmit="return false;"></form>
             </div>
 
             <div class="card chat-ia-card">
@@ -2163,7 +2183,7 @@
   <script src="js/utils.js?v=5"></script>
   <script src="js/auth.js?v=5"></script>
   <script src="js/parques.js?v=4"></script>
-  <script src="js/ventas.js?v=3"></script>
+  <script src="js/ventas.js?v=5"></script>
   <script src="js/historial.js?v=6"></script>
   <script src="js/contactos.js?v=3"></script>
   <script src="js/dashboard.js?v=8"></script>
@@ -2186,7 +2206,7 @@
   <script src="Tematicas/Navidad/navidad.js?v=1"></script>
   <script src="Tematicas/BlackFriday/blackfriday.js?v=1"></script>
   <script src="Tematicas/tematicas.js?v=2"></script>
-  <script src="js/app.js?v=5"></script>
+  <script src="js/app.js?v=10"></script>
 </body>
 
 </html>
