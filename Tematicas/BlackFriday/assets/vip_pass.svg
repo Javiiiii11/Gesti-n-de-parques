@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 70" fill="none">
+  <defs>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E1E2C"/>
+      <stop offset="50%" stop-color="#0E0F17"/>
+      <stop offset="100%" stop-color="#05060A"/>
+    </linearGradient>
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE066"/>
+      <stop offset="40%" stop-color="#FF3366"/>
+      <stop offset="100%" stop-color="#7928CA"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="116" height="66" rx="8" fill="url(#cardGrad)" stroke="url(#borderGrad)" stroke-width="2"/>
+  <rect x="8" y="10" width="22" height="15" rx="3" fill="#FFD700" opacity="0.85"/>
+  <circle cx="98" cy="18" r="8" fill="#FF1E56" opacity="0.8"/>
+  <circle cx="88" cy="18" r="8" fill="#FFBE1A" opacity="0.8"/>
+  <text x="12" y="44" fill="#FFFFFF" font-family="'Segoe UI', system-ui, sans-serif" font-size="9" font-weight="900" letter-spacing="1">BLACK FRIDAY</text>
+  <text x="12" y="56" fill="#FFD700" font-family="'Segoe UI', system-ui, sans-serif" font-size="8" font-weight="800" letter-spacing="2">VIP ACCESS</text>
+</svg>

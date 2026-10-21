@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="flashGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFBE1A"/>
+      <stop offset="50%" stop-color="#FF3366"/>
+      <stop offset="100%" stop-color="#7928CA"/>
+    </linearGradient>
+  </defs>
+  <path d="M35 4 L14 34 L29 34 L21 60 L48 26 L33 26 Z" fill="url(#flashGrad)" stroke="#FFF275" stroke-width="1.5" stroke-linejoin="round"/>
+</svg>

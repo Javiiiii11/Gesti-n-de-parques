@@ -1,0 +1,822 @@
+/* ============================================================================
+   Temáticas ParkSales · BLACK FRIDAY THEME STYLESHEET (ALTA ENERGÍA & COHESIÓN TOTAL)
+   Paleta y atmósfera: Midnight Obsidian, Carbon Fiber, Oro Neón (#FFD700),
+   Rojo Láser Cyber (#FF1E56) y Cyan Ice (#00F0FF).
+   100% aislado bajo el selector `.theme-blackfriday`.
+   ============================================================================ */
+
+/* -------------------------------------------------------------------------- */
+/* 1. MODO OSCURO (DARK MODE - AMBIENTE CYBER LUXURY BLACK FRIDAY)            */
+/* -------------------------------------------------------------------------- */
+
+body.theme-blackfriday {
+  --bf-gold: #FFD700;
+  --bf-gold-light: #FFF275;
+  --bf-gold-glow: rgba(255, 215, 0, 0.45);
+  --bf-red: #FF1E56;
+  --bf-red-glow: rgba(255, 30, 86, 0.45);
+  --bf-cyan: #00F0FF;
+  --bf-cyan-glow: rgba(0, 240, 255, 0.35);
+  --bf-dark-bg: #090A0F;
+  --bf-card-bg: rgba(16, 18, 27, 0.88);
+  --bf-border: rgba(255, 215, 0, 0.22);
+
+  background-color: #08090E !important;
+  background-image: 
+    radial-gradient(circle at 10% 15%, rgba(255, 30, 86, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 90% 25%, rgba(255, 215, 0, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 50% 85%, rgba(0, 240, 255, 0.08) 0%, transparent 50%),
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px) !important;
+  background-size: 100% 100%, 100% 100%, 100% 100%, 48px 48px, 48px 48px !important;
+  background-attachment: fixed !important;
+}
+
+/* Sidebar Cyber Black */
+body.theme-blackfriday .sidebar {
+  background: linear-gradient(180deg, #0D0E16 0%, #07080D 100%) !important;
+  border-right: 1px solid rgba(255, 215, 0, 0.22) !important;
+  box-shadow: 4px 0 28px rgba(0, 0, 0, 0.65) !important;
+}
+
+body.theme-blackfriday .sidebar-brand {
+  position: relative;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* Título ParkSales con degradado brillante */
+body.theme-blackfriday .sidebar-brand > span:not(.bf-brand-tag) {
+  background: linear-gradient(135deg, #FFF275 0%, #FFD700 55%, #FF3366 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 2px 8px rgba(255, 215, 0, 0.35));
+}
+
+/* Tag BF SALE compacto, elegante y en 1 sola línea */
+body.theme-blackfriday .sidebar-brand .bf-brand-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  background: linear-gradient(135deg, #FF1E56 0%, #B91C1C 60%, #FFBE1A 100%) !important;
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  -webkit-background-clip: border-box !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.8px !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(255, 215, 0, 0.5) !important;
+  box-shadow: 0 0 10px rgba(255, 30, 86, 0.5) !important;
+  text-transform: uppercase !important;
+  line-height: 1.2 !important;
+  margin-left: 2px !important;
+}
+
+body.theme-blackfriday .sidebar-nav .nav-item.active,
+body.theme-blackfriday .sidebar-nav .nav-link.active {
+  background: linear-gradient(135deg, rgba(255, 30, 86, 0.22) 0%, rgba(255, 215, 0, 0.22) 100%) !important;
+  border-left: 3.5px solid #FFD700 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 18px rgba(255, 30, 86, 0.3), inset 0 0 12px rgba(255, 215, 0, 0.15) !important;
+  text-shadow: 0 1px 8px rgba(255, 215, 0, 0.4);
+}
+
+body.theme-blackfriday .sidebar-nav .nav-item:hover:not(.active),
+body.theme-blackfriday .sidebar-nav .nav-link:hover:not(.active) {
+  background: rgba(255, 215, 0, 0.08) !important;
+  color: #FFF275 !important;
+  border-left: 3px solid rgba(255, 215, 0, 0.4) !important;
+}
+
+/* Topbar Cyber Glass */
+body.theme-blackfriday .topbar {
+  background: rgba(11, 13, 20, 0.92) !important;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.28) !important;
+  backdrop-filter: blur(14px) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 1px 12px rgba(255, 215, 0, 0.12) !important;
+}
+
+body.theme-blackfriday #topbar-title {
+  color: #FFFFFF !important;
+  letter-spacing: 0.02em;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 2. ESTILO UNIFICADO EN TODAS LAS CAJAS, TARJETAS Y CONTENEDORES            */
+/* -------------------------------------------------------------------------- */
+
+body.theme-blackfriday .card,
+body.theme-blackfriday .stat-card,
+body.theme-blackfriday .filter-card,
+body.theme-blackfriday .dashboard-panel,
+body.theme-blackfriday .parques-panel,
+body.theme-blackfriday .promos-card,
+body.theme-blackfriday .historial-filter-card,
+body.theme-blackfriday .ex-card,
+body.theme-blackfriday #llamada-form,
+body.theme-blackfriday .cuad-hero,
+body.theme-blackfriday .cuad-cal-card,
+body.theme-blackfriday .cuad-side .card,
+body.theme-blackfriday .cuad-admin-card,
+body.theme-blackfriday .notes-textarea-card {
+  background: linear-gradient(145deg, rgba(18, 20, 31, 0.94) 0%, rgba(12, 14, 22, 0.96) 100%) !important;
+  border: 1px solid rgba(255, 215, 0, 0.22) !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45), 0 0 15px rgba(255, 215, 0, 0.05) !important;
+  position: relative;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease !important;
+}
+
+body.theme-blackfriday .card:hover,
+body.theme-blackfriday .stat-card:hover,
+body.theme-blackfriday .dashboard-panel:hover,
+body.theme-blackfriday .parques-panel:hover,
+body.theme-blackfriday .promos-card:hover,
+body.theme-blackfriday .historial-filter-card:hover,
+body.theme-blackfriday .ex-card:hover,
+body.theme-blackfriday #llamada-form:hover {
+  transform: translateY(-3px) scale(1.004) !important;
+  border-color: rgba(255, 215, 0, 0.5) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 25px rgba(255, 30, 86, 0.22), 0 0 15px rgba(255, 215, 0, 0.25) !important;
+}
+
+/* Indicadores KPI */
+body.theme-blackfriday .stat-card .stat-value {
+  color: #FFF275 !important;
+  text-shadow: 0 0 14px rgba(255, 215, 0, 0.45);
+  font-weight: 800;
+}
+
+body.theme-blackfriday .stat-card .stat-label {
+  color: #A3A8B8 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+}
+
+/* Botones principales con brillo Cyber Gold */
+body.theme-blackfriday .btn-primary,
+body.theme-blackfriday .btn-add {
+  background: linear-gradient(135deg, #FF1E56 0%, #E60042 45%, #FFBE1A 100%) !important;
+  border: 1px solid #FFE066 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 16px rgba(255, 30, 86, 0.35) !important;
+  font-weight: 700 !important;
+  transition: all 0.2s ease !important;
+}
+
+body.theme-blackfriday .btn-primary:hover,
+body.theme-blackfriday .btn-add:hover {
+  background: linear-gradient(135deg, #FF3366 0%, #FF1E56 50%, #FFD700 100%) !important;
+  box-shadow: 0 6px 24px rgba(255, 30, 86, 0.55), 0 0 15px rgba(255, 215, 0, 0.4) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 3. VISTA HISTORIAL DE VENTAS                                               */
+/* -------------------------------------------------------------------------- */
+
+body.theme-blackfriday .hist-status-pill {
+  background: rgba(14, 16, 25, 0.9) !important;
+  border: 1px solid rgba(255, 215, 0, 0.25) !important;
+  color: #CBD5E1 !important;
+  transition: all 0.2s ease !important;
+}
+
+body.theme-blackfriday .hist-status-pill:hover {
+  border-color: #FFD700 !important;
+  background: rgba(255, 215, 0, 0.12) !important;
+  color: #FFF275 !important;
+  transform: translateY(-1px) !important;
+}
+
+body.theme-blackfriday .hist-status-pill.active {
+  background: linear-gradient(135deg, rgba(255, 30, 86, 0.28) 0%, rgba(255, 215, 0, 0.28) 100%) !important;
+  border: 1.5px solid #FFD700 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.35) !important;
+}
+
+body.theme-blackfriday .hist-status-pill .pill-badge {
+  background: #FFD700 !important;
+  color: #08090E !important;
+  font-weight: 900 !important;
+}
+
+body.theme-blackfriday .table th,
+body.theme-blackfriday .data-table th {
+  background: rgba(18, 21, 33, 0.95) !important;
+  color: #FFD700 !important;
+  border-bottom: 2px solid rgba(255, 215, 0, 0.35) !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+body.theme-blackfriday .table tr:hover td,
+body.theme-blackfriday .data-table tr:hover td {
+  background: rgba(255, 215, 0, 0.06) !important;
+}
+
+body.theme-blackfriday .search-box input,
+body.theme-blackfriday .filter-select,
+body.theme-blackfriday input[type="date"],
+body.theme-blackfriday input[type="time"],
+body.theme-blackfriday input[type="text"],
+body.theme-blackfriday input[type="tel"],
+body.theme-blackfriday select {
+  background: rgba(12, 14, 22, 0.9) !important;
+  border: 1px solid rgba(255, 215, 0, 0.25) !important;
+  color: #FFFFFF !important;
+}
+
+body.theme-blackfriday .search-box input:focus,
+body.theme-blackfriday .filter-select:focus,
+body.theme-blackfriday input:focus,
+body.theme-blackfriday select:focus,
+body.theme-blackfriday textarea:focus {
+  border-color: #FFD700 !important;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.35) !important;
+  outline: none !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 4. VISTA DE LLAMADAS                                                       */
+/* -------------------------------------------------------------------------- */
+
+body.theme-blackfriday .ll-card {
+  background: linear-gradient(145deg, rgba(18, 20, 31, 0.94) 0%, rgba(12, 14, 22, 0.96) 100%) !important;
+  border: 1px solid rgba(255, 215, 0, 0.22) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45) !important;
+  transition: all 0.25s ease !important;
+}
+
+body.theme-blackfriday .ll-card:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(255, 215, 0, 0.5) !important;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.6), 0 0 18px rgba(255, 215, 0, 0.22) !important;
+}
+
+body.theme-blackfriday .ll-time-hour {
+  color: #FFF275 !important;
+  font-weight: 800 !important;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+body.theme-blackfriday .ll-client-name {
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+}
+
+body.theme-blackfriday .ll-client-phone {
+  color: #FFD700 !important;
+  font-weight: 600 !important;
+}
+
+body.theme-blackfriday .ll-meta-tag {
+  background: rgba(10, 11, 18, 0.85) !important;
+  border: 1px solid rgba(255, 215, 0, 0.3) !important;
+  color: #FFF275 !important;
+}
+
+body.theme-blackfriday .ll-action-btn.primary,
+body.theme-blackfriday .ll-action-btn.call {
+  background: linear-gradient(135deg, #FF1E56 0%, #FFBE1A 100%) !important;
+  border: 1px solid #FFE066 !important;
+  color: #FFFFFF !important;
+}
+
+body.theme-blackfriday .ll-section-header h3 {
+  color: #FFF275 !important;
+}
+
+body.theme-blackfriday .ll-section-badge {
+  background: linear-gradient(135deg, #FF1E56 0%, #FFBE1A 100%) !important;
+  color: #FFFFFF !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 5. VISTA DE ARCHIVOS DE PARQUES Y HORARIOS                                 */
+/* -------------------------------------------------------------------------- */
+
+body.theme-blackfriday .promos-card .section-title {
+  color: #FFF275 !important;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.35);
+}
+
+body.theme-blackfriday .promos-card-actions .btn {
+  background: rgba(14, 16, 24, 0.9) !important;
+  border: 1px solid rgba(255, 215, 0, 0.35) !important;
+  color: #FFF275 !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+body.theme-blackfriday .promos-card-actions .btn:hover {
+  background: linear-gradient(135deg, rgba(255, 30, 86, 0.25) 0%, rgba(255, 215, 0, 0.25) 100%) !important;
+  border-color: #FFD700 !important;
+  color: #FFFFFF !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 14px rgba(255, 215, 0, 0.3) !important;
+}
+
+body.theme-blackfriday .promos-card-actions .btn-primary {
+  background: linear-gradient(135deg, #FF1E56 0%, #FFBE1A 100%) !important;
+  color: #FFFFFF !important;
+  border-color: #FFE066 !important;
+  box-shadow: 0 4px 14px rgba(255, 30, 86, 0.4) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 6. VISTA DE DATOS, COPIAS Y EXPORTAR / IMPORTAR                            */
+/* -------------------------------------------------------------------------- */
+
+body.theme-blackfriday .ex-card::before {
+  background: linear-gradient(90deg, #FF1E56 0%, #FFD700 50%, #FFF275 100%) !important;
+  height: 3.5px !important;
+}
+
+body.theme-blackfriday .ex-icon-wrap {
+  background: rgba(10, 11, 18, 0.85) !important;
+  border: 1px solid rgba(255, 215, 0, 0.3) !important;
+}
+
+body.theme-blackfriday .ex-title {
+  color: #FFF275 !important;
+}
+
+body.theme-blackfriday .ex-section-title {
+  color: #FFD700 !important;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.3) !important;
+}
+
+body.theme-blackfriday .ex-file-drop {
+  border: 2px dashed rgba(255, 215, 0, 0.45) !important;
+  background: rgba(10, 11, 18, 0.5) !important;
+  color: #E2E8F0 !important;
+}
+
+body.theme-blackfriday .ex-file-drop:hover {
+  border-color: #FFD700 !important;
+  background: rgba(255, 215, 0, 0.08) !important;
+  color: #FFF275 !important;
+}
+
+body.theme-blackfriday #backup-auto-status {
+  background: rgba(255, 215, 0, 0.12) !important;
+  color: #FFF275 !important;
+  border: 1px solid rgba(255, 215, 0, 0.3) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 7. ELEMENTOS AMBIENTALES: CHISPAS Y RIBETE DE ESQUINA (TOP: 0)             */
+/* -------------------------------------------------------------------------- */
+
+.bf-sparks-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* Ribete de esquina superior (igual de limpio que Halloween y Navidad) */
+.bf-corner-ribbon {
+  position: fixed;
+  width: 110px;
+  height: 110px;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.92;
+  transition: opacity 0.3s ease;
+}
+
+.bf-corner-ribbon.top-left {
+  top: 0;
+  left: 0;
+}
+
+.bf-corner-ribbon.top-right {
+  top: 0;
+  right: 0;
+  transform: scaleX(-1);
+}
+
+.bf-ribbon-img {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 2px 10px rgba(255, 215, 0, 0.4));
+}
+
+@media (max-width: 768px) {
+  .bf-corner-ribbon {
+    width: 65px;
+    height: 65px;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 8. ADORNOS EN PANTALLA DE ACCESO (VIP ACCESS)                              */
+/* -------------------------------------------------------------------------- */
+
+.bf-auth-card-badge {
+  position: absolute;
+  top: -24px;
+  right: -16px;
+  width: 90px;
+  height: 52px;
+  z-index: 15;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 10px rgba(255, 215, 0, 0.4));
+  transform: rotate(8deg);
+  animation: bfVipFloat 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes bfVipFloat {
+  0% { transform: rotate(8deg) translateY(0); }
+  100% { transform: rotate(11deg) translateY(-4px); }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 9. TOPBAR BADGE Y BOTÓN DE SONIDO                                          */
+/* -------------------------------------------------------------------------- */
+
+.bf-topbar-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(20, 22, 33, 0.95) 0%, rgba(10, 11, 18, 0.95) 100%);
+  border: 1.5px solid #FFD700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #FFF275;
+  letter-spacing: 0.8px;
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.25), inset 0 0 8px rgba(255, 215, 0, 0.12);
+  user-select: none;
+  animation: bfGlowPill 3s ease-in-out infinite alternate;
+}
+
+@keyframes bfGlowPill {
+  0% { box-shadow: 0 0 12px rgba(255, 215, 0, 0.25); border-color: #FFD700; }
+  100% { box-shadow: 0 0 20px rgba(255, 30, 86, 0.4), 0 0 10px rgba(255, 215, 0, 0.45); border-color: #FF3366; }
+}
+
+.bf-pill-icon {
+  font-size: 13px;
+  filter: drop-shadow(0 0 4px #FFD700);
+}
+
+.bf-sound-btn {
+  background: linear-gradient(135deg, rgba(26, 29, 44, 0.9) 0%, rgba(14, 16, 26, 0.9) 100%);
+  border: 1.5px solid rgba(255, 215, 0, 0.35);
+  color: #FFF275;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.bf-sound-btn:hover {
+  transform: scale(1.1);
+  border-color: #FFD700;
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.5);
+}
+
+.bf-sound-btn.active {
+  background: linear-gradient(135deg, #FF1E56 0%, #FFBE1A 100%);
+  border-color: #FFF275;
+  color: #FFFFFF;
+  box-shadow: 0 0 18px rgba(255, 30, 86, 0.55);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 10. ADORNOS EN LAS ESQUINAS DE TARJETAS (BADGES DISCRETOS)                 */
+/* -------------------------------------------------------------------------- */
+
+.bf-card-badge {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 22px;
+  height: 22px;
+  z-index: 8;
+  pointer-events: none;
+  opacity: 0.82;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.55));
+}
+
+.card:hover .bf-card-badge,
+.stat-card:hover .bf-card-badge,
+.dashboard-panel:hover .bf-card-badge,
+.ex-card:hover .bf-card-badge,
+.promos-card:hover .bf-card-badge {
+  transform: scale(1.15) rotate(4deg);
+  opacity: 1;
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.55));
+}
+
+/* -------------------------------------------------------------------------- */
+/* 11. DASHBOARD BANNER BLACK FRIDAY                                          */
+/* -------------------------------------------------------------------------- */
+
+.bf-dashboard-banner {
+  position: relative;
+  width: 100%;
+  min-height: 170px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  background: #090B12;
+  border: 1.5px solid rgba(255, 215, 0, 0.35);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 0 24px rgba(255, 30, 86, 0.2);
+  display: flex;
+  align-items: center;
+}
+
+.bf-banner-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 38%;
+  opacity: 0.75;
+  filter: brightness(0.95) contrast(1.15) saturate(1.25);
+  transition: transform 6s ease;
+}
+
+.bf-dashboard-banner:hover .bf-banner-bg {
+  transform: scale(1.03);
+}
+
+.bf-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, 
+    rgba(8, 9, 14, 0.94) 0%, 
+    rgba(8, 9, 14, 0.82) 42%, 
+    rgba(8, 9, 14, 0.35) 75%, 
+    rgba(8, 9, 14, 0.15) 100%);
+  pointer-events: none;
+}
+
+.bf-banner-content {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  padding: 24px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.bf-banner-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #FF1E56 0%, #D97706 100%);
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 20px;
+  box-shadow: 0 2px 10px rgba(255, 30, 86, 0.4);
+  margin-bottom: 8px;
+}
+
+.bf-banner-title {
+  font-size: 24px;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
+.bf-banner-title span {
+  background: linear-gradient(135deg, #FFF275 0%, #FFD700 60%, #FF3366 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.4));
+}
+
+.bf-banner-desc {
+  font-size: 13.5px;
+  color: #E2E8F0;
+  max-width: 540px;
+  margin: 0;
+  line-height: 1.45;
+  font-weight: 500;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+}
+
+.bf-banner-countdown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(12, 14, 22, 0.85);
+  border: 1.5px solid rgba(255, 215, 0, 0.4);
+  backdrop-filter: blur(10px);
+  padding: 10px 18px;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 0 12px rgba(255, 215, 0, 0.1);
+}
+
+.bf-countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 44px;
+}
+
+.bf-countdown-val {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 22px;
+  font-weight: 900;
+  color: #FFF275;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+  line-height: 1;
+}
+
+.bf-countdown-lbl {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  color: #94A3B8;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.bf-countdown-sep {
+  font-size: 18px;
+  font-weight: 900;
+  color: #FF1E56;
+  text-shadow: 0 0 8px #FF1E56;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 768px) {
+  .bf-banner-content {
+    padding: 18px 20px;
+  }
+  .bf-banner-title {
+    font-size: 20px;
+  }
+  .bf-banner-countdown {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 12. COPILOT FLOTANTE - EDICIÓN OFICIAL COPILOT BLACK FRIDAY                */
+/* -------------------------------------------------------------------------- */
+
+/* Ocultar icono azul base y pulso original para evitar botones dobles */
+body.theme-blackfriday #copilot-fab > svg {
+  display: none !important;
+}
+
+body.theme-blackfriday #copilot-fab .copilot-fab-pulse {
+  display: none !important;
+}
+
+body.theme-blackfriday #copilot-fab {
+  gap: 2px !important;
+  filter: drop-shadow(0 0 16px rgba(255, 215, 0, 0.5)) !important;
+}
+
+.bf-copilot-wrap {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bf-copilot-wrap:hover {
+  transform: scale(1.12);
+}
+
+.bf-copilot-pulse {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.45) 0%, rgba(255, 30, 86, 0.3) 60%, transparent 80%);
+  animation: bfPulseRing 2.2s infinite ease-out;
+  pointer-events: none;
+}
+
+@keyframes bfPulseRing {
+  0% { transform: scale(0.9); opacity: 0.85; }
+  50% { transform: scale(1.15); opacity: 0.35; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+
+.bf-copilot-svg {
+  width: 54px;
+  height: 54px;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.6));
+}
+
+body.theme-blackfriday #copilot-fab .copilot-fab-label {
+  color: #FFF275 !important;
+  text-shadow: 0 1px 6px rgba(255, 215, 0, 0.8) !important;
+  font-weight: 800 !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 13. MODO CLARO (LIGHT MODE - LUXURY PLATINUM & BLACK GOLD)                 */
+/* -------------------------------------------------------------------------- */
+
+body.theme-blackfriday.light-mode {
+  background-color: #F4F5F9 !important;
+  background-image: 
+    radial-gradient(circle at 10% 15%, rgba(255, 30, 86, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 90% 80%, rgba(255, 215, 0, 0.08) 0%, transparent 45%),
+    linear-gradient(#E8EAF0 1px, transparent 1px),
+    linear-gradient(90deg, #E8EAF0 1px, transparent 1px) !important;
+  background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px !important;
+}
+
+body.theme-blackfriday.light-mode .sidebar {
+  background: linear-gradient(180deg, #111219 0%, #0A0B10 100%) !important;
+  border-right: 1px solid rgba(255, 215, 0, 0.3) !important;
+}
+
+body.theme-blackfriday.light-mode .topbar {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.35) !important;
+}
+
+body.theme-blackfriday.light-mode #topbar-title {
+  color: #0F121C !important;
+}
+
+body.theme-blackfriday.light-mode .card,
+body.theme-blackfriday.light-mode .stat-card,
+body.theme-blackfriday.light-mode .filter-card,
+body.theme-blackfriday.light-mode .dashboard-panel,
+body.theme-blackfriday.light-mode .parques-panel,
+body.theme-blackfriday.light-mode .promos-card,
+body.theme-blackfriday.light-mode .historial-filter-card,
+body.theme-blackfriday.light-mode .ex-card,
+body.theme-blackfriday.light-mode #llamada-form,
+body.theme-blackfriday.light-mode .ll-card {
+  background: #FFFFFF !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.3) !important;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06), 0 0 12px rgba(255, 215, 0, 0.08) !important;
+}
+
+body.theme-blackfriday.light-mode .card:hover,
+body.theme-blackfriday.light-mode .stat-card:hover,
+body.theme-blackfriday.light-mode .dashboard-panel:hover,
+body.theme-blackfriday.light-mode .ex-card:hover,
+body.theme-blackfriday.light-mode .ll-card:hover {
+  border-color: rgba(255, 30, 86, 0.5) !important;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12), 0 0 20px rgba(255, 215, 0, 0.25) !important;
+}
+
+body.theme-blackfriday.light-mode .stat-card .stat-value,
+body.theme-blackfriday.light-mode .ll-client-name {
+  color: #111420 !important;
+}
+
+body.theme-blackfriday.light-mode .bf-banner-overlay {
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0.95) 0%, 
+    rgba(255, 255, 255, 0.86) 42%, 
+    rgba(255, 255, 255, 0.32) 75%, 
+    rgba(255, 255, 255, 0.1) 100%) !important;
+}
+
+body.theme-blackfriday.light-mode .bf-banner-title {
+  color: #0B0E18 !important;
+  text-shadow: none !important;
+}
+
+body.theme-blackfriday.light-mode .bf-banner-desc {
+  color: #334155 !important;
+}

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bfTagGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF1E56"/>
+      <stop offset="100%" stop-color="#8B0029"/>
+    </linearGradient>
+    <linearGradient id="goldBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF275"/>
+      <stop offset="100%" stop-color="#FFBE1A"/>
+    </linearGradient>
+  </defs>
+  <!-- Discount Tag -->
+  <path d="M12 28 L28 12 L52 12 C55 12 57 14 57 17 L57 41 L41 57 C39 59 36 59 34 57 L12 35 C10 33 10 30 12 28 Z" fill="url(#bfTagGrad)" stroke="url(#goldBorder)" stroke-width="2"/>
+  <circle cx="47" cy="22" r="3" fill="#FFF275"/>
+  <text x="35" y="38" text-anchor="middle" fill="#FFFFFF" font-family="'Segoe UI', system-ui, sans-serif" font-size="11" font-weight="900" letter-spacing="0.5">SALE</text>
+  <text x="35" y="47" text-anchor="middle" fill="#FFD700" font-family="'Segoe UI', system-ui, sans-serif" font-size="7" font-weight="800">VIP</text>
+</svg>
