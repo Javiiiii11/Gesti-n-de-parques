@@ -1,4 +1,4 @@
-﻿/* ============================================================================
+/* ============================================================================
    app.js â€” arranque de la aplicaciÃ³n, enrutado de vistas y UI global
 ============================================================================ */
 
@@ -261,13 +261,22 @@ function initTopbarPomo() {
 }
 
 /* -------------------------------------------------------------------------- */
-/* SESSION TIMEOUT — bloquea la web (404 igual que Alt+B) tras 30 s inactivo  */
+/* SESSION TIMEOUT — bloquea la web (404 igual que Alt+B) por inactividad     */
 /* -------------------------------------------------------------------------- */
+
+// ⚙️ CONFIGURACIÓN DEL BLOQUEO POR INACTIVIDAD
+// true  = si no usas la web durante el tiempo indicado, se bloquea con el 404
+// false = nunca se bloquea por inactividad (tampoco al recargar la página)
+const BLOQUEO_INACTIVIDAD_ACTIVO = true;
+// Segundos sin actividad (ratón, teclado, clic, táctil, scroll) antes de bloquear
+const BLOQUEO_INACTIVIDAD_SEGUNDOS = 60;
+
 function setupSessionTimeout() {
+  if (!BLOQUEO_INACTIVIDAD_ACTIVO) return;
   if (window.__sessionTimeoutWired) return;
   window.__sessionTimeoutWired = true;
 
-  const INACTIVITY_TIMEOUT = 30 * 1000; // 30 segundos
+  const INACTIVITY_TIMEOUT = Math.max(1, Number(BLOQUEO_INACTIVIDAD_SEGUNDOS) || 30) * 1000;
   let lastActivity = Date.now();
   let armed = false;
 
@@ -317,7 +326,7 @@ function setupSessionTimeout() {
     obsReady.observe(appEl, { attributes: true, attributeFilter: ['class'] });
   }
 
-  // Comprobación periódica robusta: si pasan 30 s sin actividad, se bloquea
+  // Comprobación periódica robusta: si pasan los segundos configurados sin actividad, se bloquea
   setInterval(() => {
     if (!armed || estaBloqueado()) return;
     if (Date.now() - lastActivity >= INACTIVITY_TIMEOUT) {
