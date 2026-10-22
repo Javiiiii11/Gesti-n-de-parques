@@ -623,8 +623,8 @@ async function descargarPlantillaMacros() {
   const url = 'assets/plantilla_ventas_macros.xlsm';
   const filename = 'Plantilla_Ventas_ParkSales.xlsm';
 
-  // Si no hay ventas, descargamos la plantilla tal cual
-  if (!ventas.length) {
+  // Sin JSZip no se puede inyectar nada: se descarga la plantilla tal cual.
+  if (typeof JSZip === 'undefined') {
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
@@ -632,11 +632,6 @@ async function descargarPlantillaMacros() {
     a.click();
     a.remove();
     toast('Plantilla con macros descargada. Ábrela en Excel y pulsa «Habilitar contenido».', 'success', 6000);
-    return;
-  }
-
-  if (typeof JSZip === 'undefined') {
-    toast('No se pudo cargar la librería JSZip. Comprueba tu conexión.', 'error', 4500);
     return;
   }
 
@@ -824,7 +819,105 @@ async function descargarPlantillaMacros() {
       zip.file(shPath, forceRecalcXml(sXml));
     }
 
-    // 4. Generar el blob y descargar
+    // ========================================================================
+    // 4. HOJA "ARO": anillo con el % del objetivo del mes (como en la web)
+    //    Se AÑADE una hoja nueva al final. No se toca ninguna de las existentes
+    //    (ni sus fórmulas, ni el botón, ni las macros VBA).
+    // ========================================================================
+    const mesActual = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+
+    let objetivoMes = 0;
+    try {
+      if (typeof getMonthlyGoalForMonth === 'function') {
+        objetivoMes = Number(getMonthlyGoalForMonth(mesActual)) || 0;
+      }
+    } catch (e) { }
+    if (!objetivoMes) {
+      try {
+        const lista = JSON.parse(localStorage.getItem('parksales_objetivos_mensuales') || '[]');
+        const item = Array.isArray(lista) ? lista.find((o) => o && o.mes === mesActual) : null;
+        if (item) objetivoMes = Number(item.importe) || 0;
+      } catch (e) { }
+    }
+
+    const esEfectiva = (v) => (typeof isVentaEfectiva === 'function' ? isVentaEfectiva(v) : true);
+    const vendidoMes = ventas
+      .filter((v) => String(v.fecha || '').startsWith(mesActual) && esEfectiva(v))
+      .reduce((acc, v) => acc + (Number(v.importe_total) || 0), 0);
+
+    const progreso = objetivoMes > 0 ? Math.min(vendidoMes, objetivoMes) : 0;
+    const restante = objetivoMes > 0 ? Math.max(0, objetivoMes - vendidoMes) : 0;
+    const pctNum = objetivoMes > 0 ? vendidoMes / objetivoMes : 0;
+    const pctTexto = (pctNum * 100).toFixed(1).replace('.', ',') + '% del objetivo';
+
+    const escXml = (s) => String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+    const celdaTexto = (ref, estilo, texto) =>
+      `<c r="${ref}" s="${estilo}" t="inlineStr"><is><t xml:space="preserve">${escXml(texto)}</t></is></c>`;
+
+    const filaSimple = (r, celdas) => `<row r="${r}" spans="1:5" x14ac:dyDescent="0.25">${celdas}</row>`;
+
+    const sheetAroXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x14ac" xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"><sheetPr/><dimension ref="A1:K22"/><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormatPr baseColWidth="10" defaultRowHeight="15" x14ac:dyDescent="0.25"/><cols><col min="1" max="1" width="24.7109375" customWidth="1"/><col min="2" max="2" width="18.7109375" customWidth="1"/><col min="3" max="3" width="2.7109375" customWidth="1"/><col min="4" max="10" width="11.7109375" customWidth="1"/></cols><sheetData><row r="1" spans="1:5" ht="23.25" x14ac:dyDescent="0.35">${celdaTexto('A1', 2, 'PROGRESO DEL MES')}<c r="B1" s="1"/><c r="C1" s="1"/><c r="D1" s="1"/><c r="E1" s="1"/></row>${filaSimple(2, celdaTexto('A2', 4, 'Aro del objetivo · se recalcula solo con tus ventas') + '<c r="B2" s="3"/><c r="C2" s="3"/><c r="D2" s="3"/><c r="E2" s="3"/>')}${filaSimple(4, celdaTexto('A4', 15, 'Objetivo del mes') + `<c r="B4" s="18"><v>${objetivoMes}</v></c>`)}${filaSimple(5, celdaTexto('A5', 15, 'Vendido este mes') + `<c r="B5" s="18"><f ca="1">SUMIFS(Ventas!$E$5:$E$5000,Ventas!$A$5:$A$5000,"&gt;="&amp;EOMONTH(TODAY(),-1)+1,Ventas!$A$5:$A$5000,"&lt;="&amp;EOMONTH(TODAY(),0))</f><v>${vendidoMes}</v></c>`)}${filaSimple(6, celdaTexto('A6', 15, 'Te falta') + `<c r="B6" s="18"><f ca="1">MAX(0,B4-B5)</f><v>${restante}</v></c>`)}${filaSimple(7, celdaTexto('A7', 15, '% conseguido') + `<c r="B7" s="13" t="str"><f ca="1">TEXT(IF(B4&gt;0,B5/B4,0),"0.0%")&amp;" del objetivo"</f><v>${escXml(pctTexto)}</v></c>`)}${filaSimple(9, celdaTexto('A9', 15, 'Progreso') + `<c r="B9" s="18"><f ca="1">MIN(B5,B4)</f><v>${progreso}</v></c>`)}${filaSimple(10, celdaTexto('A10', 15, 'Restante') + `<c r="B10" s="18"><f ca="1">MAX(0,B4-B5)</f><v>${restante}</v></c>`)}</sheetData><mergeCells count="1"><mergeCell ref="A1:E1"/></mergeCells><pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/><drawing r:id="rId1"/></worksheet>`;
+
+    const drawingAroXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><xdr:twoCellAnchor><xdr:from><xdr:col>3</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>2</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:to><xdr:col>10</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>20</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to><xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="2" name="Aro del objetivo"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId1"/></a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor></xdr:wsDr>`;
+
+    const chartAroXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><c:date1904 val="0"/><c:lang val="es-ES"/><c:roundedCorners val="0"/><c:chart><c:title><c:tx><c:strRef><c:f>Aro!$B$7</c:f><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>${escXml(pctTexto)}</c:v></c:pt></c:strCache></c:strRef></c:tx><c:overlay val="0"/><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="1400" b="1"><a:solidFill><a:srgbClr val="0A0F1C"/></a:solidFill><a:latin typeface="Calibri"/></a:defRPr></a:pPr><a:endParaRPr lang="es-ES"/></a:p></c:txPr></c:title><c:autoTitleDeleted val="0"/><c:plotArea><c:layout/><c:doughnutChart><c:varyColors val="1"/><c:ser><c:idx val="0"/><c:order val="0"/><c:tx><c:v>Objetivo del mes</c:v></c:tx><c:dPt><c:idx val="0"/><c:bubble3D val="0"/><c:spPr><a:solidFill><a:srgbClr val="FF9A44"/></a:solidFill><a:ln w="19050"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:ln></c:spPr></c:dPt><c:dPt><c:idx val="1"/><c:bubble3D val="0"/><c:spPr><a:solidFill><a:srgbClr val="E7EAF0"/></a:solidFill><a:ln w="19050"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:ln></c:spPr></c:dPt><c:dLbls><c:showLegendKey val="0"/><c:showVal val="0"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls><c:cat><c:strRef><c:f>Aro!$A$9:$A$10</c:f><c:strCache><c:ptCount val="2"/><c:pt idx="0"><c:v>Progreso</c:v></c:pt><c:pt idx="1"><c:v>Restante</c:v></c:pt></c:strCache></c:strRef></c:cat><c:val><c:numRef><c:f>Aro!$B$9:$B$10</c:f><c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="2"/><c:pt idx="0"><c:v>${progreso}</c:v></c:pt><c:pt idx="1"><c:v>${restante}</c:v></c:pt></c:numCache></c:numRef></c:val></c:ser><c:dLbls><c:showLegendKey val="0"/><c:showVal val="0"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls><c:firstSliceAng val="0"/><c:holeSize val="68"/></c:doughnutChart></c:plotArea><c:legend><c:legendPos val="b"/><c:overlay val="0"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="900"/></a:pPr><a:endParaRPr lang="es-ES"/></a:p></c:txPr></c:legend><c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/></c:chart><c:spPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:ln w="9525"><a:solidFill><a:srgbClr val="D8DEE9"/></a:solidFill></a:ln></c:spPr></c:chartSpace>`;
+
+    const relsAroHoja = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing2.xml"/></Relationships>`;
+
+    const relsAroDibujo = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart1.xml"/></Relationships>`;
+
+    zip.file('xl/worksheets/sheet5.xml', sheetAroXml);
+    zip.file('xl/worksheets/_rels/sheet5.xml.rels', relsAroHoja);
+    zip.file('xl/drawings/drawing2.xml', drawingAroXml);
+    zip.file('xl/drawings/_rels/drawing2.xml.rels', relsAroDibujo);
+    zip.file('xl/charts/chart1.xml', chartAroXml);
+
+    // Registrar la hoja nueva en [Content_Types].xml
+    let ctAro = await zip.file('[Content_Types].xml').async('string');
+    if (!ctAro.includes('/xl/worksheets/sheet5.xml')) {
+      ctAro = ctAro.replace('</Types>',
+        '<Override PartName="/xl/worksheets/sheet5.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+        '<Override PartName="/xl/drawings/drawing2.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>' +
+        '<Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>' +
+        '</Types>');
+      zip.file('[Content_Types].xml', ctAro);
+    }
+
+    // Registrar la relación y la pestaña de la hoja nueva en el libro
+    let wbAro = await zip.file('xl/workbook.xml').async('string');
+    if (!wbAro.includes('name="Aro"')) {
+      wbAro = wbAro.replace('</sheets>', '<sheet name="Aro" sheetId="5" r:id="rId10"/></sheets>');
+      zip.file('xl/workbook.xml', wbAro);
+
+      let wbRelsAro = await zip.file('xl/_rels/workbook.xml.rels').async('string');
+      if (!wbRelsAro.includes('worksheets/sheet5.xml')) {
+        wbRelsAro = wbRelsAro.replace('</Relationships>',
+          '<Relationship Id="rId10" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet5.xml"/></Relationships>');
+        zip.file('xl/_rels/workbook.xml.rels', wbRelsAro);
+      }
+    }
+
+    // Refrescar la lista de hojas de las propiedades del documento
+    try {
+      let appXml = await zip.file('docProps/app.xml').async('string');
+      appXml = appXml
+        .replace('<vt:i4>4</vt:i4>', '<vt:i4>5</vt:i4>')
+        .replace('<vt:vector size="4" baseType="lpstr">', '<vt:vector size="5" baseType="lpstr">')
+        .replace('</vt:vector></TitlesOfParts>', '<vt:lpstr>Aro</vt:lpstr></vt:vector></TitlesOfParts>');
+      zip.file('docProps/app.xml', appXml);
+    } catch (e) { /* opcional: si falla, Excel lo regenera */ }
+
+    // 5. Generar el blob y descargar
     const blob = await zip.generateAsync({
       type: 'blob',
       mimeType: 'application/vnd.ms-excel.sheet.macroEnabled.12',

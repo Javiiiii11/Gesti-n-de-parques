@@ -276,11 +276,7 @@ function setupSessionTimeout() {
   if (window.__sessionTimeoutWired) return;
   window.__sessionTimeoutWired = true;
 
-<<<<<<< HEAD
-  const INACTIVITY_TIMEOUT = 60 * 1000; // 60 segundos
-=======
-  const INACTIVITY_TIMEOUT = Math.max(1, Number(BLOQUEO_INACTIVIDAD_SEGUNDOS) || 30) * 1000;
->>>>>>> 0efb120c2584851c06d3d1def2e6baf11d92543f
+  const INACTIVITY_TIMEOUT = Math.max(1, Number(BLOQUEO_INACTIVIDAD_SEGUNDOS) || 60) * 1000;
   let lastActivity = Date.now();
   let armed = false;
 
