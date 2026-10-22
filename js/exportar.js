@@ -4,6 +4,9 @@
 
 function initExportView() {
   document.getElementById('btn-export-xlsx').addEventListener('click', exportXLSX);
+  document.getElementById('btn-export-plantilla').addEventListener('click', exportPlantillaVentas);
+  const btnMacros = document.getElementById('btn-export-macros');
+  if (btnMacros) btnMacros.addEventListener('click', descargarPlantillaMacros);
   document.getElementById('btn-export-json').addEventListener('click', exportBackupJSON);
 
   const drop = document.getElementById('import-drop');
@@ -188,68 +191,657 @@ function exportContactosCSV() {
   toast('CSV de apuntes descargado correctamente', 'success');
 }
 
-/* --- EXPORTAR EXCEL MULTI-HOJA --- */
+/* --- EXPORTAR EXCEL DE VENTAS (informe bonito, con estilos) --- */
+
+const XL_STYLE = {
+  brand: 'F5A623',
+  brandDark: '0A0F1C',
+  subtitleBg: 'FDF3E3',
+  subtitleFg: '8A6316',
+  headerBg: '1F2A44',
+  headerFg: 'FFFFFF',
+  rowBase: 'FFFFFF',
+  rowAlt: 'F4F7FB',
+  border: 'D9E1EC',
+  text: '1F2A44',
+  muted: '8A94A6',
+  money: '1B7F5A',
+  totalBg: 'FFF3D6',
+};
+
+// Colores por estado (fondo suave + texto intenso) para el Excel
+const XL_ESTADO_STYLE = {
+  completado: { fill: 'E6F7EE', text: '1E7A4B' },
+  enviado: { fill: 'E9F1FE', text: '2C6BC4' },
+  pendiente: { fill: 'FEF5E0', text: 'A9700C' },
+  incompleto: { fill: 'FCEBEF', text: 'B23A50' },
+  no_enviado: { fill: 'EEF1F5', text: '5B6676' },
+  selwo_flexible: { fill: 'E2F7FE', text: '0284A8' },
+};
+
+const XL_HEADERS = ['Fecha / Hora', 'Localizador', 'Detalle', 'Estado', 'Importe'];
+const XL_WIDTHS = [20, 18, 34, 22, 15];
+const XL_MONEY_COL = 4;
+const XL_CENTER_COLS = [3];
+const XL_ESTADO_COL = 3;
+
+function xlBorder() {
+  const side = { style: 'thin', color: { rgb: XL_STYLE.border } };
+  return { top: side, bottom: side, left: side, right: side };
+}
+
+// Construye la hoja "Mis Ventas": informe estilizado de todo el historial
+function buildVentasReportSheet() {
+  const hoy = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  // Ventas ordenadas de más reciente a más antigua
+  const ventas = [...STATE.ventas].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+  const rows = ventas.map((v) => {
+    const tipo = v.tipo || 'entrada';
+    const estadoNorm = typeof normalizeEstadoVenta === 'function' ? normalizeEstadoVenta(v.estado) : (v.estado || 'completado');
+    const info = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(estadoNorm) : { label: estadoNorm, icon: '' };
+    return {
+      estado: estadoNorm,
+      cells: [
+        fmtDateTime(v.fecha),
+        v.localizador || '—',
+        tipo === 'entrada' ? parqueNombre(v.parque_id) : bonoNombre(v.bono_id),
+        `${info.icon ? info.icon + ' ' : ''}${info.label}`,
+        Number(v.importe_total) || 0,
+      ],
+    };
+  });
+
+  const total = rows.reduce((s, r) => s + (r.cells[XL_MONEY_COL] || 0), 0);
+  const nCols = XL_HEADERS.length;
+  const HEADER_R = 3;
+  const DATA_R0 = 4;
+  const DATA_R1 = DATA_R0 + rows.length - 1;
+  const TOTAL_R = DATA_R1 + 1;
+
+  // Bloque superior (título + KPIs) y tabla. El TOTAL es una fórmula viva.
+  const title = '💰  MIS VENTAS';
+  const kpis = `Generado el ${hoy}   ·   ${rows.length} venta${rows.length !== 1 ? 's' : ''}   ·   Total ${fmtEUR(total)}   ·   Ticket medio ${fmtEUR(rows.length ? total / rows.length : 0)}`;
+  const totalRow = new Array(nCols).fill('');
+  totalRow[0] = 'TOTAL';
+  totalRow[XL_MONEY_COL] = { t: 'n', f: `SUM(E${DATA_R0 + 1}:E${DATA_R1 + 1})`, z: '#,##0.00 "€"' };
+  const aoa = [[title], [kpis], [], XL_HEADERS, ...rows.map((r) => r.cells), totalRow];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const enc = (r, c) => XLSX.utils.encode_cell({ r, c });
+
+  ws['!cols'] = XL_WIDTHS.map((w) => ({ wch: w }));
+  ws['!rows'] = [{ hpt: 36 }, { hpt: 22 }, { hpt: 6 }, { hpt: 24 }];
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: nCols - 1 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: nCols - 1 } },
+    { s: { r: TOTAL_R, c: 0 }, e: { r: TOTAL_R, c: nCols - 2 } },
+  ];
+
+  // Banda de título
+  const tCell = ws[enc(0, 0)];
+  if (tCell) tCell.s = {
+    font: { bold: true, sz: 18, color: { rgb: XL_STYLE.brandDark } },
+    fill: { fgColor: { rgb: XL_STYLE.brand } },
+    alignment: { vertical: 'center', horizontal: 'left', indent: 1 },
+  };
+
+  // Banda de KPIs
+  const sCell = ws[enc(1, 0)];
+  if (sCell) sCell.s = {
+    font: { sz: 10, color: { rgb: XL_STYLE.subtitleFg } },
+    fill: { fgColor: { rgb: XL_STYLE.subtitleBg } },
+    alignment: { vertical: 'center', horizontal: 'left', indent: 1 },
+  };
+
+  // Cabecera de la tabla
+  for (let c = 0; c < nCols; c++) {
+    const cell = ws[enc(HEADER_R, c)];
+    if (!cell) continue;
+    cell.s = {
+      font: { bold: true, sz: 11, color: { rgb: XL_STYLE.headerFg } },
+      fill: { fgColor: { rgb: XL_STYLE.headerBg } },
+      alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+      border: xlBorder(),
+    };
+  }
+
+  // Filas de datos
+  rows.forEach((row, i) => {
+    const rowIdx = DATA_R0 + i;
+    const est = XL_ESTADO_STYLE[row.estado] || XL_ESTADO_STYLE.completado;
+    for (let c = 0; c < nCols; c++) {
+      const cell = ws[enc(rowIdx, c)];
+      if (!cell) continue;
+      const isMoney = c === XL_MONEY_COL;
+      const isCenter = XL_CENTER_COLS.includes(c);
+      const isEstado = c === XL_ESTADO_COL;
+      const isPlaceholder = String(cell.v) === '—';
+      let fill = i % 2 === 0 ? XL_STYLE.rowBase : XL_STYLE.rowAlt;
+      let fontColor = isMoney ? XL_STYLE.money : (isPlaceholder ? XL_STYLE.muted : XL_STYLE.text);
+      let bold = isMoney;
+      if (isEstado) { fill = est.fill; fontColor = est.text; bold = true; }
+      cell.s = {
+        font: { sz: 11, color: { rgb: fontColor }, bold },
+        fill: { fgColor: { rgb: fill } },
+        alignment: { vertical: 'center', horizontal: isCenter ? 'center' : (isMoney ? 'right' : 'left') },
+        border: xlBorder(),
+      };
+      if (isMoney) cell.z = '#,##0.00 "€"';
+    }
+  });
+
+  // Fila TOTAL
+  for (let c = 0; c < nCols; c++) {
+    const cell = ws[enc(TOTAL_R, c)];
+    if (!cell) continue;
+    const isMoney = c === XL_MONEY_COL;
+    cell.s = {
+      font: { bold: true, sz: 12, color: { rgb: XL_STYLE.brandDark } },
+      fill: { fgColor: { rgb: XL_STYLE.totalBg } },
+      alignment: { vertical: 'center', horizontal: 'right', indent: isMoney ? 0 : 1 },
+      border: xlBorder(),
+    };
+    if (isMoney) cell.z = '#,##0.00 "€"';
+  }
+
+  // Autofiltro sobre la cabecera (solo cabecera + datos, sin el total)
+  ws['!autofilter'] = {
+    ref: XLSX.utils.encode_range({ s: { r: HEADER_R, c: 0 }, e: { r: Math.max(HEADER_R, DATA_R1), c: nCols - 1 } }),
+  };
+
+  return ws;
+}
 
 function exportXLSX() {
   if (typeof XLSX === 'undefined') { toast('No se pudo cargar la librería de Excel. Comprueba tu conexión.', 'error', 4500); return; }
+  if (!STATE.ventas.length) { toast('Todavía no hay ventas que exportar', 'error'); return; }
+
+  const n = STATE.ventas.length;
   const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, buildVentasReportSheet(), 'Mis Ventas');
+  XLSX.writeFile(wb, `parksales_ventas_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  toast(`Excel con ${n} venta${n !== 1 ? 's' : ''} descargado`, 'success');
+}
 
-  // 1. Hoja de Ventas
-  const viaLabels = { llamada: '📞 Llamada', correo: '✉️ Correo', chat: '💬 Chat' };
-  const ventasRows = STATE.ventas.map((v) => ({
-    Fecha: fmtDateTime(v.fecha),
-    Tipo: v.tipo === 'entrada' ? 'Entrada' : 'Bono',
-    Detalle: v.tipo === 'entrada' ? parqueNombre(v.parque_id) : bonoNombre(v.bono_id),
-    'Vía': viaLabels[v.via] || v.via || '📞 Llamada',
-    Cliente: v.cliente_nombre || '—',
-    Localizador: v.localizador || '—',
-    'Importe total': v.importe_total,
-  }));
-  const wsVentas = XLSX.utils.json_to_sheet(ventasRows);
-  XLSX.utils.book_append_sheet(wb, wsVentas, 'Ventas');
+/* --- PLANTILLA EXCEL AUTO-CALCULADA (para añadir ventas) ---
+   Nota: las macros VBA reales no se pueden generar desde el navegador
+   (requieren un .xlsm con código binario). Esta plantilla usa fórmulas
+   automáticas para conseguir el mismo efecto: escribes y todo se calcula solo. */
 
-  // 2. Hoja de Parques
-  const parquesRows = STATE.parques.map((p) => ({
-    Nombre: p.nombre,
-    Activo: p.activo ? 'Sí' : 'No',
-    'Ventas totales': STATE.ventas.filter((v) => v.parque_id === p.id).length,
-    Creado: fmtDateTime(p.created_at)
-  }));
-  const wsParques = XLSX.utils.json_to_sheet(parquesRows);
-  XLSX.utils.book_append_sheet(wb, wsParques, 'Parques');
+const XL_CAPTURA_COLS = ['Fecha / Hora', 'Localizador', 'Detalle', 'Estado', 'Importe'];
+const XL_CAPTURA_WIDTHS = [20, 18, 34, 22, 15];
+const XL_CAPTURA_FILAS = 60; // filas de entrada disponibles
+const XL_INPUT_FILL = 'FDFCF6';
 
-  // 3. Hoja de Bonos
-  const bonosRows = STATE.tipos_bono.map((b) => ({
-    Nombre: b.nombre,
-    Activo: b.activo ? 'Sí' : 'No',
-    'Ventas totales': STATE.ventas.filter((v) => v.bono_id === b.id).length,
-    Creado: fmtDateTime(b.created_at)
-  }));
-  const wsBonos = XLSX.utils.json_to_sheet(bonosRows);
-  XLSX.utils.book_append_sheet(wb, wsBonos, 'Tipos de Bonos');
+// Hoja de captura: filas vacías para escribir ventas + totales y resumen con fórmulas
+function buildCapturaSheet() {
+  const nCols = XL_CAPTURA_COLS.length;
+  const COL_MONEY = 4;
+  const HEADER_R = 3;
+  const DATA_R0 = 4;
+  const DATA_R1 = DATA_R0 + XL_CAPTURA_FILAS - 1;
+  const TOTAL_R = DATA_R1 + 1;
 
-  // 4. Hoja de Apuntes
-  const contactosRows = STATE.contactos.map((c) => ({
-    Fecha: fmtDateTime(c.created_at),
-    Cliente: c.nombre_apellidos || '—',
-    Correo: c.correo || '—',
-    Teléfono: c.telefono || '—',
-    Tipo: c.tipo === 'entrada' ? 'Entradas' : 'Bonos',
-    'Parque/Bono': c.tipo === 'entrada' ? parqueNombre(c.parque_id) : bonoNombre(c.bono_id),
-    Cantidad: c.tipo === 'entrada' ? (c.cantidad_entradas || 1) : (c.cantidad_bonos || 1),
-    Extras: c.extras || '—',
-    'Nº Bono': c.num_bono || '—',
-    DNI: c.dni || '—',
-    'Fecha Nacimiento': c.fecha_nacimiento ? fmtDateShort(c.fecha_nacimiento + 'T00:00:00') : '—',
-    Importe: c.importe_total,
-    'Estado de pago': c.estado_pago,
-    Anotaciones: c.anotaciones || '—'
-  }));
-  const wsContactos = XLSX.utils.json_to_sheet(contactosRows);
-  XLSX.utils.book_append_sheet(wb, wsContactos, 'Apuntes y Contactos');
+  const aoa = [
+    ['➕  AÑADIR VENTAS'],
+    ['Escribe tus ventas en las filas de abajo. Los importes y los totales se calculan automáticamente.'],
+    [],
+    XL_CAPTURA_COLS,
+  ];
+  // Filas de entrada vacías
+  for (let i = 0; i < XL_CAPTURA_FILAS; i++) aoa.push(new Array(nCols).fill(''));
+  // Fila TOTAL (importe con fórmula viva)
+  const totalRow = new Array(nCols).fill('');
+  totalRow[0] = 'TOTAL';
+  totalRow[COL_MONEY] = { t: 'n', f: `SUM(E${DATA_R0 + 1}:E${DATA_R1 + 1})`, z: '#,##0.00 "€"' };
+  aoa.push(totalRow);
+  aoa.push([]);
+  // Resumen automático (debajo de la tabla: etiqueta en A:D, valor en E)
+  const RESUMEN_INI = TOTAL_R + 2;
+  const resumenTitleRow = new Array(nCols).fill('');
+  resumenTitleRow[0] = '📊  RESUMEN AUTOMÁTICO';
+  aoa.push(resumenTitleRow);
 
-  XLSX.writeFile(wb, `parksales_completo_${new Date().toISOString().slice(0, 10)}.xlsx`);
-  toast('Excel completo descargado', 'success');
+  const rangoA = `$A$${DATA_R0 + 1}:$A$${DATA_R1 + 1}`;
+  const rangoD = `$D$${DATA_R0 + 1}:$D$${DATA_R1 + 1}`;
+  const rangoE = `$E$${DATA_R0 + 1}:$E$${DATA_R1 + 1}`;
+  const resumenItems = [
+    ['Nº de ventas registradas', `COUNTA(${rangoA})`, '#,##0'],
+    ['Importe total', `SUM(${rangoE})`, '#,##0.00 "€"'],
+    ['Ticket medio', `IFERROR(AVERAGE(${rangoE}),0)`, '#,##0.00 "€"'],
+    ['Completado', `SUMIF(${rangoD},"Completado",${rangoE})`, '#,##0.00 "€"'],
+    ['Pendiente de pago', `SUMIF(${rangoD},"Pendiente de pago",${rangoE})`, '#,##0.00 "€"'],
+    ['Enviado', `SUMIF(${rangoD},"Enviado",${rangoE})`, '#,##0.00 "€"'],
+    ['Incompleto', `SUMIF(${rangoD},"Incompleto",${rangoE})`, '#,##0.00 "€"'],
+  ];
+  resumenItems.forEach(([label, f, z]) => {
+    const fila = new Array(nCols).fill('');
+    fila[0] = label;
+    fila[COL_MONEY] = { t: 'n', f, z };
+    aoa.push(fila);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const enc = (r, c) => XLSX.utils.encode_cell({ r, c });
+
+  ws['!cols'] = XL_CAPTURA_WIDTHS.map((w) => ({ wch: w }));
+  ws['!rows'] = [{ hpt: 36 }, { hpt: 22 }, { hpt: 6 }, { hpt: 24 }];
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: nCols - 1 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: nCols - 1 } },
+    { s: { r: TOTAL_R, c: 0 }, e: { r: TOTAL_R, c: COL_MONEY - 1 } },
+    { s: { r: RESUMEN_INI, c: 0 }, e: { r: RESUMEN_INI, c: nCols - 1 } },
+  ];
+  for (let i = 0; i < resumenItems.length; i++) {
+    const r = RESUMEN_INI + 1 + i;
+    ws['!merges'].push({ s: { r, c: 0 }, e: { r, c: COL_MONEY - 1 } });
+  }
+
+  // Banda de título
+  const tCell = ws[enc(0, 0)];
+  if (tCell) tCell.s = {
+    font: { bold: true, sz: 18, color: { rgb: XL_STYLE.brandDark } },
+    fill: { fgColor: { rgb: XL_STYLE.brand } },
+    alignment: { vertical: 'center', horizontal: 'left', indent: 1 },
+  };
+  const sCell = ws[enc(1, 0)];
+  if (sCell) sCell.s = {
+    font: { sz: 10, color: { rgb: XL_STYLE.subtitleFg } },
+    fill: { fgColor: { rgb: XL_STYLE.subtitleBg } },
+    alignment: { vertical: 'center', horizontal: 'left', indent: 1 },
+  };
+
+  // Cabecera de la tabla de captura
+  for (let c = 0; c < nCols; c++) {
+    const cell = ws[enc(HEADER_R, c)];
+    if (!cell) continue;
+    cell.s = {
+      font: { bold: true, sz: 11, color: { rgb: XL_STYLE.headerFg } },
+      fill: { fgColor: { rgb: XL_STYLE.headerBg } },
+      alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+      border: xlBorder(),
+    };
+  }
+
+  // Filas de entrada (aspecto de formulario rellenable)
+  for (let r = DATA_R0; r <= DATA_R1; r++) {
+    for (let c = 0; c < nCols; c++) {
+      const cell = ws[enc(r, c)];
+      if (!cell) continue;
+      const isMoney = c === COL_MONEY;
+      cell.s = {
+        font: { sz: 11, color: { rgb: XL_STYLE.text } },
+        fill: { fgColor: { rgb: XL_INPUT_FILL } },
+        alignment: { vertical: 'center', horizontal: isMoney ? 'right' : (c === XL_ESTADO_COL ? 'center' : 'left') },
+        border: xlBorder(),
+      };
+      if (isMoney) cell.z = '#,##0.00 "€"';
+    }
+  }
+
+  // Fila TOTAL
+  for (let c = 0; c < nCols; c++) {
+    const cell = ws[enc(TOTAL_R, c)];
+    if (!cell) continue;
+    const isMoney = c === COL_MONEY;
+    cell.s = {
+      font: { bold: true, sz: 12, color: { rgb: XL_STYLE.brandDark } },
+      fill: { fgColor: { rgb: XL_STYLE.totalBg } },
+      alignment: { vertical: 'center', horizontal: 'right', indent: isMoney ? 0 : 1 },
+      border: xlBorder(),
+    };
+    if (isMoney) cell.z = '#,##0.00 "€"';
+  }
+
+  // Estilos del bloque de resumen
+  const rTitle = ws[enc(RESUMEN_INI, 0)];
+  if (rTitle) rTitle.s = {
+    font: { bold: true, sz: 12, color: { rgb: XL_STYLE.headerFg } },
+    fill: { fgColor: { rgb: XL_STYLE.headerBg } },
+    alignment: { vertical: 'center', horizontal: 'left', indent: 1 },
+  };
+  resumenItems.forEach((_, i) => {
+    const r = RESUMEN_INI + 1 + i;
+    const labelCell = ws[enc(r, 0)];
+    const valCell = ws[enc(r, COL_MONEY)];
+    if (labelCell) labelCell.s = {
+      font: { sz: 11, bold: true, color: { rgb: XL_STYLE.text } },
+      fill: { fgColor: { rgb: i % 2 === 0 ? XL_STYLE.rowAlt : XL_STYLE.rowBase } },
+      alignment: { vertical: 'center', horizontal: 'left', indent: 1 },
+      border: xlBorder(),
+    };
+    if (valCell) valCell.s = {
+      font: { bold: true, sz: 11, color: { rgb: XL_STYLE.money } },
+      fill: { fgColor: { rgb: i % 2 === 0 ? XL_STYLE.rowAlt : XL_STYLE.rowBase } },
+      alignment: { vertical: 'center', horizontal: 'right' },
+      border: xlBorder(),
+    };
+  });
+
+  return ws;
+}
+
+// Hoja de listas de valores válidos (para autorrelleno/desplegables manuales)
+function buildListasSheet() {
+  const estados = ['Completado', 'Pendiente de pago', 'Enviado', 'Incompleto', 'No enviado', 'Flexible pendiente'];
+  const parques = STATE.parques.map((p) => p.nombre);
+  const bonos = STATE.tipos_bono.map((b) => b.nombre);
+
+  const cols = [
+    { titulo: 'Tipo', valores: ['Entrada', 'Bono'] },
+    { titulo: 'Vía', valores: ['Llamada', 'Correo', 'Chat'] },
+    { titulo: 'Estado', valores: estados },
+    { titulo: 'Parques', valores: parques },
+    { titulo: 'Bonos', valores: bonos },
+  ];
+
+  const nCols = cols.length;
+  const maxLen = Math.max(...cols.map((c) => c.valores.length));
+  const aoa = [
+    ['📋  LISTAS DE VALORES'],
+    ['Copia estos valores en la hoja "Añadir ventas". En Excel puedes crear desplegables con Datos → Validación de datos → Lista.'],
+    [],
+    cols.map((c) => c.titulo),
+  ];
+  for (let i = 0; i < maxLen; i++) {
+    aoa.push(cols.map((c) => c.valores[i] || ''));
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const enc = (r, c) => XLSX.utils.encode_cell({ r, c });
+
+  ws['!cols'] = cols.map(() => ({ wch: 24 }));
+  ws['!rows'] = [{ hpt: 36 }, { hpt: 22 }, { hpt: 6 }, { hpt: 24 }];
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: nCols - 1 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: nCols - 1 } },
+  ];
+
+  const tCell = ws[enc(0, 0)];
+  if (tCell) tCell.s = {
+    font: { bold: true, sz: 18, color: { rgb: XL_STYLE.brandDark } },
+    fill: { fgColor: { rgb: XL_STYLE.brand } },
+    alignment: { vertical: 'center', horizontal: 'left', indent: 1 },
+  };
+  const sCell = ws[enc(1, 0)];
+  if (sCell) sCell.s = {
+    font: { sz: 10, color: { rgb: XL_STYLE.subtitleFg } },
+    fill: { fgColor: { rgb: XL_STYLE.subtitleBg } },
+    alignment: { vertical: 'center', horizontal: 'left', indent: 1 },
+  };
+
+  for (let c = 0; c < nCols; c++) {
+    const cell = ws[enc(3, c)];
+    if (!cell) continue;
+    cell.s = {
+      font: { bold: true, sz: 11, color: { rgb: XL_STYLE.headerFg } },
+      fill: { fgColor: { rgb: XL_STYLE.headerBg } },
+      alignment: { vertical: 'center', horizontal: 'center' },
+      border: xlBorder(),
+    };
+  }
+  for (let i = 0; i < maxLen; i++) {
+    const r = 4 + i;
+    for (let c = 0; c < nCols; c++) {
+      const cell = ws[enc(r, c)];
+      if (!cell) continue;
+      cell.s = {
+        font: { sz: 11, color: { rgb: XL_STYLE.text } },
+        fill: { fgColor: { rgb: i % 2 === 0 ? XL_STYLE.rowBase : XL_STYLE.rowAlt } },
+        alignment: { vertical: 'center', horizontal: 'left', indent: 1 },
+        border: xlBorder(),
+      };
+    }
+  }
+
+  return ws;
+}
+
+function exportPlantillaVentas() {
+  if (typeof XLSX === 'undefined') { toast('No se pudo cargar la librería de Excel. Comprueba tu conexión.', 'error', 4500); return; }
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, buildCapturaSheet(), 'Añadir ventas');
+  if (STATE.ventas.length) XLSX.utils.book_append_sheet(wb, buildVentasReportSheet(), 'Mis Ventas');
+  XLSX.utils.book_append_sheet(wb, buildListasSheet(), 'Listas');
+  XLSX.writeFile(wb, `parksales_plantilla_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  toast('Plantilla automática descargada', 'success');
+}
+
+/* --- PLANTILLA CON MACROS VBA (.xlsm) ---
+   Las macros VBA no se pueden generar desde el navegador, así que se sirve
+   como recurso ya preparado del proyecto. Incluye formulario, desplegables
+   de parques, fecha de hoy automática y un botón que inserta la venta y
+   recalcula los totales por mes.
+
+   Antes de descargar, se inyectan en la hoja "Ventas" todas las ventas
+   existentes de la base de datos para que el historial, los totales del mes
+   y el resumen mensual ya vengan rellenos. Las macros VBA se conservan
+   intactas (se toca solo el XML de la hoja de datos). */
+async function descargarPlantillaMacros() {
+  const ventas = (STATE.ventas || []).slice().sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+  const url = 'assets/plantilla_ventas_macros.xlsm';
+  const filename = 'Plantilla_Ventas_ParkSales.xlsm';
+
+  // Si no hay ventas, descargamos la plantilla tal cual
+  if (!ventas.length) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    toast('Plantilla con macros descargada. Ábrela en Excel y pulsa «Habilitar contenido».', 'success', 6000);
+    return;
+  }
+
+  if (typeof JSZip === 'undefined') {
+    toast('No se pudo cargar la librería JSZip. Comprueba tu conexión.', 'error', 4500);
+    return;
+  }
+
+  toast('Generando plantilla con tus ventas...', 'info', 3000);
+
+  try {
+    // 1. Cargar la plantilla .xlsm
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('No se pudo cargar la plantilla');
+    const buffer = await resp.arrayBuffer();
+    const zip = await JSZip.loadAsync(buffer);
+
+    // 2. Modificar la hoja "Ventas" (sheet2.xml) usando DOMParser para garantizar XML válido
+    const sheetXml = await zip.file('xl/worksheets/sheet2.xml').async('string');
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(sheetXml, 'application/xml');
+    const ws = doc.documentElement;
+
+    const NS_MAIN = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+    const NS_X14AC = 'http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac';
+
+    const sheetData = Array.from(ws.getElementsByTagName('*')).find(el => el.localName === 'sheetData');
+    const dimension = Array.from(ws.getElementsByTagName('*')).find(el => el.localName === 'dimension');
+    const autoFilter = Array.from(ws.getElementsByTagName('*')).find(el => el.localName === 'autoFilter');
+
+    // Número de serie de fecha Excel (días desde 1899-12-30, hora local)
+    const excelSerial = (iso) => {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return null;
+      const local = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds());
+      const epoch = Date.UTC(1899, 11, 30);
+      return (local - epoch) / 86400000;
+    };
+
+    const DATA_START = 5;
+    const n = ventas.length;
+    const lastDataRow = DATA_START + n - 1;
+    const maxRow = 5000;
+
+    // Eliminar filas existentes de datos (r >= DATA_START) preservando las cabeceras (1-4)
+    Array.from(sheetData.getElementsByTagName('*'))
+      .filter(el => el.localName === 'row')
+      .forEach((row) => {
+        const r = parseInt(row.getAttribute('r'), 10);
+        if (r >= DATA_START) sheetData.removeChild(row);
+      });
+
+    // Helper para crear una celda de texto inline
+    const inlineCell = (rowNum, col, style, text) => {
+      const c = doc.createElementNS(NS_MAIN, 'c');
+      c.setAttribute('r', `${col}${rowNum}`);
+      c.setAttribute('s', style);
+      c.setAttribute('t', 'inlineStr');
+      const is = doc.createElementNS(NS_MAIN, 'is');
+      const t = doc.createElementNS(NS_MAIN, 't');
+      t.textContent = text == null ? '' : String(text);
+      is.appendChild(t);
+      c.appendChild(is);
+      return c;
+    };
+
+    // Añadir filas con datos de ventas
+    ventas.forEach((v, idx) => {
+      const rowNum = DATA_START + idx;
+      const row = doc.createElementNS(NS_MAIN, 'row');
+      row.setAttribute('r', String(rowNum));
+      row.setAttribute('spans', '1:5');
+      row.setAttributeNS(NS_X14AC, 'x14ac:dyDescent', '0.25');
+
+      // A: Fecha/Hora
+      const cA = doc.createElementNS(NS_MAIN, 'c');
+      cA.setAttribute('r', `A${rowNum}`);
+      cA.setAttribute('s', '17');
+      const serial = excelSerial(v.fecha);
+      if (serial !== null) {
+        const vA = doc.createElementNS(NS_MAIN, 'v');
+        vA.textContent = String(serial);
+        cA.appendChild(vA);
+      }
+      row.appendChild(cA);
+
+      // B: Localizador
+      row.appendChild(inlineCell(rowNum, 'B', '7', v.localizador || ''));
+
+      // C: Detalle
+      const tipo = v.tipo || 'entrada';
+      const detalle = tipo === 'entrada' ? parqueNombre(v.parque_id) : bonoNombre(v.bono_id);
+      row.appendChild(inlineCell(rowNum, 'C', '7', detalle || ''));
+
+      // D: Estado
+      const estadoNorm = normalizeEstadoVenta(v.estado);
+      const info = getEstadoBadgeInfo(estadoNorm);
+      row.appendChild(inlineCell(rowNum, 'D', '7', info.label || estadoNorm));
+
+      // E: Importe
+      const cE = doc.createElementNS(NS_MAIN, 'c');
+      cE.setAttribute('r', `E${rowNum}`);
+      cE.setAttribute('s', '18');
+      const vE = doc.createElementNS(NS_MAIN, 'v');
+      vE.textContent = String(Number(v.importe_total) || 0);
+      cE.appendChild(vE);
+      row.appendChild(cE);
+
+      sheetData.appendChild(row);
+    });
+
+    // Añadir filas vacías hasta maxRow para el efecto "infinito"
+    for (let r = lastDataRow + 1; r <= maxRow; r++) {
+      const row = doc.createElementNS(NS_MAIN, 'row');
+      row.setAttribute('r', String(r));
+      row.setAttribute('spans', '1:5');
+      row.setAttributeNS(NS_X14AC, 'x14ac:dyDescent', '0.25');
+      ['A', 'B', 'C', 'D', 'E'].forEach((col, ci) => {
+        const c = doc.createElementNS(NS_MAIN, 'c');
+        c.setAttribute('r', `${col}${r}`);
+        c.setAttribute('s', ['17', '7', '7', '7', '18'][ci]);
+        row.appendChild(c);
+      });
+      sheetData.appendChild(row);
+    }
+
+    // Ajustar anchos de columna (A=22, B=20, E=20)
+    Array.from(ws.getElementsByTagName('*')).filter(el => el.localName === 'col').forEach(col => {
+      const min = col.getAttribute('min');
+      if (min === '1') col.setAttribute('width', '22');
+      else if (min === '2') col.setAttribute('width', '20');
+      else if (min === '5') col.setAttribute('width', '20');
+    });
+
+    // Actualizar dimensión y autofiltro
+    if (dimension) dimension.setAttribute('ref', `A1:E${maxRow}`);
+    if (autoFilter) autoFilter.setAttribute('ref', `A4:E${maxRow}`);
+
+    // Actualizar rangos de validación de datos
+    Array.from(ws.getElementsByTagName('*')).forEach((el) => {
+      if (el.localName === 'sqref') {
+        const text = el.textContent || '';
+        if (text.includes('C5:C')) el.textContent = `C5:C${maxRow}`;
+        else if (text.includes('D5:D')) el.textContent = `D5:D${maxRow}`;
+      }
+    });
+
+    // Serializar de nuevo garantizando que no haya errores de etiquetas
+    const serializer = new XMLSerializer();
+    zip.file('xl/worksheets/sheet2.xml', serializer.serializeToString(doc));
+
+    // --- FORZAR RECÁLCULO DE FÓRMULAS AL ABRIR ---
+    // 1) calcChain: ELIMINACIÓN COMPLETA (Fichero + Relación + ContentType)
+    // Es vital para evitar el error de "problema con contenido" al cambiar los datos.
+    if (zip.file('xl/calcChain.xml')) {
+      zip.remove('xl/calcChain.xml');
+
+      const ctXml = await zip.file('[Content_Types].xml').async('string');
+      zip.file('[Content_Types].xml', ctXml.replace(/<Override[^>]*PartName="\/xl\/calcChain\.xml"[^>]*\/>/g, ''));
+
+      const rXml = await zip.file('xl/_rels/workbook.xml.rels').async('string');
+      zip.file('xl/_rels/workbook.xml.rels', rXml.replace(/<Relationship[^>]*Target="calcChain\.xml"[^>]*\/>/g, ''));
+    }
+
+    // 2) workbook.xml: forzar recálculo completo y sincronizar el rango del autofiltro
+    let wbXml = await zip.file('xl/workbook.xml').async('string');
+    if (wbXml.includes('<calcPr')) {
+      wbXml = wbXml.replace(/<calcPr([^/>]*)\/?>/, (m, attrs) => {
+        let a = attrs;
+        if (!a.includes('fullCalcOnLoad')) a += ' fullCalcOnLoad="1"';
+        if (!a.includes('forceFullCalc')) a += ' forceFullCalc="1"';
+        return `<calcPr${a}/>`;
+      });
+    } else {
+      const pos = wbXml.indexOf('</workbook>');
+      wbXml = wbXml.slice(0, pos) + '<calcPr fullCalcOnLoad="1" forceFullCalc="1"/>' + wbXml.slice(pos);
+    }
+    // Sincronizar _FilterDatabase
+    wbXml = wbXml.replace(/(Ventas!\$A\$4:\$E\$)\d+/g, `$1${maxRow}`);
+    zip.file('xl/workbook.xml', wbXml);
+
+    // 3) Fórmulas de sheet1/sheet3: sin valor cacheado y con ca="1"
+    // Se hace por regex para no tocar el resto del XML y preservar las macros del botón.
+    const forceRecalcXml = (xml) => xml
+      .replace(/<f(?=[\s>])(?![^>]*\bca=)([^>]*)>/g, '<f ca="1"$1>')
+      .replace(/(<\/f>)\s*<v>[^<]*<\/v>/g, '$1');
+
+    for (const shPath of ['xl/worksheets/sheet1.xml', 'xl/worksheets/sheet3.xml']) {
+      const sXml = await zip.file(shPath).async('string');
+      zip.file(shPath, forceRecalcXml(sXml));
+    }
+
+    // 4. Generar el blob y descargar
+    const blob = await zip.generateAsync({
+      type: 'blob',
+      mimeType: 'application/vnd.ms-excel.sheet.macroEnabled.12',
+    });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+
+    toast(`¡Ventas inyectadas! PASO OBLIGATORIO: Clic derecho en el archivo -> Propiedades -> marcar DESBLOQUEAR -> Aceptar.`, 'success', 10000);
+  } catch (err) {
+    console.error('[ParkSales] Error al generar plantilla con macros:', err);
+    toast('Error al generar la plantilla: ' + err.message, 'error');
+  }
 }
 
 /* --- BACKUP JSON COMPLETO --- */

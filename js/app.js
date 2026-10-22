@@ -267,7 +267,7 @@ function setupSessionTimeout() {
   if (window.__sessionTimeoutWired) return;
   window.__sessionTimeoutWired = true;
 
-  const INACTIVITY_TIMEOUT = 30 * 1000; // 30 segundos
+  const INACTIVITY_TIMEOUT = 60 * 1000; // 60 segundos
   let lastActivity = Date.now();
   let armed = false;
 
@@ -294,8 +294,9 @@ function setupSessionTimeout() {
     if (armed) return;
     armed = true;
     lastActivity = Date.now();
-    // Si la página viene de una recarga, se bloquea al instante.
-    if (esRecargaDePagina()) {
+    // Si la página viene de una recarga, se bloquea al instante (a menos que estemos fuera de la oficina).
+    const fueraOficina = localStorage.getItem('parksales_fuera_oficina') === 'true';
+    if (esRecargaDePagina() && !fueraOficina) {
       bloquearPorInactividad();
     }
   }
@@ -320,6 +321,11 @@ function setupSessionTimeout() {
   // Comprobación periódica robusta: si pasan 30 s sin actividad, se bloquea
   setInterval(() => {
     if (!armed || estaBloqueado()) return;
+
+    // Si el modo "Fuera de oficina" está activo, no bloquear nunca
+    const fueraOficina = localStorage.getItem('parksales_fuera_oficina') === 'true';
+    if (fueraOficina) return;
+
     if (Date.now() - lastActivity >= INACTIVITY_TIMEOUT) {
       bloquearPorInactividad();
     }

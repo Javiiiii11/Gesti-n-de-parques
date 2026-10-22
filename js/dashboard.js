@@ -1584,6 +1584,8 @@ function openProfileSettings(initialMonthKey = null) {
       : `<div class="goal-preview-pill pill-progress">⚡ ${fmtEUR(goal - monthSales)} restantes</div>`)
     : `<div class="goal-preview-pill pill-none">Sin meta definida</div>`;
 
+  const isFueraOficina = localStorage.getItem('parksales_fuera_oficina') === 'true';
+
   const bodyHtml = `
     <div class="profile-panel profile-panel--wide">
       <section class="profile-hero profile-hero--compact">
@@ -1666,8 +1668,23 @@ function openProfileSettings(initialMonthKey = null) {
         <section class="profile-section profile-section--security">
           <span class="profile-section-badge profile-section-badge--lock">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Seguridad
+            Seguridad y Ubicación
           </span>
+          
+          <!-- Interruptor Fuera de Oficina -->
+          <div class="profile-office-mode">
+            <div class="office-mode-info">
+              <span class="office-mode-title">🌍 ¿Estás fuera de la oficina?</span>
+              <p class="office-mode-desc">Si se activa, se deshabilitará el bloqueo automático por inactividad (404).</p>
+            </div>
+            <label class="switch-pill">
+              <input type="checkbox" id="profile-fuera-oficina" ${isFueraOficina ? 'checked' : ''}>
+              <span class="switch-pill-slider"></span>
+            </label>
+          </div>
+
+          <div class="profile-divider"></div>
+
           <p class="profile-section-desc">Mantén tu cuenta protegida. Usa una contraseña segura que no compartas con nadie.</p>
           <input class="profile-autofill-username" type="email" name="username" autocomplete="username" value="${escapeHtml(rawUserEmail)}" readonly tabindex="-1" aria-hidden="true">
           <div class="profile-fields profile-fields--security">
@@ -1849,6 +1866,18 @@ function openProfileSettings(initialMonthKey = null) {
       toast(err?.message || 'No se pudo guardar la meta mensual.', 'error');
     } finally {
       saveBtn.disabled = false;
+    }
+  });
+
+  // Manejar el interruptor Fuera de Oficina
+  const fueraOficinaToggle = document.getElementById('profile-fuera-oficina');
+  fueraOficinaToggle?.addEventListener('change', () => {
+    const isChecked = fueraOficinaToggle.checked;
+    localStorage.setItem('parksales_fuera_oficina', isChecked);
+    if (isChecked) {
+      toast('🌍 Modo fuera de oficina activado. Bloqueo 404 desactivado.', 'success');
+    } else {
+      toast('🏠 Modo en la oficina activado. Bloqueo 404 reactivado.', 'info');
     }
   });
 }

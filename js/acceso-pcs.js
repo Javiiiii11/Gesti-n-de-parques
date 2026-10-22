@@ -17,7 +17,8 @@ const CONFIG_ACCESO_PC = {
   // 💻 LISTA DE IDENTIFICADORES DE PCs AUTORIZADOS:
   // Pega aquí los códigos de los ordenadores que tienen permiso para ver y usar la web:
   PCS_AUTORIZADOS: [
-    'PC-A762-EE18', // PC torre casa
+    'PC-58FD-A74C', // PC torre casa
+    // NO FUNCIONA SOLUCIONAR **********************************
   ],
 
   // 🔑 CLAVE MAESTRA DE DESBLOQUEO:
@@ -84,6 +85,11 @@ const CONFIG_ACCESO_PC = {
 
   // 2. Comprobar si el PC está en la lista de autorizados
   function verificarAutorizacion() {
+    // Si ya está autorizado en esta sesión por clave maestra, permitir
+    try {
+      if (localStorage.getItem(STORAGE_KEY_AUTH) === 'autorizado_maestro') return true;
+    } catch(e){}
+
     if (CONFIG_ACCESO_PC.PERMITIR_LOCALHOST) {
       const host = window.location.hostname;
       if (host === 'localhost' || host === '127.0.0.1' || window.location.protocol === 'file:') {
@@ -91,18 +97,26 @@ const CONFIG_ACCESO_PC = {
       }
     }
 
-    const listaNormalizada = (CONFIG_ACCESO_PC.PCS_AUTORIZADOS || []).map(id => String(id || '').trim().toUpperCase());
-    if (listaNormalizada.includes(pcId.toUpperCase())) {
+    const currentId = pcId.toUpperCase().trim();
+    const listaNormalizada = (CONFIG_ACCESO_PC.PCS_AUTORIZADOS || [])
+      .map(id => String(id || '').trim().toUpperCase())
+      .filter(id => id.length > 0);
+
+    // DEBUG: Log para ayudar al usuario a ver su ID real
+    console.log('[ParkSales] ID detectado:', currentId);
+    console.log('[ParkSales] IDs autorizados:', listaNormalizada);
+
+    if (listaNormalizada.includes(currentId)) {
       return true;
     }
 
     try {
       const guardado = localStorage.getItem(STORAGE_KEY_AUTH);
-      if (guardado === 'autorizado_' + pcId || guardado === 'autorizado_maestro') {
+      if (guardado === 'autorizado_' + currentId) {
         return true;
       }
       const aliasGuardado = localStorage.getItem(STORAGE_KEY_CUSTOM_ID);
-      if (aliasGuardado && listaNormalizada.includes(aliasGuardado.toUpperCase())) {
+      if (aliasGuardado && listaNormalizada.includes(aliasGuardado.toUpperCase().trim())) {
         return true;
       }
     } catch (e) { }

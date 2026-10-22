@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Test recalc fix</title>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+</head>
+<body>
+<h1>Test recalc + macros</h1>
+<button id="btn">Generar y verificar</button>
+<pre id="log"></pre>
+<script>
+// Mock STATE
+window.STATE = {
+  ventas: [
+    { fecha: '2026-10-20T10:30:00', tipo: 'entrada', parque_id: 'p1', localizador: 'LOC001', estado: 'completado', importe_total: 45.50 },
+    { fecha: '2026-10-21T14:20:00', tipo: 'bono', bono_id: 'b1', localizador: 'LOC002', estado: 'pendiente', importe_total: 120.00 },
+    { fecha: '2026-10-22T09:15:00', tipo: 'entrada', parque_id: 'p2', localizador: 'LOC003', estado: 'enviado', importe_total: 30.00 },
+  ],
+  parques: [{ id: 'p1', nombre: 'Parque Warner' }, { id: 'p2', nombre: 'ZOO' }],
+  tipos_bono: [{ id: 'b1', nombre: 'Bono Oro' }],
+};
+function parqueNombre(id){ const p = STATE.parques.find(x => x.id === id); return p ? p.nombre : '—'; }
+function bonoNombre(id){ const b = STATE.tipos_bono.find(x => x.id === id); return b ? b.nombre : 'Bono Parques'; }
+const ESTADOS = { completado:{label:'Completado'}, enviado:{label:'Enviado'}, pendiente:{label:'Pendiente de pago'}, incompleto:{label:'Incompleto'}, no_enviado:{label:'No enviado'}, selwo_flexible:{label:'Flexible Pendiente'} };
+function normalizeEstadoVenta(v){ const s=String(v||'').trim().toLowerCase(); if(s.includes('flexible'))return'selwo_flexible'; if(s==='completado'||s==='pagado')return'completado'; if(s==='enviado')return'enviado'; if(s==='incompleto')return'incompleto'; if(s.includes('no enviado'))return'no_enviado'; if(s.includes('pendiente'))return'pendiente'; return'completado'; }
+function getEstadoBadgeInfo(v){ return ESTADOS[normalizeEstadoVenta(v)]||ESTADOS.completado; }
+
+document.getElementById('btn').addEventListener('click', async () => {
+  const log = document.getElementById('log');
+  log.textContent = '...';
+  const resp = await fetch('assets/plantilla_ventas_macros.xlsm');
+  const buffer = await resp.arrayBuffer();
+  const zip = await JSZip.loadAsync(buffer);
+  const NS_MAIN='http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  const NS_X14AC='http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac';
+  const parser = new DOMParser();
+  const serializer = new XMLSerializer();
+  const excelSerial=(iso)=>{const d=new Date(iso);if(isNaN(d.getTime()))return null;const local=Date.UTC(d.getFullYear(),d.getMonth(),d.getDate(),d.getHours(),d.getMinutes(),d.getSeconds());const epoch=Date.UTC(1899,11,30);return(local-epoch)/86400000;};
+  const sheetXml = await zip.file('xl/worksheets/sheet2.xml').async('string');
+  const doc=parser.parseFromString(sheetXml,'application/xml');
+  const ws=doc.documentElement;
+  const sheetData=Array.from(ws.getElementsByTagName('*')).find(el=>el.localName==='sheetData');
+  const dimension=Array.from(ws.getElementsByTagName('*')).find(el=>el.localName==='dimension');
+  const autoFilter=Array.from(ws.getElementsByTagName('*')).find(el=>el.localName==='autoFilter');
+  const ventas=STATE.ventas.slice().sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  const DATA_START=5,n=ventas.length,lastDataRow=DATA_START+n-1,maxRow=Math.max(304,lastDataRow+30);
+  Array.from(sheetData.getElementsByTagName('*')).filter(el=>el.localName==='row').forEach(row=>{const r=parseInt(row.getAttribute('r'),10);if(r>=DATA_START)sheetData.removeChild(row);});
+  const inlineCell=(rowNum,col,style,text)=>{const c=doc.createElementNS(NS_MAIN,'c');c.setAttribute('r',col+rowNum);c.setAttribute('s',style);c.setAttribute('t','inlineStr');const is=doc.createElementNS(NS_MAIN,'is');const t=doc.createElementNS(NS_MAIN,'t');t.textContent=text==null?'':String(text);is.appendChild(t);c.appendChild(is);return c;};
+  ventas.forEach((v,idx)=>{const rowNum=DATA_START+idx;const row=doc.createElementNS(NS_MAIN,'row');row.setAttribute('r',String(rowNum));row.setAttribute('spans','1:5');row.setAttributeNS(NS_X14AC,'x14ac:dyDescent','0.25');const cA=doc.createElementNS(NS_MAIN,'c');cA.setAttribute('r','A'+rowNum);cA.setAttribute('s','17');const serial=excelSerial(v.fecha);if(serial!==null){const vA=doc.createElementNS(NS_MAIN,'v');vA.textContent=String(serial);cA.appendChild(vA);}row.appendChild(cA);row.appendChild(inlineCell(rowNum,'B','7',v.localizador||''));const tipo=v.tipo||'entrada';const detalle=tipo==='entrada'?parqueNombre(v.parque_id):bonoNombre(v.bono_id);row.appendChild(inlineCell(rowNum,'C','7',detalle||''));const info=getEstadoBadgeInfo(v.estado);row.appendChild(inlineCell(rowNum,'D','7',info.label||''));const cE=doc.createElementNS(NS_MAIN,'c');cE.setAttribute('r','E'+rowNum);cE.setAttribute('s','18');const vE=doc.createElementNS(NS_MAIN,'v');vE.textContent=String(Number(v.importe_total)||0);cE.appendChild(vE);row.appendChild(cE);sheetData.appendChild(row);});
+  for(let r=lastDataRow+1;r<=maxRow;r++){const row=doc.createElementNS(NS_MAIN,'row');row.setAttribute('r',String(r));row.setAttribute('spans','1:5');row.setAttributeNS(NS_X14AC,'x14ac:dyDescent','0.25');['A','B','C','D','E'].forEach((col,ci)=>{const c=doc.createElementNS(NS_MAIN,'c');c.setAttribute('r',col+r);c.setAttribute('s',['17','7','7','7','18'][ci]);row.appendChild(c);});sheetData.appendChild(row);}
+  if(dimension)dimension.setAttribute('ref','A1:E'+maxRow);
+  if(autoFilter)autoFilter.setAttribute('ref','A4:E'+maxRow);
+  Array.from(ws.getElementsByTagName('*')).forEach(el=>{if(el.localName==='sqref'){const text=el.textContent||'';if(text.includes('C5:C'))el.textContent='C5:C'+maxRow;else if(text.includes('D5:D'))el.textContent='D5:D'+maxRow;}});
+  zip.file('xl/worksheets/sheet2.xml',serializer.serializeToString(doc));
+
+  // --- RECALC FIX ---
+  if(zip.file('xl/calcChain.xml'))zip.remove('xl/calcChain.xml');
+  const wbXml=await zip.file('xl/workbook.xml').async('string');
+  const wbDoc=parser.parseFromString(wbXml,'application/xml');
+  const wbEls=wbDoc.getElementsByTagName('*');
+  for(let i=0;i<wbEls.length;i++){if(wbEls[i].localName==='calcPr'){wbEls[i].setAttribute('fullCalcOnLoad','1');wbEls[i].setAttribute('forceFullCalc','1');break;}}
+  zip.file('xl/workbook.xml',serializer.serializeToString(wbDoc));
+  const forceRecalcSheet=async(sheetPath)=>{const sXml=await zip.file(sheetPath).async('string');const sDoc=parser.parseFromString(sXml,'application/xml');const cells=sDoc.getElementsByTagName('*');for(let i=0;i<cells.length;i++){const c=cells[i];if(c.localName!=='c')continue;const f=Array.from(c.childNodes).find(ch=>ch.localName==='f');if(!f)continue;f.setAttribute('ca','1');const v=Array.from(c.childNodes).find(ch=>ch.localName==='v');if(v)c.removeChild(v);}zip.file(sheetPath,serializer.serializeToString(sDoc));};
+  await forceRecalcSheet('xl/worksheets/sheet1.xml');
+  await forceRecalcSheet('xl/worksheets/sheet3.xml');
+
+  const out=await zip.generateAsync({type:'arraybuffer'});
+  const z2=await JSZip.loadAsync(out);
+  const files=Object.keys(z2.files).sort();
+  log.textContent='';
+  log.textContent+='calcChain.xml presente: '+ (files.includes('xl/calcChain.xml'))+'\n';
+  const wbNew=await z2.file('xl/workbook.xml').async('string');
+  log.textContent+='fullCalcOnLoad presente: '+wbNew.includes('fullCalcOnLoad="1"')+'\n';
+  log.textContent+='forceFullCalc presente: '+wbNew.includes('forceFullCalc="1"')+'\n';
+  log.textContent+='vbaProject.bin presente: '+files.includes('xl/vbaProject.bin')+'\n';
+  const s1=await z2.file('xl/worksheets/sheet1.xml').async('string');
+  const c11match=s1.match(/<c r="C11"[^>]*>([\s\S]*?)<\/c>/);
+  log.textContent+='C11: '+(c11match?c11match[0]:'(no encontrado)')+'\n';
+  log.textContent+='C11 tiene ca="1": '+(/<c r="C11"[^>]*>[\s\S]*?<f[^>]*ca="1"/.test(s1))+'\n';
+  log.textContent+='C11 no tiene <v> cacheado: '+!/<c r="C11"[^>]*>[\s\S]*?<v>/.test(s1)+'\n';
+  const blob=new Blob([out],{type:'application/vnd.ms-excel.sheet.macroEnabled.12'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='test_recalc.xlsm';document.body.appendChild(a);a.click();a.remove();
+  log.textContent+='\nArchivo descargado. Abrelo en Excel y comprueba:\n- "Nº de ventas registradas" debe mostrar 3 (no 0).\n- El total del mes debe sumar 195,50 €.\n';
+});
+</script>
+</body>
+</html>
