@@ -17,9 +17,11 @@ const CONFIG_ACCESO_PC = {
   // 🔑 CLAVE MAESTRA DE DESBLOQUEO:
   CLAVE_MAESTRA: 'parksales2026',
 
-  // 🕵️ MODO CAMUFLAJE ERROR 404:
-  // true = Si no está autorizado, muestra una página de error 404 de GitHub Pages.
-  MODO_CAMUFLAJE_404: true,
+  // 🕵️ MODO CAMUFLAJE ERROR 404 (interruptor maestro):
+  // true  = el 404 EXISTE: si el PC no está autorizado, si pulsas Alt+B o si salta el
+  //         bloqueo por inactividad, se muestra la página de error 404 de GitHub Pages.
+  // false = el 404 NO EXISTE: la web arranca y funciona con normalidad, sin bloqueos.
+  MODO_CAMUFLAJE_404: false,
 
   // 🛠️ Permitir acceso directo en desarrollo local (localhost / 127.0.0.1)
   PERMITIR_LOCALHOST: false,
@@ -120,11 +122,18 @@ const CONFIG_ACCESO_PC = {
   const estaAutorizado = verificarAutorizacion();
   const hayBloqueoPanico = sessionStorage.getItem(STORAGE_KEY_PANIC) === '1';
 
+  // 🕵️ INTERRUPTOR MAESTRO DEL 404:
+  // true  = el 404 existe (PC no autorizado / Alt+B / bloqueo por inactividad).
+  // false = el 404 NO existe: la web funciona con total normalidad, sin bloqueos.
+  const CAMUFLAJE_404_ACTIVO = CONFIG_ACCESO_PC.MODO_CAMUFLAJE_404 === true;
+
   // Exponer objeto global para inspección
   window.SEGURIDAD_PC = {
     id: pcId,
     // true si el PC está en la lista blanca (independientemente del bloqueo temporal)
     pcAutorizado: estaAutorizado,
+    // Interruptor maestro para que app.js sepa si el 404 está habilitado
+    modoCamuflaje404: CAMUFLAJE_404_ACTIVO,
     autorizado: estaAutorizado && !hayBloqueoPanico,
     desautorizarEstePC: function () {
       localStorage.removeItem(STORAGE_KEY_AUTH);
@@ -307,11 +316,14 @@ const CONFIG_ACCESO_PC = {
   `;
   document.head.appendChild(estiloCamuflaje);
 
-  // Iniciar siempre el atajo del botón de pánico (Alt+B)
-  iniciarAtajoPanico();
+  // Iniciar el atajo del botón de pánico (Alt+B) SOLO si el camuflaje 404 está activo
+  if (CAMUFLAJE_404_ACTIVO) {
+    iniciarAtajoPanico();
+  }
 
-  // Si no está autorizado O está en bloqueo de pánico: aplicar 404 de inmediato
-  if (!estaAutorizado || hayBloqueoPanico) {
+  // Si no está autorizado O está en bloqueo de pánico: aplicar 404 de inmediato.
+  // (Con el camuflaje desactivado, el 404 no existe y la web arranca normal.)
+  if (CAMUFLAJE_404_ACTIVO && (!estaAutorizado || hayBloqueoPanico)) {
     aplicarBloqueoVisual404();
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', montarCamuflaje);
@@ -349,6 +361,8 @@ const CONFIG_ACCESO_PC = {
 
   // Activa el bloqueo 404 al instante (0ms)
   function activarPanico() {
+    // Con el camuflaje desactivado el 404 no existe: no se bloquea nada.
+    if (!CAMUFLAJE_404_ACTIVO) return;
     try { sessionStorage.setItem(STORAGE_KEY_PANIC, '1'); } catch (e) { }
     aplicarBloqueoVisual404();
     montarCamuflaje();

@@ -206,9 +206,9 @@ async function bootApp(user) {
 
 document.addEventListener('DOMContentLoaded', () => {
   // ComprobaciÃ³n de seguridad por PC / dispositivo
-  // (solo se detiene si el PC no estÃ¡ autorizado; un bloqueo temporal de
-  //  inactividad NO impide arrancar la app, para que la sesiÃ³n se recuerde)
-  if (window.SEGURIDAD_PC && window.SEGURIDAD_PC.pcAutorizado === false) {
+  // (solo se detiene si el PC no estÃ¡ autorizado Y el camuflaje 404 estÃ¡ activo;
+  //  con el 404 desactivado la app arranca siempre con normalidad)
+  if (window.SEGURIDAD_PC && window.SEGURIDAD_PC.pcAutorizado === false && window.SEGURIDAD_PC.modoCamuflaje404) {
     console.warn('[ParkSales] InicializaciÃ³n detenida: PC no autorizado.');
     return;
   }
@@ -273,6 +273,8 @@ const BLOQUEO_INACTIVIDAD_SEGUNDOS = 60;
 
 function setupSessionTimeout() {
   if (!BLOQUEO_INACTIVIDAD_ACTIVO) return;
+  // Con el camuflaje 404 desactivado no existe bloqueo por inactividad
+  if (window.SEGURIDAD_PC && window.SEGURIDAD_PC.modoCamuflaje404 === false) return;
   if (window.__sessionTimeoutWired) return;
   window.__sessionTimeoutWired = true;
 
