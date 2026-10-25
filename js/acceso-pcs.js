@@ -10,7 +10,7 @@ const CONFIG_ACCESO_PC = {
   // 💻 LISTA DE IDENTIFICADORES DE PCs AUTORIZADOS:
   // Pega aquí los códigos de los ordenadores que tienen permiso para ver y usar la web:
   PCS_AUTORIZADOS: [
-    'PC-58FD-A74C', // PC torre casa
+    'PC-A762-EE18', // PC torre casa
     // NO FUNCIONA SOLUCIONAR **********************************
   ],
 
@@ -21,7 +21,7 @@ const CONFIG_ACCESO_PC = {
   // true  = el 404 EXISTE: si el PC no está autorizado, si pulsas Alt+B o si salta el
   //         bloqueo por inactividad, se muestra la página de error 404 de GitHub Pages.
   // false = el 404 NO EXISTE: la web arranca y funciona con normalidad, sin bloqueos.
-  MODO_CAMUFLAJE_404: false,
+  MODO_CAMUFLAJE_404: true,
 
   // 🛠️ Permitir acceso directo en desarrollo local (localhost / 127.0.0.1)
   PERMITIR_LOCALHOST: false,
