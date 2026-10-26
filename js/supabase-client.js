@@ -93,6 +93,7 @@ const LOCAL_KEYS = {
   objetivos_mensuales: 'parksales_objetivos_mensuales',
   cuadrante_list: 'parksales_cuadrante_list',
   cuadrante_data: 'parksales_cuadrante_data',
+  usuarios_permisos: 'parksales_usuarios_permisos',
 };
 
 function localSeedIfEmpty() {
@@ -1152,6 +1153,131 @@ const DB = {
       localStorage.setItem(handledKey, requestedAt);
     }
     return isPending;
+  },
+
+  // -------------------------------------------------------- PERMISOS USUARIOS (LOCALIZADOR)
+  async getPermisoLocalizador(email) {
+    if (!email) return false;
+    const cleanEmail = String(email).trim().toLowerCase();
+
+    // Comprobar Supabase si está disponible
+    if (supabaseClient) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('usuarios_permisos')
+          .select('ver_localizador')
+          .eq('email', cleanEmail)
+          .maybeSingle();
+
+        if (!error && data) {
+          const val = Boolean(data.ver_localizador);
+          // Sincronizar local
+          try {
+            const perms = JSON.parse(localStorage.getItem(LOCAL_KEYS.usuarios_permisos) || '{}');
+            perms[cleanEmail] = val;
+            localStorage.setItem(LOCAL_KEYS.usuarios_permisos, JSON.stringify(perms));
+          } catch (e) {}
+          return val;
+        }
+
+        // Si no existe fila para este correo, registrar con false
+        if (!error && !data) {
+          await this.registrarUsuarioPermiso(cleanEmail, false);
+        }
+      } catch (err) {
+        console.warn('[ParkSales] No se pudo consultar usuarios_permisos en Supabase:', err);
+      }
+    }
+
+    // Fallback a localStorage
+    try {
+      const perms = JSON.parse(localStorage.getItem(LOCAL_KEYS.usuarios_permisos) || '{}');
+      return Boolean(perms[cleanEmail]);
+    } catch (e) {
+      return false;
+    }
+  },
+
+  async getAllPermisosUsuarios() {
+    let mapa = {};
+    try {
+      mapa = JSON.parse(localStorage.getItem(LOCAL_KEYS.usuarios_permisos) || '{}');
+    } catch (e) {
+      mapa = {};
+    }
+
+    if (supabaseClient) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('usuarios_permisos')
+          .select('*')
+          .order('email', { ascending: true });
+
+        if (!error && Array.isArray(data)) {
+          data.forEach((row) => {
+            if (row.email) {
+              mapa[row.email.trim().toLowerCase()] = Boolean(row.ver_localizador);
+            }
+          });
+          try {
+            localStorage.setItem(LOCAL_KEYS.usuarios_permisos, JSON.stringify(mapa));
+          } catch (e) {}
+        }
+      } catch (err) {
+        console.warn('[ParkSales] Error al obtener usuarios_permisos de Supabase:', err);
+      }
+    }
+
+    return mapa;
+  },
+
+  async setPermisoLocalizador(email, verLocalizador) {
+    if (!email) return false;
+    const cleanEmail = String(email).trim().toLowerCase();
+    const val = Boolean(verLocalizador);
+
+    // Guardar en local primero para reactividad instantánea
+    try {
+      const perms = JSON.parse(localStorage.getItem(LOCAL_KEYS.usuarios_permisos) || '{}');
+      perms[cleanEmail] = val;
+      localStorage.setItem(LOCAL_KEYS.usuarios_permisos, JSON.stringify(perms));
+    } catch (e) {}
+
+    // Guardar en Supabase
+    if (supabaseClient) {
+      try {
+        const { error } = await supabaseClient
+          .from('usuarios_permisos')
+          .upsert({ email: cleanEmail, ver_localizador: val, updated_at: new Date().toISOString() });
+        if (error) console.warn('[ParkSales] Error al guardar en Supabase usuarios_permisos:', error);
+      } catch (err) {
+        console.error('[ParkSales] Error en setPermisoLocalizador Supabase:', err);
+      }
+    }
+    return true;
+  },
+
+  async registrarUsuarioPermiso(email, verLocalizador = false) {
+    if (!email) return;
+    const cleanEmail = String(email).trim().toLowerCase();
+
+    try {
+      const perms = JSON.parse(localStorage.getItem(LOCAL_KEYS.usuarios_permisos) || '{}');
+      if (perms[cleanEmail] === undefined) {
+        perms[cleanEmail] = Boolean(verLocalizador);
+        localStorage.setItem(LOCAL_KEYS.usuarios_permisos, JSON.stringify(perms));
+      }
+    } catch (e) {}
+
+    if (supabaseClient) {
+      try {
+        await supabaseClient
+          .from('usuarios_permisos')
+          .insert({ email: cleanEmail, ver_localizador: Boolean(verLocalizador) });
+      } catch (e) {
+        // Ignorar si ya existe
+      }
+    }
   },
 };
 

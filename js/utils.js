@@ -366,7 +366,12 @@ const STATE = {
   contactos: [],
   objetivosMensuales: [],
   currentUser: null,
+  verLocalizador: false,
 };
+
+function canVerLocalizador() {
+  return Boolean(STATE.verLocalizador);
+}
 
 function parqueNombre(parqueId) {
   if (!parqueId) return '—';

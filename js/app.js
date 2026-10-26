@@ -147,11 +147,18 @@ async function bootApp(user) {
     if (typeof migrateLegacyMonthlyGoal === 'function') {
       await migrateLegacyMonthlyGoal();
     }
+    // Cargar permisos específicos de usuario (ej: visibilidad de localizadores)
+    const userEmail = user?.email || '';
+    if (typeof DB.getPermisoLocalizador === 'function' && userEmail) {
+      STATE.verLocalizador = await DB.getPermisoLocalizador(userEmail);
+    } else {
+      STATE.verLocalizador = false;
+    }
   } catch (err) {
     toast('Error al cargar datos: ' + err.message, 'error', 6000);
   }
 
-
+  applyLocalizadorVisibility();
   setUserChip(user);
 
   // Cada paso de inicializaciÃ³n va protegido: un fallo puntual (p. ej. que
@@ -396,6 +403,45 @@ function abrirCopilot() {
   // Si el navegador bloqueÃ³ el popup, abrir en pestaÃ±a nueva como fallback
   if (!popup || popup.closed || typeof popup.closed === 'undefined') {
     window.open(url, '_blank', 'noopener,noreferrer');
-    toast('ðŸ’¡ Activa las ventanas emergentes para una mejor experiencia con Copilot.', 'info', 4000);
+    toast('💡 Activa las ventanas emergentes para una mejor experiencia con Copilot.', 'info', 4000);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* CONTROL DE VISIBILIDAD DE LOCALIZADORES POR PERMISO DE USUARIO             */
+/* -------------------------------------------------------------------------- */
+
+function applyLocalizadorVisibility() {
+  const visible = typeof canVerLocalizador === 'function' && canVerLocalizador();
+
+  // 1. Campo en el formulario de Registrar Venta
+  const locInput = document.getElementById('v-localizador');
+  if (locInput) {
+    const locField = locInput.closest('.form-field');
+    if (locField) locField.style.display = visible ? '' : 'none';
+  }
+
+  // 2. Fila en la vista previa del ticket lateral
+  const tpLoc = document.getElementById('tp-localizador');
+  if (tpLoc) {
+    const tpRow = tpLoc.closest('.tp-row');
+    if (tpRow) tpRow.style.display = visible ? '' : 'none';
+  }
+
+  // 3. Columna del encabezado en la tabla de historial
+  const histThLoc = document.querySelector('#historial-table th[data-sort="localizador"]');
+  if (histThLoc) {
+    histThLoc.style.display = visible ? '' : 'none';
+  }
+
+  // 4. Placeholder del buscador de historial
+  const histSearch = document.getElementById('hist-search');
+  if (histSearch) {
+    histSearch.placeholder = visible ? 'Buscar parque, localizador…' : 'Buscar parque, importe…';
+  }
+
+  // 5. Re-renderizar historial si ya está listo
+  if (typeof renderHistorial === 'function' && typeof APP_BOOTED !== 'undefined' && APP_BOOTED) {
+    renderHistorial();
   }
 }

@@ -83,7 +83,7 @@ const CONFIG_ACCESO_PC = {
     // Si ya está autorizado en esta sesión por clave maestra, permitir
     try {
       if (localStorage.getItem(STORAGE_KEY_AUTH) === 'autorizado_maestro') return true;
-    } catch(e){}
+    } catch (e) { }
 
     if (CONFIG_ACCESO_PC.PERMITIR_LOCALHOST) {
       const host = window.location.hostname;

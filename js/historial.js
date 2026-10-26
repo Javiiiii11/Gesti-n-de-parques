@@ -226,12 +226,12 @@ function getFilteredSortedVentas() {
   }));
 
   if (HIST_STATE.search) {
-    const q = HIST_STATE.search;
+    const canLoc = typeof canVerLocalizador === 'function' && canVerLocalizador();
     rows = rows.filter((v) =>
       v.parqueNombreCache.toLowerCase().includes(q) ||
       v.bonoNombreCache.toLowerCase().includes(q) ||
       (v.cliente_nombre || '').toLowerCase().includes(q) ||
-      (v.localizador || '').toLowerCase().includes(q));
+      (canLoc && (v.localizador || '').toLowerCase().includes(q)));
   }
   if (HIST_STATE.tipoVenta) rows = rows.filter((v) => v.tipo === HIST_STATE.tipoVenta);
   if (HIST_STATE.via) rows = rows.filter((v) => (v.via || 'llamada') === HIST_STATE.via);
@@ -291,8 +291,12 @@ function renderHistorial() {
   });
 
   const tbody = document.getElementById('historial-tbody');
+  const showLoc = typeof canVerLocalizador === 'function' && canVerLocalizador();
+  const histThLoc = document.querySelector('#historial-table th[data-sort="localizador"]');
+  if (histThLoc) histThLoc.style.display = showLoc ? '' : 'none';
+
   if (!pageRows.length) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">
+    tbody.innerHTML = `<tr><td colspan="${showLoc ? 9 : 8}"><div class="empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       No se han encontrado ventas con estos filtros.</div></td></tr>`;
   } else {
@@ -308,6 +312,7 @@ function renderHistorial() {
       const estadoNorm = v.estadoNorm || 'completado';
       const badgeInfo = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(estadoNorm) : { label: estadoNorm, colorBg: 'rgba(0,138,0,0.18)', textColor: '#00E676', colorBorder: '#008A00' };
       const isSelwo = typeof isSelwoVenta === 'function' ? isSelwoVenta(v) : (v.selwo_tipo || (v.parqueNombreCache && v.parqueNombreCache.toLowerCase().includes('hotel selwo')));
+      const locCellHtml = showLoc ? `<td>${escapeHtml(loc)}</td>` : '';
 
       return `
         <tr>
@@ -319,7 +324,7 @@ function renderHistorial() {
             ${escapeHtml(detalle)}
             ${v.selwo_tipo === 'flexible' && v.fecha_visita ? `<div style="font-size:11px; margin-top:2px; color:#00C6FF; font-weight:600; display:flex; align-items:center; gap:3px;"><span>🗓️</span> Visita: ${typeof fmtDateShort === 'function' ? fmtDateShort(v.fecha_visita) : v.fecha_visita.split('T')[0]}</div>` : ''}
           </td>
-          <td>${escapeHtml(loc)}</td>
+          ${locCellHtml}
           <td>
             <div class="hist-quick-status-wrap">
               <select class="hist-quick-status-select" data-venta-id="${v.id}" title="Cambiar estado rápidamente" style="background:${badgeInfo.colorBg}; color:${badgeInfo.textColor}; border: 1px solid ${badgeInfo.colorBorder};">
@@ -510,7 +515,7 @@ function openEditVenta(id) {
           <label for="ev-importe">Importe total (€)</label>
           <input type="number" id="ev-importe" min="0" step="0.01" value="${v.importe_total}">
         </div>
-        <div class="form-field">
+        <div class="form-field" id="ev-localizador-field" style="${(typeof canVerLocalizador === 'function' && canVerLocalizador()) ? '' : 'display:none;'}">
           <label for="ev-localizador">Localizador</label>
           <input type="text" id="ev-localizador" value="${escapeHtml(v.localizador || contacto.localizador || '')}" placeholder="Sin localizador">
         </div>
@@ -638,7 +643,10 @@ function openEditVenta(id) {
   document.getElementById('ev-save').addEventListener('click', async () => {
     const nextTipo = tipo;
     const importeTotal = Number(document.getElementById('ev-importe').value);
-    const localizador = document.getElementById('ev-localizador')?.value.trim() || null;
+    const canLoc = typeof canVerLocalizador === 'function' && canVerLocalizador();
+    const localizador = canLoc
+      ? (document.getElementById('ev-localizador')?.value.trim() || null)
+      : (v.localizador || null);
     const via = document.getElementById('ev-via').value;
     const nextEstado = document.getElementById('ev-estado')?.value || 'completado';
     const anotaciones = nextTipo === 'entrada'

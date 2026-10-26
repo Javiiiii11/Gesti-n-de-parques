@@ -1729,6 +1729,43 @@ function openProfileSettings(initialMonthKey = null) {
             Cambiar contraseña
           </button>
         </section>
+
+        <!-- SECCIÓN DE ADMINISTRACIÓN DE PERMISOS (LOCALIZADORES) -->
+        <section class="profile-section profile-section--admin" style="margin-top:20px;">
+          <span class="profile-section-badge" style="background:rgba(245,166,35,0.15); color:var(--accent); border-color:rgba(245,166,35,0.3);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Administración de Permisos (Localizadores)
+          </span>
+          <p class="profile-section-desc">Gestiona qué usuarios pueden ver y usar el campo localizador. Para los no autorizados se ocultará en toda la interfaz, pero se seguirá guardando por detrás.</p>
+          
+          <div id="admin-perms-lock" style="padding:16px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-m); display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-size:22px;">🔒</span>
+              <div>
+                <div style="font-weight:600; color:var(--text-primary); font-size:14px;">Panel restringido</div>
+                <div style="font-size:12px; color:var(--text-muted);">Introduce la contraseña de administrador para gestionar los usuarios</div>
+              </div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input type="password" id="admin-perms-pass" placeholder="Contraseña admin" style="padding:8px 12px; border-radius:var(--radius-s); background:var(--bg-main); border:1px solid var(--border); color:var(--text-primary); font-size:13px; width:160px;">
+              <button type="button" class="btn btn-primary btn-sm" id="admin-perms-unlock-btn" style="padding:8px 14px;">Desbloquear</button>
+            </div>
+          </div>
+          <div id="admin-perms-error" style="color:var(--danger, #ff4757); font-size:12px; margin-top:6px; display:none;"></div>
+
+          <div id="admin-perms-panel" style="display:none; margin-top:14px; padding:16px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-m);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+              <div style="font-size:13px; font-weight:600; color:var(--text-primary);">Usuarios registrados y visibilidad de localizador:</div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <input type="email" id="admin-add-user-email" placeholder="añadir.usuario@correo.com" style="padding:6px 10px; border-radius:var(--radius-s); background:var(--bg-main); border:1px solid var(--border); color:var(--text-primary); font-size:12px; width:210px;">
+                <button type="button" class="btn btn-secondary btn-sm" id="admin-add-user-btn" style="padding:6px 12px; font-size:12px;">+ Añadir</button>
+              </div>
+            </div>
+            <div id="admin-perms-users-list" style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto; padding-right:4px;">
+              <div style="color:var(--text-muted); font-size:12px; font-style:italic;">Cargando usuarios...</div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   `;
@@ -1878,6 +1915,142 @@ function openProfileSettings(initialMonthKey = null) {
       toast('🌍 Modo fuera de oficina activado. Bloqueo 404 desactivado.', 'success');
     } else {
       toast('🏠 Modo en la oficina activado. Bloqueo 404 reactivado.', 'info');
+    }
+  });
+
+  // Manejar Panel de Administración de Permisos de Localizadores
+  const adminLock = document.getElementById('admin-perms-lock');
+  const adminPanel = document.getElementById('admin-perms-panel');
+  const adminPassInput = document.getElementById('admin-perms-pass');
+  const adminUnlockBtn = document.getElementById('admin-perms-unlock-btn');
+  const adminError = document.getElementById('admin-perms-error');
+  const adminUsersList = document.getElementById('admin-perms-users-list');
+  const adminAddEmail = document.getElementById('admin-add-user-email');
+  const adminAddBtn = document.getElementById('admin-add-user-btn');
+
+  const MASTER_ADMIN_PASS = 'admin123';
+
+  async function loadAndRenderAdminUsers() {
+    if (!adminUsersList) return;
+    adminUsersList.innerHTML = '<div style="color:var(--text-muted); font-size:12px; font-style:italic;">Cargando lista de permisos...</div>';
+    try {
+      const permsMap = (typeof DB.getAllPermisosUsuarios === 'function')
+        ? await DB.getAllPermisosUsuarios()
+        : {};
+
+      // Si el usuario actual no está en la lista, asegurar que figure
+      if (rawUserEmail && permsMap[rawUserEmail] === undefined) {
+        permsMap[rawUserEmail] = Boolean(STATE.verLocalizador);
+      }
+
+      const emails = Object.keys(permsMap).sort();
+      if (!emails.length) {
+        adminUsersList.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding:10px;">No hay usuarios registrados aún. Puedes añadir correos arriba.</div>';
+        return;
+      }
+
+      adminUsersList.innerHTML = emails.map((email) => {
+        const isCurrent = email === rawUserEmail;
+        const isChecked = Boolean(permsMap[email]);
+        return `
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:var(--bg-main); border:1px solid var(--border); border-radius:var(--radius-s); gap:12px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:14px;">👤</span>
+              <span style="font-size:13px; font-weight:500; color:var(--text-primary); word-break:break-all;">${escapeHtml(email)}</span>
+              ${isCurrent ? '<span style="font-size:10px; font-weight:700; padding:2px 6px; background:rgba(245,166,35,0.2); color:var(--accent); border-radius:4px;">Tú</span>' : ''}
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-size:11px; font-weight:600; color:${isChecked ? '#00E676' : 'var(--text-muted)'};">${isChecked ? '👁️ Localizador activado' : 'Oculto'}</span>
+              <label class="switch-pill" style="margin:0;">
+                <input type="checkbox" class="admin-perm-toggle" data-email="${escapeHtml(email)}" ${isChecked ? 'checked' : ''}>
+                <span class="switch-pill-slider"></span>
+              </label>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Wire checkboxes
+      adminUsersList.querySelectorAll('.admin-perm-toggle').forEach((chk) => {
+        chk.addEventListener('change', async () => {
+          const targetEmail = chk.dataset.email;
+          const nextVal = chk.checked;
+          chk.disabled = true;
+          try {
+            if (typeof DB.setPermisoLocalizador === 'function') {
+              await DB.setPermisoLocalizador(targetEmail, nextVal);
+            }
+            if (targetEmail === rawUserEmail) {
+              STATE.verLocalizador = nextVal;
+              if (typeof applyLocalizadorVisibility === 'function') {
+                applyLocalizadorVisibility();
+              }
+            }
+            toast(`Permiso actualizado para ${targetEmail}: ${nextVal ? 'Localizador activado' : 'Localizador oculto'}`, 'success', 3000);
+            loadAndRenderAdminUsers();
+          } catch (e) {
+            toast('Error al actualizar permiso: ' + e.message, 'error');
+            chk.checked = !nextVal;
+          } finally {
+            chk.disabled = false;
+          }
+        });
+      });
+    } catch (err) {
+      adminUsersList.innerHTML = `<div style="color:var(--danger, #ff4757); font-size:12px;">Error al cargar permisos: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  function unlockAdminPanel() {
+    if (adminLock) adminLock.style.display = 'none';
+    if (adminPanel) adminPanel.style.display = 'block';
+    if (adminError) adminError.style.display = 'none';
+    sessionStorage.setItem('parksales_admin_perms_unlocked', '1');
+    loadAndRenderAdminUsers();
+  }
+
+  if (sessionStorage.getItem('parksales_admin_perms_unlocked') === '1') {
+    unlockAdminPanel();
+  }
+
+  adminUnlockBtn?.addEventListener('click', () => {
+    const entered = (adminPassInput?.value || '').trim();
+    if (entered === MASTER_ADMIN_PASS) {
+      unlockAdminPanel();
+    } else {
+      if (adminError) {
+        adminError.textContent = '❌ Contraseña de administrador incorrecta.';
+        adminError.style.display = 'block';
+      }
+      adminPassInput?.focus();
+    }
+  });
+
+  adminPassInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      adminUnlockBtn?.click();
+    }
+  });
+
+  adminAddBtn?.addEventListener('click', async () => {
+    const newEmail = (adminAddEmail?.value || '').trim().toLowerCase();
+    if (!newEmail || !newEmail.includes('@')) {
+      toast('Introduce un correo electrónico válido', 'error');
+      adminAddEmail?.focus();
+      return;
+    }
+    adminAddBtn.disabled = true;
+    try {
+      if (typeof DB.setPermisoLocalizador === 'function') {
+        await DB.setPermisoLocalizador(newEmail, false);
+      }
+      if (adminAddEmail) adminAddEmail.value = '';
+      toast(`Usuario ${newEmail} añadido a la lista`, 'success');
+      loadAndRenderAdminUsers();
+    } catch (e) {
+      toast('Error al añadir usuario: ' + e.message, 'error');
+    } finally {
+      adminAddBtn.disabled = false;
     }
   });
 }

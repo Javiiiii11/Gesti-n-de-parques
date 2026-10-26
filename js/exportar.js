@@ -113,15 +113,19 @@ async function addAllPredefinedBonos() {
 /* --- HEADERS PARA EXPORTACIONES --- */
 
 function getVentasHeaders() {
-  return [
+  const showLoc = typeof canVerLocalizador === 'function' && canVerLocalizador();
+  const headers = [
     { label: 'Fecha', value: (v) => fmtDateTime(v.fecha) },
     { label: 'Tipo', value: (v) => v.tipo === 'entrada' ? 'Entradas' : 'Bonos' },
     { label: 'Detalle', value: (v) => v.tipo === 'entrada' ? parqueNombre(v.parque_id) : bonoNombre(v.bono_id) },
     { label: 'Vía', value: (v) => { const viaLabels = { llamada: '📞 Llamada', correo: '✉️ Correo', chat: '💬 Chat' }; return viaLabels[v.via] || v.via || '📞 Llamada'; } },
     { label: 'Cliente', value: (v) => v.cliente_nombre || '—' },
-    { label: 'Localizador', value: (v) => v.localizador || '—' },
-    { label: 'Importe total', value: (v) => v.importe_total },
   ];
+  if (showLoc) {
+    headers.push({ label: 'Localizador', value: (v) => v.localizador || '—' });
+  }
+  headers.push({ label: 'Importe total', value: (v) => v.importe_total });
+  return headers;
 }
 
 function getParquesHeaders() {
@@ -233,6 +237,15 @@ function xlBorder() {
 // Construye la hoja "Mis Ventas": informe estilizado de todo el historial
 function buildVentasReportSheet() {
   const hoy = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+  const showLoc = typeof canVerLocalizador === 'function' && canVerLocalizador();
+
+  const headers = showLoc
+    ? ['Fecha / Hora', 'Localizador', 'Detalle', 'Estado', 'Importe']
+    : ['Fecha / Hora', 'Detalle', 'Estado', 'Importe'];
+  const widths = showLoc ? [20, 18, 34, 22, 15] : [20, 34, 22, 15];
+  const moneyCol = showLoc ? 4 : 3;
+  const estadoCol = showLoc ? 3 : 2;
+  const centerCols = showLoc ? [3] : [2];
 
   // Ventas ordenadas de más reciente a más antigua
   const ventas = [...STATE.ventas].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
@@ -241,20 +254,28 @@ function buildVentasReportSheet() {
     const tipo = v.tipo || 'entrada';
     const estadoNorm = typeof normalizeEstadoVenta === 'function' ? normalizeEstadoVenta(v.estado) : (v.estado || 'completado');
     const info = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(estadoNorm) : { label: estadoNorm, icon: '' };
+    const cells = showLoc
+      ? [
+          fmtDateTime(v.fecha),
+          v.localizador || '—',
+          tipo === 'entrada' ? parqueNombre(v.parque_id) : bonoNombre(v.bono_id),
+          `${info.icon ? info.icon + ' ' : ''}${info.label}`,
+          Number(v.importe_total) || 0,
+        ]
+      : [
+          fmtDateTime(v.fecha),
+          tipo === 'entrada' ? parqueNombre(v.parque_id) : bonoNombre(v.bono_id),
+          `${info.icon ? info.icon + ' ' : ''}${info.label}`,
+          Number(v.importe_total) || 0,
+        ];
     return {
       estado: estadoNorm,
-      cells: [
-        fmtDateTime(v.fecha),
-        v.localizador || '—',
-        tipo === 'entrada' ? parqueNombre(v.parque_id) : bonoNombre(v.bono_id),
-        `${info.icon ? info.icon + ' ' : ''}${info.label}`,
-        Number(v.importe_total) || 0,
-      ],
+      cells,
     };
   });
 
-  const total = rows.reduce((s, r) => s + (r.cells[XL_MONEY_COL] || 0), 0);
-  const nCols = XL_HEADERS.length;
+  const total = rows.reduce((s, r) => s + (r.cells[moneyCol] || 0), 0);
+  const nCols = headers.length;
   const HEADER_R = 3;
   const DATA_R0 = 4;
   const DATA_R1 = DATA_R0 + rows.length - 1;
@@ -265,12 +286,13 @@ function buildVentasReportSheet() {
   const kpis = `Generado el ${hoy}   ·   ${rows.length} venta${rows.length !== 1 ? 's' : ''}   ·   Total ${fmtEUR(total)}   ·   Ticket medio ${fmtEUR(rows.length ? total / rows.length : 0)}`;
   const totalRow = new Array(nCols).fill('');
   totalRow[0] = 'TOTAL';
-  totalRow[XL_MONEY_COL] = { t: 'n', f: `SUM(E${DATA_R0 + 1}:E${DATA_R1 + 1})`, z: '#,##0.00 "€"' };
-  const aoa = [[title], [kpis], [], XL_HEADERS, ...rows.map((r) => r.cells), totalRow];
+  const moneyColLetter = showLoc ? 'E' : 'D';
+  totalRow[moneyCol] = { t: 'n', f: `SUM(${moneyColLetter}${DATA_R0 + 1}:${moneyColLetter}${DATA_R1 + 1})`, z: '#,##0.00 "€"' };
+  const aoa = [[title], [kpis], [], headers, ...rows.map((r) => r.cells), totalRow];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   const enc = (r, c) => XLSX.utils.encode_cell({ r, c });
 
-  ws['!cols'] = XL_WIDTHS.map((w) => ({ wch: w }));
+  ws['!cols'] = widths.map((w) => ({ wch: w }));
   ws['!rows'] = [{ hpt: 36 }, { hpt: 22 }, { hpt: 6 }, { hpt: 24 }];
   ws['!merges'] = [
     { s: { r: 0, c: 0 }, e: { r: 0, c: nCols - 1 } },
@@ -313,9 +335,9 @@ function buildVentasReportSheet() {
     for (let c = 0; c < nCols; c++) {
       const cell = ws[enc(rowIdx, c)];
       if (!cell) continue;
-      const isMoney = c === XL_MONEY_COL;
-      const isCenter = XL_CENTER_COLS.includes(c);
-      const isEstado = c === XL_ESTADO_COL;
+      const isMoney = c === moneyCol;
+      const isCenter = centerCols.includes(c);
+      const isEstado = c === estadoCol;
       const isPlaceholder = String(cell.v) === '—';
       let fill = i % 2 === 0 ? XL_STYLE.rowBase : XL_STYLE.rowAlt;
       let fontColor = isMoney ? XL_STYLE.money : (isPlaceholder ? XL_STYLE.muted : XL_STYLE.text);
@@ -598,14 +620,164 @@ function buildListasSheet() {
   return ws;
 }
 
-function exportPlantillaVentas() {
-  if (typeof XLSX === 'undefined') { toast('No se pudo cargar la librería de Excel. Comprueba tu conexión.', 'error', 4500); return; }
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, buildCapturaSheet(), 'Añadir ventas');
-  if (STATE.ventas.length) XLSX.utils.book_append_sheet(wb, buildVentasReportSheet(), 'Mis Ventas');
-  XLSX.utils.book_append_sheet(wb, buildListasSheet(), 'Listas');
-  XLSX.writeFile(wb, `parksales_plantilla_${new Date().toISOString().slice(0, 10)}.xlsx`);
-  toast('Plantilla automática descargada', 'success');
+/* ─── PLANTILLA PREMIUM (sin macros, con gráficos y tarjetas KPI) ─────────
+   Se sirve el archivo pre-generado con openpyxl (paleta navy + naranja,
+   4 hojas: Panel de Control, AÑADIR VENTAS, LISTAS, INSTRUCCIONES).
+   Si JSZip está disponible, se inyectan las ventas existentes en la hoja
+   «AÑADIR VENTAS» antes de la descarga. */
+
+async function exportPlantillaVentas() {
+  const PREMIUM_URL = 'assets/plantilla_ventas_premium.xlsx';
+  const filename = `ParkSales_Plantilla_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+  // Sin JSZip simplemente descargamos la plantilla tal cual
+  if (typeof JSZip === 'undefined') {
+    const a = document.createElement('a');
+    a.href = PREMIUM_URL;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    toast('✨ Plantilla premium descargada. ¡Ábrela en Excel!', 'success', 5000);
+    return;
+  }
+
+  // Con JSZip: cargar plantilla e inyectar ventas existentes
+  toast('Generando plantilla premium con tus ventas...', 'info', 3000);
+  try {
+    const resp = await fetch(PREMIUM_URL);
+    if (!resp.ok) throw new Error('No se pudo cargar la plantilla premium');
+    const buffer = await resp.arrayBuffer();
+    const zip = await JSZip.loadAsync(buffer);
+
+    // Buscar la hoja «AÑADIR VENTAS» (sheet2 en el xlsx generado por openpyxl)
+    // Leer workbook.xml para encontrar el sheetId correcto
+    const wbXml = await zip.file('xl/workbook.xml').async('string');
+    const sheetMatch = wbXml.match(/<sheet[^>]*name="ANADIR VENTAS"[^>]*r:id="([^"]+)"/);
+    const rId = sheetMatch ? sheetMatch[1] : null;
+
+    if (rId && STATE.ventas.length) {
+      const relsXml = await zip.file('xl/_rels/workbook.xml.rels').async('string');
+      const relMatch = relsXml.match(new RegExp(`Id="${rId}"[^>]*Target="([^"]+)"`));
+      const sheetPath = relMatch ? 'xl/' + relMatch[1] : null;
+
+      if (sheetPath && zip.file(sheetPath)) {
+        const sheetXml = await zip.file(sheetPath).async('string');
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(sheetXml, 'application/xml');
+        const NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+        const sheetData = Array.from(doc.getElementsByTagName('*')).find(el => el.localName === 'sheetData');
+
+        if (sheetData) {
+          const DATA_START = 6; // primera fila de datos en AÑADIR VENTAS
+          const ventas = [...STATE.ventas].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+          // Eliminar filas de datos existentes (>= DATA_START)
+          Array.from(sheetData.getElementsByTagName('*'))
+            .filter(el => el.localName === 'row')
+            .forEach(row => {
+              const r = parseInt(row.getAttribute('r'), 10);
+              if (r >= DATA_START) sheetData.removeChild(row);
+            });
+
+          const excelSerial = (iso) => {
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return null;
+            const local = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds());
+            return (local - Date.UTC(1899, 11, 30)) / 86400000;
+          };
+
+          const inlineCell = (rowNum, col, text) => {
+            const c = doc.createElementNS(NS, 'c');
+            c.setAttribute('r', `${col}${rowNum}`);
+            c.setAttribute('t', 'inlineStr');
+            const is = doc.createElementNS(NS, 'is');
+            const t = doc.createElementNS(NS, 't');
+            t.textContent = text == null ? '' : String(text);
+            is.appendChild(t);
+            c.appendChild(is);
+            return c;
+          };
+
+          ventas.forEach((v, idx) => {
+            const rowNum = DATA_START + idx;
+            const row = doc.createElementNS(NS, 'row');
+            row.setAttribute('r', String(rowNum));
+            row.setAttribute('spans', '1:7');
+
+            // B: Fecha
+            const cB = doc.createElementNS(NS, 'c');
+            cB.setAttribute('r', `B${rowNum}`);
+            cB.setAttribute('s', '1');
+            const serial = excelSerial(v.fecha);
+            if (serial !== null) {
+              const vB = doc.createElementNS(NS, 'v');
+              vB.textContent = String(serial);
+              cB.appendChild(vB);
+            }
+            row.appendChild(cB);
+
+            // C: Localizador
+            row.appendChild(inlineCell(rowNum, 'C', v.localizador || ''));
+
+            // D: Detalle
+            const tipo = v.tipo || 'entrada';
+            const detalle = tipo === 'entrada' ? parqueNombre(v.parque_id) : bonoNombre(v.bono_id);
+            row.appendChild(inlineCell(rowNum, 'D', detalle || ''));
+
+            // E: Estado
+            const estadoNorm = typeof normalizeEstadoVenta === 'function' ? normalizeEstadoVenta(v.estado) : (v.estado || '');
+            const info = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(estadoNorm) : { label: estadoNorm };
+            row.appendChild(inlineCell(rowNum, 'E', info.label || estadoNorm));
+
+            // G: Importe
+            const cG = doc.createElementNS(NS, 'c');
+            cG.setAttribute('r', `G${rowNum}`);
+            const vG = doc.createElementNS(NS, 'v');
+            vG.textContent = String(Number(v.importe_total) || 0);
+            cG.appendChild(vG);
+            row.appendChild(cG);
+
+            sheetData.appendChild(row);
+          });
+
+          const serializer = new XMLSerializer();
+          zip.file(sheetPath, serializer.serializeToString(doc));
+        }
+      }
+    }
+
+    // Forzar recálculo
+    let wbXmlNew = await zip.file('xl/workbook.xml').async('string');
+    if (!wbXmlNew.includes('fullCalcOnLoad')) {
+      wbXmlNew = wbXmlNew.includes('<calcPr')
+        ? wbXmlNew.replace(/<calcPr([^/>]*)\/?>/, '<calcPr$1 fullCalcOnLoad="1"/>')
+        : wbXmlNew.replace('</workbook>', '<calcPr fullCalcOnLoad="1"/></workbook>');
+      zip.file('xl/workbook.xml', wbXmlNew);
+    }
+
+    const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+
+    const n = STATE.ventas.length;
+    toast(`✨ Plantilla premium descargada${n ? ` con ${n} venta${n !== 1 ? 's' : ''} inyectada${n !== 1 ? 's' : ''}` : ''}`, 'success', 5000);
+  } catch (err) {
+    console.error('[ParkSales] Error al generar plantilla premium:', err);
+    // Fallback: descargar sin datos
+    const a = document.createElement('a');
+    a.href = PREMIUM_URL;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    toast('Plantilla premium descargada (sin datos inyectados)', 'info', 4000);
+  }
 }
 
 /* --- PLANTILLA CON MACROS VBA (.xlsm) ---

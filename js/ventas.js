@@ -96,6 +96,13 @@ function initVentaForm() {
     }
   });
 
+  // Visibilidad del campo de localizador según permisos
+  const locInput = document.getElementById('v-localizador');
+  if (locInput) {
+    const locField = locInput.closest('.form-field');
+    if (locField) locField.style.display = (typeof canVerLocalizador === 'function' && canVerLocalizador()) ? '' : 'none';
+  }
+
   // Cambio de parque: detectar si es Hotel Selwo
   const parqueSelect = document.getElementById('v-parque');
   if (parqueSelect) {
@@ -201,6 +208,10 @@ function updateTicketPreview() {
   const localizadorEl = document.getElementById('v-localizador');
   const locValue = localizadorEl ? localizadorEl.value.trim() : '';
   setPreviewText('tp-localizador', locValue || 'Sin localizador');
+  const tpLocRow = document.getElementById('tp-localizador')?.closest('.tp-row');
+  if (tpLocRow) {
+    tpLocRow.style.display = (typeof canVerLocalizador === 'function' && canVerLocalizador()) ? '' : 'none';
+  }
   setPreviewText('tp-total', typeof fmtEUR === 'function' ? fmtEUR(importe) : importe.toFixed(2) + ' €');
 
 
@@ -330,11 +341,16 @@ function wireQuickParse() {
     const badgeInfo = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(data.estado) : { label: data.estado || 'Completado', colorBg: '#34D39922', textColor: '#34D399', colorBorder: '#34D399', icon: '✅' };
 
     if (preview) {
+      const showLoc = typeof canVerLocalizador === 'function' && canVerLocalizador();
+      const locHtml = showLoc
+        ? `<div class="qp-row"><span>Localizador</span><strong>${escapeHtml(data.localizador) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>`
+        : '';
+
       preview.innerHTML = `
         <div class="qp-card">
           <div class="qp-head">📋 Vista previa de datos detectados</div>
           <div class="qp-row"><span>Estado</span><strong style="color:${badgeInfo.textColor}; font-weight:700;">${badgeInfo.icon} ${badgeInfo.label}</strong></div>
-          <div class="qp-row"><span>Localizador</span><strong>${escapeHtml(data.localizador) || '<i style="color:var(--text-muted)">—</i>'}</strong></div>
+          ${locHtml}
           <div class="qp-row"><span>Importe</span><strong>${typeof fmtEUR === 'function' ? fmtEUR(data.precio) : data.precio.toFixed(2) + ' €'}</strong></div>
         </div>
       `;
