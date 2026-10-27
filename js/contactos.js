@@ -15,10 +15,21 @@ let CONTACTOS_STATE = {
 function wireContactosView() {
   document.getElementById('btn-nuevo-contacto').addEventListener('click', () => openContactoForm());
 
-  document.getElementById('contactos-search').addEventListener('input', debounce((e) => {
-    CONTACTOS_STATE.search = e.target.value.trim().toLowerCase();
-    renderContactos();
-  }, 300));
+  const contactosSearchEl = document.getElementById('contactos-search');
+  if (contactosSearchEl) {
+    contactosSearchEl.addEventListener('input', debounce((e) => {
+      CONTACTOS_STATE.search = e.target.value.trim().toLowerCase();
+      renderContactos();
+    }, 250));
+
+    contactosSearchEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        CONTACTOS_STATE.search = e.target.value.trim().toLowerCase();
+        renderContactos();
+      }
+    });
+  }
 
   document.getElementById('contactos-filtro-tipo').addEventListener('change', (e) => {
     CONTACTOS_STATE.tipo = e.target.value;
@@ -256,18 +267,28 @@ function renderContactos() {
 
   let filtrados = STATE.contactos.filter((c) => {
     // Por defecto, ocultar los apuntes ya pagados de la lista general
-    // (ya que se consideran ventas y van al Historial), a menos que se filtre por ellos.
-    if (!CONTACTOS_STATE.estado && c.estado_pago === 'pagado') return false;
+    // (ya que se consideran ventas y van al Historial), a menos que se filtre por ellos o se use el buscador.
+    if (!CONTACTOS_STATE.estado && !CONTACTOS_STATE.search && c.estado_pago === 'pagado') return false;
 
     if (CONTACTOS_STATE.tipo && c.tipo !== CONTACTOS_STATE.tipo) return false;
     if (CONTACTOS_STATE.via && (c.via || 'llamada') !== CONTACTOS_STATE.via) return false;
     if (CONTACTOS_STATE.estado && c.estado_pago !== CONTACTOS_STATE.estado) return false;
     if (CONTACTOS_STATE.search) {
-      const s = CONTACTOS_STATE.search;
-      const matchName = (c.nombre_apellidos || '').toLowerCase().includes(s);
-      const matchDni = (c.dni || '').toLowerCase().includes(s);
-      const matchLoc = (c.localizador || '').toLowerCase().includes(s);
-      return matchName || matchDni || matchLoc;
+      const qNorm = (CONTACTOS_STATE.search || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+      const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+      const matchName = norm(c.nombre_apellidos).includes(qNorm);
+      const matchDni = norm(c.dni).includes(qNorm);
+      const matchLoc = norm(c.localizador).includes(qNorm);
+      const matchEmail = norm(c.correo || c.email).includes(qNorm);
+      const matchTel = norm(c.telefono).includes(qNorm);
+      const matchNotas = norm(c.anotaciones).includes(qNorm);
+      const matchExtras = norm(c.extras).includes(qNorm);
+      const matchParque = norm(typeof parqueNombre === 'function' ? parqueNombre(c.parque_id) : '').includes(qNorm);
+      const matchBono = norm(typeof bonoNombre === 'function' ? bonoNombre(c.bono_id) : '').includes(qNorm);
+      const matchImporte = norm(c.importe_total).includes(qNorm);
+
+      return matchName || matchDni || matchLoc || matchEmail || matchTel || matchNotas || matchExtras || matchParque || matchBono || matchImporte;
     }
     return true;
   });

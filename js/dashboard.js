@@ -59,7 +59,7 @@ function getEffectiveWorkdaysCount(monthKey) {
   if (custom !== null) return custom;
   const [year, month] = String(monthKey || '').split('-').map(Number);
   if (!year || !month) return 22;
-  
+
   try {
     if (typeof currentPerson === 'function' && typeof upcomingWorkDays === 'function') {
       const p = currentPerson();
@@ -68,11 +68,11 @@ function getEffectiveWorkdaysCount(monthKey) {
         const days = end.getDate();
         let count = 0;
         let hasAny = false;
-        
+
         for (let d = 1; d <= days; d++) {
           const iso = new Date(year, month - 1, d, 12, 0, 0).toISOString().split('T')[0];
           const code = typeof codeOn === 'function' ? codeOn(p, iso) : null;
-          
+
           if (code) {
             hasAny = true; // Encontramos algún turno (L, V, TM1...) en este mes
             const meta = typeof shiftMeta === 'function' ? shiftMeta(code, iso) : null;
@@ -81,12 +81,12 @@ function getEffectiveWorkdaysCount(monthKey) {
             }
           }
         }
-        
+
         if (hasAny) return count;
       }
     }
-  } catch(e) {}
-  
+  } catch (e) { }
+
   return countWorkdaysInMonth(year, month - 1);
 }
 
@@ -386,7 +386,7 @@ function renderDashboard() {
   // Meta y métricas calculadas sobre el mes del periodo seleccionado (solo efectivas)
   const mesReferencia = STATE.ventas.filter((venta) => isMismoMes(venta.fecha, referenceDate) && (typeof isVentaEfectiva === 'function' ? isVentaEfectiva(venta) : true));
   const currentMonthSales = sum(mesReferencia, 'importe_total');
-  
+
   const MILESTONES_PCT = [100, 120, 140, 160];
   let activeTarget = goal;
   if (goal > 0) {
@@ -1734,9 +1734,9 @@ function openProfileSettings(initialMonthKey = null) {
         <section class="profile-section profile-section--admin" style="margin-top:20px;">
           <span class="profile-section-badge" style="background:rgba(245,166,35,0.15); color:var(--accent); border-color:rgba(245,166,35,0.3);">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Administración de Permisos (Localizadores)
+            Administración de Permisos
           </span>
-          <p class="profile-section-desc">Gestiona qué usuarios pueden ver y usar el campo localizador. Para los no autorizados se ocultará en toda la interfaz, pero se seguirá guardando por detrás.</p>
+          <p class="profile-section-desc">Gestiona permisos de usuarios.</p>
           
           <div id="admin-perms-lock" style="padding:16px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-m); display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
             <div style="display:flex; align-items:center; gap:12px;">
@@ -2227,7 +2227,7 @@ function openQuickGoalModal(monthKey = null) {
 
 async function saveQuickGoal(monthKey) {
   const amountEl = document.getElementById('quick-goal-amount');
-  
+
   if (!amountEl) return;
   const amount = Number(amountEl.value);
 
@@ -2279,7 +2279,7 @@ let _fireIntensity = 1; // 0..1 (1 = efecto completo, a partir de 2000 €)
 function startFireParticles(wrapEl, intensity = 1) {
   _fireIntensity = Math.max(0.05, Math.min(1, intensity));
   if (_fireInterval) return;
-  
+
   const canvas = wrapEl.querySelector('canvas');
   if (!canvas) return;
   _fireCanvas = canvas;
@@ -2288,14 +2288,14 @@ function startFireParticles(wrapEl, intensity = 1) {
     if (!_fireCanvas || !document.body.contains(_fireCanvas)) { stopFireParticles(); return; }
 
     const rect = _fireCanvas.getBoundingClientRect();
-    
+
     // If canvas is not visible (other page active), skip spawning
     if (rect.width === 0 || rect.height === 0 || rect.top > window.innerHeight || rect.bottom < 0) return;
-    
+
     // Center of the canvas on screen
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
-    
+
     // Ring radius — Chart.js doughnut uses ~78% of half the canvas
     const ringRadius = Math.min(rect.width, rect.height) / 2 * 0.78;
 
@@ -2310,7 +2310,7 @@ function startFireParticles(wrapEl, intensity = 1) {
     // Angle along the filled arc (starts at top = -90°)
     const startAngle = -Math.PI / 2;
     const endAngle = startAngle + arcPct * Math.PI * 2;
-    
+
     // 60% of particles concentrate near the TIP (end of the arc)
     // 40% spread along the full arc for ambiance
     let angle;

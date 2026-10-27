@@ -43,6 +43,7 @@
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 34 34%22><defs><linearGradient id=%22l%22 x1=%220%22 y1=%220%22 x2=%2234%22 y2=%2234%22><stop offset=%220%%22 stop-color=%22%23FF9A44%22/><stop offset=%22100%%22 stop-color=%22%23FC6076%22/></linearGradient></defs><rect width=%2234%22 height=%2234%22 rx=%2210%22 fill=%22url(%23l)%22/><circle cx=%2217%22 cy=%2217%22 r=%227%22 stroke=%22white%22 stroke-width=%222%22 stroke-dasharray=%223 3%22/><circle cx=%2217%22 cy=%2217%22 r=%223%22 fill=%22white%22/><path d=%22M17 17 L22 27 M17 17 L12 27%22 stroke=%22white%22 stroke-width=%222%22 stroke-linecap=%22round%22/></svg>">
   <link rel="stylesheet" href="css/style.css?v=27">
+  <link rel="stylesheet" href="css/novedades.css?v=1">
   <!-- Temáticas estacionales (Halloween, Navidad, Black Friday...) -->
   <link rel="stylesheet" href="Tematicas/Halloween/halloween.css?v=1">
   <link rel="stylesheet" href="Tematicas/Navidad/navidad.css?v=1">
@@ -295,6 +296,15 @@
           Exportar / Importar
         </div>
       </nav>
+
+      <!-- Chip discreto de novedades y versión al pie de la barra lateral -->
+      <div class="sidebar-version-chip" id="sidebar-version-btn" title="Ver novedades y registro de versiones">
+        <div class="sidebar-version-left">
+          <span class="sparkle">✨</span>
+          <span>Novedades</span>
+        </div>
+        <span class="sidebar-version-tag">v2.5</span>
+      </div>
     </aside>
 
     <div class="main-col">
@@ -396,8 +406,18 @@
           </svg>
         </button>
 
-        <button class="btn-fab-quick" id="quick-add-btn" title="Registrar venta rápida" onclick="switchView('venta-rapida')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+        <!-- <button class="icon-btn icon-btn--changelog" id="btn-open-novedades" title="Novedades y Registro de Versiones">
+          <span class="changelog-badge-dot" id="changelog-badge-dot" style="display:none;"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path
+              d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+          </svg>
+        </button> -->
+
+        <button class="btn-fab-quick" id="quick-add-btn" title="Registrar venta rápida"
+          onclick="switchView('venta-rapida')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
             <path d="M12 5v14M5 12h14" />
           </svg>
           <span>Nueva venta</span>
@@ -436,11 +456,18 @@
               Mi cuadrante
             </button>
             <button class="tbm-item" id="tbm-parques-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l7-14 4 8 3-5 4 11H3z" /></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M3 21l7-14 4 8 3-5 4 11H3z" />
+              </svg>
               Parques / Bonos
             </button>
             <button class="tbm-item" id="tbm-estadisticas-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18" /><path d="M7 15l4-5 3 3 5-7" /></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M3 3v18h18" />
+                <path d="M7 15l4-5 3 3 5-7" />
+              </svg>
               Estadísticas
             </button>
             <div class="tbm-separator"><span>BACKUP</span></div>
@@ -465,12 +492,13 @@
             <button class="tbm-item" id="tbm-cloud-recovery-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                 stroke-linejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
               Recuperación de Cookies (Admin)
             </button>
             <div class="tbm-separator"><span>CUENTA</span></div>
-            <div class="tbm-item" style="cursor: default; opacity: 0.85; font-size: 11.5px; display: flex; align-items: center; justify-content: space-between; padding: 8px 12px;">
+            <div class="tbm-item"
+              style="cursor: default; opacity: 0.85; font-size: 11.5px; display: flex; align-items: center; justify-content: space-between; padding: 8px 12px;">
               <span>💻 Este PC:</span>
               <span id="user-menu-pc-id" style="font-family: monospace; font-weight: 600; color: #FF9A44;">—</span>
             </div>
@@ -551,7 +579,8 @@
               <div class="panel-head">
                 <div>
                   <h3 id="dashboard-estado-title">Distribución por Estado</h3>
-                  <p class="chart-sub" id="dashboard-estado-sub">Desglose de estados y acceso directo a ventas en el filtro.</p>
+                  <p class="chart-sub" id="dashboard-estado-sub">Desglose de estados y acceso directo a ventas en el
+                    filtro.</p>
                 </div>
               </div>
               <div class="goal-layout">
@@ -636,25 +665,30 @@
 
                 <!-- ⭐ Bloque especial Hotel Selwo (solo visible al seleccionar ese parque) -->
                 <div id="v-field-selwo" style="display:none;" class="form-field full">
-                  <div style="background:rgba(255,154,68,0.08);border:1px solid rgba(255,154,68,0.35);border-radius:var(--radius-m);padding:14px 16px;display:flex;flex-direction:column;gap:12px;">
+                  <div
+                    style="background:rgba(255,154,68,0.08);border:1px solid rgba(255,154,68,0.35);border-radius:var(--radius-m);padding:14px 16px;display:flex;flex-direction:column;gap:12px;">
                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
                       <span style="font-size:15px;">🏨</span>
                       <span style="font-size:13px;font-weight:700;color:#FF9A44;">Hotel Selwo — Tipo de entrada</span>
                     </div>
                     <div style="display:flex;gap:20px;flex-wrap:wrap;">
                       <label style="flex-direction:row;align-items:center;gap:8px;cursor:pointer;">
-                        <input type="radio" name="v-selwo-tipo" id="v-selwo-noflex" value="no_flexible" checked style="width:auto;accent-color:#FF9A44;">
+                        <input type="radio" name="v-selwo-tipo" id="v-selwo-noflex" value="no_flexible" checked
+                          style="width:auto;accent-color:#FF9A44;">
                         <span style="font-size:13px;font-weight:600;">🔒 No Flexible</span>
                         <span style="font-size:11px;color:var(--text-muted);">Requiere fecha</span>
                       </label>
                       <label style="flex-direction:row;align-items:center;gap:8px;cursor:pointer;">
-                        <input type="radio" name="v-selwo-tipo" id="v-selwo-flex" value="flexible" style="width:auto;accent-color:#00C6FF;">
+                        <input type="radio" name="v-selwo-tipo" id="v-selwo-flex" value="flexible"
+                          style="width:auto;accent-color:#00C6FF;">
                         <span style="font-size:13px;font-weight:600;">🗓️ Flexible</span>
                         <span style="font-size:11px;color:var(--text-muted);">Requiere fecha</span>
                       </label>
                     </div>
                     <div id="v-selwo-fecha-row">
-                      <label for="v-selwo-fecha" style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">📅 Fecha de visita (la venta contará ese día)</label>
+                      <label for="v-selwo-fecha"
+                        style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">📅
+                        Fecha de visita (la venta contará ese día)</label>
                       <input type="date" id="v-selwo-fecha" style="max-width:200px;">
                     </div>
                   </div>
@@ -739,7 +773,9 @@
               </div>
 
               <div class="tp-row"><span>Localizador</span><b id="tp-localizador">Sin localizador</b></div>
-              <div class="tp-row" id="tp-row-estado"><span>Estado</span><b id="tp-estado"><span class="badge" style="background:rgba(0,138,0,0.18); color:#00E676; border:1px solid #008A00; font-weight:700; font-size:11px; padding:2px 8px; border-radius:999px;">✅ Completado</span></b></div>
+              <div class="tp-row" id="tp-row-estado"><span>Estado</span><b id="tp-estado"><span class="badge"
+                    style="background:rgba(0,138,0,0.18); color:#00E676; border:1px solid #008A00; font-weight:700; font-size:11px; padding:2px 8px; border-radius:999px;">✅
+                    Completado</span></b></div>
 
 
               <div class="tp-row" id="tp-row-notas" style="display:none"><span>Notas</span><b id="tp-notas"
@@ -1077,8 +1113,13 @@
                 <button class="btn btn-ghost btn-sm" type="button" id="cuad-next" aria-label="Mes siguiente">›</button>
                 <button class="btn btn-secondary btn-sm" type="button" id="cuad-today">Hoy</button>
               </div>
-              <button class="btn btn-ghost btn-sm" type="button" id="cuad-editor-toggle" title="Activa para editar turnos sin resubir CSV">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <button class="btn btn-ghost btn-sm" type="button" id="cuad-editor-toggle"
+                title="Activa para editar turnos sin resubir CSV">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  style="width:14px;height:14px;">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
                 <span id="cuad-editor-label">Modo editor: OFF</span>
               </button>
             </div>
@@ -1180,7 +1221,8 @@
                       <input type="tel" id="ll-telefono" placeholder="Ej. 612 345 678" required>
                     </div>
                     <div class="form-field">
-                      <label for="ll-cliente">👤 Cliente <span style="color:var(--text-muted); font-size:12px; font-weight:400;">(opcional)</span></label>
+                      <label for="ll-cliente">👤 Cliente <span
+                          style="color:var(--text-muted); font-size:12px; font-weight:400;">(opcional)</span></label>
                       <input type="text" id="ll-cliente" placeholder="Nombre del cliente">
                     </div>
                     <div class="form-field">
@@ -1332,14 +1374,16 @@
           </div>
 
           <!-- Sección de Hotel y Bonos (Dividida al 50%) -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 32px;">
+          <div
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 32px;">
             <!-- Tarjeta Ventas Hotel (Izquierda) -->
             <div class="card card-pad promos-card" style="margin-bottom: 0;">
               <div class="promos-card-header">
                 <span class="promos-icon">🏨</span>
                 <div>
                   <h3 class="section-title" style="margin:0;">Ventas Hotel</h3>
-                  <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Accede al archivo Excel de control de reservas de hotel.</p>
+                  <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Accede al archivo Excel de control
+                    de reservas de hotel.</p>
                 </div>
               </div>
               <div class="promos-card-actions">
@@ -1369,7 +1413,8 @@
                 <span class="promos-icon">🎟️</span>
                 <div>
                   <h3 class="section-title" style="margin:0;">Bono Parques</h3>
-                  <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Consulta la información y el área privada de todos los bonos.</p>
+                  <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Consulta la información y el área
+                    privada de todos los bonos.</p>
                 </div>
               </div>
               <div class="promos-card-actions" style="gap: 8px;">
@@ -1421,32 +1466,38 @@
                 <span class="pill-label">Todas</span>
                 <span class="pill-badge" id="pill-count-all">0</span>
               </button>
-              <button type="button" class="hist-status-pill" data-status="completado" style="--pill-color:#008A00; --pill-text:#00E676;">
+              <button type="button" class="hist-status-pill" data-status="completado"
+                style="--pill-color:#008A00; --pill-text:#00E676;">
                 <span class="pill-dot" style="background:#008A00;"></span>
                 <span class="pill-label">Completadas</span>
                 <span class="pill-badge" id="pill-count-completado">0</span>
               </button>
-              <button type="button" class="hist-status-pill" data-status="enviado" style="--pill-color:#EAB308; --pill-text:#FDE047;">
+              <button type="button" class="hist-status-pill" data-status="enviado"
+                style="--pill-color:#EAB308; --pill-text:#FDE047;">
                 <span class="pill-dot" style="background:#EAB308;"></span>
                 <span class="pill-label">Enviadas</span>
                 <span class="pill-badge" id="pill-count-enviado">0</span>
               </button>
-              <button type="button" class="hist-status-pill" data-status="pendiente" style="--pill-color:#F97316; --pill-text:#FB923C;">
+              <button type="button" class="hist-status-pill" data-status="pendiente"
+                style="--pill-color:#F97316; --pill-text:#FB923C;">
                 <span class="pill-dot" style="background:#F97316;"></span>
                 <span class="pill-label">Pendientes</span>
                 <span class="pill-badge" id="pill-count-pendiente">0</span>
               </button>
-              <button type="button" class="hist-status-pill" data-status="incompleto" style="--pill-color:#9E0038; --pill-text:#FF6B8B;">
+              <button type="button" class="hist-status-pill" data-status="incompleto"
+                style="--pill-color:#9E0038; --pill-text:#FF6B8B;">
                 <span class="pill-dot" style="background:#9E0038;"></span>
                 <span class="pill-label">Incompletas</span>
                 <span class="pill-badge" id="pill-count-incompleto">0</span>
               </button>
-              <button type="button" class="hist-status-pill" data-status="no_enviado" style="--pill-color:#64748B; --pill-text:#94A3B8;">
+              <button type="button" class="hist-status-pill" data-status="no_enviado"
+                style="--pill-color:#64748B; --pill-text:#94A3B8;">
                 <span class="pill-dot" style="background:#64748B;"></span>
                 <span class="pill-label">No enviadas</span>
                 <span class="pill-badge" id="pill-count-no_enviado">0</span>
               </button>
-              <button type="button" class="hist-status-pill" data-status="selwo_flexible" style="--pill-color:#00C6FF; --pill-text:#00C6FF;">
+              <button type="button" class="hist-status-pill" data-status="selwo_flexible"
+                style="--pill-color:#00C6FF; --pill-text:#00C6FF;">
                 <span class="pill-dot" style="background:#00C6FF;"></span>
                 <span class="pill-label">Flexible Pendiente</span>
                 <span class="pill-badge" id="pill-count-selwo_flexible">0</span>
@@ -1465,7 +1516,7 @@
                 <option value="">Entradas y Bonos</option>
                 <option value="entrada">Entradas</option>
                 <option value="bono">Bonos</option>
-              </select>              <select class="filter-select" id="hist-filtro-via">
+              </select> <select class="filter-select" id="hist-filtro-via">
                 <option value="">Todas las vias</option>
                 <option value="llamada">📞 Llamada</option>
                 <option value="correo">✉️ Correo</option>
@@ -1484,9 +1535,10 @@
                 <input type="date" class="filter-select hist-date-field" id="hist-filtro-hasta">
               </div>
               <button class="btn btn-ghost btn-sm" id="hist-filtro-clear" title="Restablecer todos los filtros">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-right:4px;">
-                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                  <path d="M3 3v5h5"/>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  style="width:13px;height:13px;margin-right:4px;">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
                 </svg>
                 Limpiar
               </button>
@@ -1965,7 +2017,8 @@
                   </svg></div>
                 <h4 class="ex-title">Descargar Backup Total</h4>
               </div>
-              <p class="ex-desc">Genera un archivo <strong>.json</strong> con absolutamente todo (ventas, llamadas gestionadas/pendientes, notas rápidas, apuntes, parques, bonos, objetivos y cuadrantes).</p>
+              <p class="ex-desc">Genera un archivo <strong>.json</strong> con absolutamente todo (ventas, llamadas
+                gestionadas/pendientes, notas rápidas, apuntes, parques, bonos, objetivos y cuadrantes).</p>
               <div class="ex-actions">
                 <button class="btn btn-secondary" id="btn-export-json">Descargar .json</button>
               </div>
@@ -1982,7 +2035,8 @@
                   </svg></div>
                 <h4 class="ex-title">Restaurar Datos</h4>
               </div>
-              <p class="ex-desc">Restaura un backup .json completo (incluyendo llamadas, notas, ventas y apuntes). Los registros que ya existan se omiten sin duplicarse.</p>
+              <p class="ex-desc">Restaura un backup .json completo (incluyendo llamadas, notas, ventas y apuntes). Los
+                registros que ya existan se omiten sin duplicarse.</p>
               <div class="ex-file-drop" id="import-drop">Haz clic o arrastra un archivo .json aquí</div>
               <input type="file" id="import-file" accept="application/json" style="display:none;">
             </div>
@@ -2002,9 +2056,11 @@
               </div>
               <p class="ex-desc"><strong>Informe:</strong> todo tu historial de ventas en un .xlsx con formato de tabla
                 profesional (colores por estado, importes en euros, total y ticket medio).</p>
-              <p class="ex-desc"><strong>Plantilla:</strong> incluye una hoja “Añadir ventas” con totales y resumen que se
+              <p class="ex-desc"><strong>Plantilla:</strong> incluye una hoja “Añadir ventas” con totales y resumen que
+                se
                 calculan solos al escribir (fórmulas automáticas, sin macros VBA).</p>
-              <p class="ex-desc"><strong>Con macros:</strong> plantilla .xlsm con un formulario, desplegables de parques,
+              <p class="ex-desc"><strong>Con macros:</strong> plantilla .xlsm con un formulario, desplegables de
+                parques,
                 la fecha de hoy puesta sola y un botón que añade la venta a la tabla y recalcula los totales por mes. Al
                 abrirla, pulsa <em>“Habilitar contenido”</em> para que funcionen las macros.</p>
               <div class="ex-actions">
@@ -2029,7 +2085,8 @@
                 <h4 class="ex-title">Importar CSV de Vector</h4>
               </div>
               <p class="ex-desc">Sube el informe en CSV. <strong>Multipark</strong> solo sale en bonos y se guarda como
-                <em>Sin especificar · Bono</em>. Los parques sí traen su nombre.</p>
+                <em>Sin especificar · Bono</em>. Los parques sí traen su nombre.
+              </p>
               <div class="ex-file-drop" id="import-csv-drop">Haz clic o arrastra uno o varios archivos .csv aquí</div>
               <input type="file" id="import-csv-file" accept=".csv" style="display:none;" multiple>
             </div>
@@ -2041,7 +2098,8 @@
           <div class="view-header">
             <div>
               <h2>Asistente de correos</h2>
-              <p class="desc">Redacta respuestas rápidas usando tus propios apuntes, sin conectarte a ninguna IA externa</p>
+              <p class="desc">Redacta respuestas rápidas usando tus propios apuntes, sin conectarte a ninguna IA externa
+              </p>
             </div>
           </div>
 
@@ -2074,7 +2132,7 @@
               <div class="chat-ia-output-actions">
                 <button type="button" class="btn btn-secondary" id="chat-ia-copy-btn">Copiar correo</button>
               </div>
-</div>
+            </div>
         </section>
 
       </div>
@@ -2094,6 +2152,64 @@
       </div>
       <div class="modal-body" id="modal-body"></div>
       <div class="modal-foot" id="modal-foot"></div>
+    </div>
+  </div>
+
+  <!-- ============================= MODAL NOVEDADES Y VERSIONES ============================= -->
+  <div class="novedades-backdrop" id="novedades-modal-backdrop" onclick="if(event.target===this)closeNovedadesModal()">
+    <div class="novedades-modal" role="dialog" aria-modal="true" aria-labelledby="novedades-title">
+      <div class="novedades-glow"></div>
+
+      <div class="novedades-header">
+        <button class="novedades-close-btn" id="novedades-close-btn" onclick="closeNovedadesModal()"
+          title="Cerrar (Esc)" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div class="novedades-badges">
+          <span class="novedades-pill-hero">✨ NOVEDADES DE PARKSALES</span>
+          <span class="novedades-version-pill">v2.5.0 Actual</span>
+        </div>
+
+        <h2 id="novedades-title">¡Descubre las últimas mejoras y cambios!</h2>
+        <p>Se ha adaptado la plataforma para que puedas seguir gestionando tus ventas de forma rápida, segura y conforme
+          a las nuevas normativas.</p>
+      </div>
+
+      <div class="novedades-tabs">
+        <button type="button" class="novedades-tab active" data-tab="actual">
+          <span>🌟 Novedades v2.5.0</span>
+          <span class="tab-count">5</span>
+        </button>
+        <button type="button" class="novedades-tab" data-tab="historial">
+          <span>📜 Historial de Versiones</span>
+          <span class="tab-count">4</span>
+        </button>
+      </div>
+
+      <div class="novedades-body" id="novedades-tab-content">
+        <!-- Renderizado dinámico desde novedades.js -->
+      </div>
+
+      <div class="novedades-footer">
+        <div class="novedades-footer-hint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4M12 8h.01" />
+          </svg>
+          <span>Puedes consultar este historial en cualquier momento en Novedades ✨</span>
+        </div>
+        <button type="button" class="novedades-btn-confirm" id="novedades-confirm-btn" onclick="closeNovedadesModal()">
+          <span>¡Entendido, empezar a usar!</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -2203,8 +2319,8 @@
   <script src="js/auth.js?v=5"></script>
   <script src="js/parques.js?v=4"></script>
   <script src="js/ventas.js?v=6"></script>
-  <script src="js/historial.js?v=7"></script>
-  <script src="js/contactos.js?v=3"></script>
+  <script src="js/historial.js?v=8"></script>
+  <script src="js/contactos.js?v=4"></script>
   <script src="js/dashboard.js?v=21"></script>
   <script src="js/estadisticas.js?v=3"></script>
   <script src="js/exportar.js?v=20"></script>
@@ -2225,7 +2341,8 @@
   <script src="Tematicas/Navidad/navidad.js?v=1"></script>
   <script src="Tematicas/BlackFriday/blackfriday.js?v=1"></script>
   <script src="Tematicas/tematicas.js?v=2"></script>
-  <script src="js/app.js?v=22"></script>
+  <script src="js/novedades.js?v=2"></script>
+  <script src="js/app.js?v=23"></script>
 </body>
 
 </html>

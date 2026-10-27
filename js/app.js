@@ -89,15 +89,31 @@ function wireThemeToggle() {
 }
 
 function wireGlobalSearch() {
-  document.getElementById('global-search').addEventListener('input', debounce((e) => {
-    const q = e.target.value.trim();
-    if (!q) return;
-    switchView('historial');
-    document.getElementById('hist-search').value = q;
+  const globalSearchEl = document.getElementById('global-search');
+  if (!globalSearchEl) return;
+
+  const handleGlobalSearch = (val) => {
+    const q = (val || '').trim();
+    const histSearchEl = document.getElementById('hist-search');
+    if (histSearchEl) histSearchEl.value = q;
     HIST_STATE.search = q.toLowerCase();
     HIST_STATE.page = 1;
+    if (q) {
+      switchView('historial');
+    }
     renderHistorial();
+  };
+
+  globalSearchEl.addEventListener('input', debounce((e) => {
+    handleGlobalSearch(e.target.value);
   }, 300));
+
+  globalSearchEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleGlobalSearch(e.target.value);
+    }
+  });
 }
 
 function setUserChip(user) {
@@ -176,6 +192,9 @@ async function bootApp(user) {
     safe(renderHistorial, 'renderizado de historial');
     safe(renderDashboard, 'renderizado de dashboard');
     safe(renderContactos, 'renderizado de contactos');
+    if (typeof checkAndShowNovedadesAuto === 'function') {
+      safe(checkAndShowNovedadesAuto, 'comprobación de novedades');
+    }
     document.getElementById('app').classList.add('ready');
     return;
   }
@@ -201,8 +220,11 @@ async function bootApp(user) {
   safe(renderHistorial, 'renderizado de historial');
   safe(renderContactos, 'renderizado de contactos');
   safe(renderDashboard, 'renderizado de dashboard');
+  if (typeof checkAndShowNovedadesAuto === 'function') {
+    safe(checkAndShowNovedadesAuto, 'comprobación de novedades');
+  }
 
-  // Comprobar periÃ³dicamente si han llegado fechas de visitas flexibles (cada 30 min)
+  // Comprobar periódicamente si han llegado fechas de visitas flexibles (cada 30 min)
   setInterval(() => safe(checkAndAutoCompleteFlexibles, 'verificaciÃ³n periÃ³dica flexibles'), 30 * 60 * 1000);
 
   document.getElementById('app').classList.add('ready');

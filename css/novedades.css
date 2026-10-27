@@ -1,0 +1,476 @@
+/* ============================================================================
+   novedades.css — Estilos para el Modal de Novedades y Registro de Versiones
+   Inspirado en el changelog moderno de Opera GX / Discord / Raycast
+============================================================================ */
+
+/* --- Backdrop del modal de novedades --- */
+.novedades-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 16, 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.novedades-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* --- Contenedor del Modal --- */
+.novedades-modal {
+  width: 100%;
+  max-width: 680px;
+  max-height: min(88vh, 780px);
+  background: var(--bg-card);
+  border: 1px solid rgba(245, 166, 35, 0.28);
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 24px 64px -12px rgba(0, 0, 0, 0.75),
+    0 0 40px -10px rgba(245, 166, 35, 0.18);
+  border-radius: var(--radius-l);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: scale(0.94) translateY(12px);
+  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.novedades-backdrop.active .novedades-modal {
+  transform: scale(1) translateY(0);
+}
+
+/* Decoración luminosa superior */
+.novedades-glow {
+  position: absolute;
+  top: -90px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 380px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(245, 166, 35, 0.35) 0%, rgba(255, 107, 107, 0.18) 50%, transparent 75%);
+  filter: blur(35px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* --- Cabecera del modal --- */
+.novedades-header {
+  position: relative;
+  z-index: 1;
+  padding: 28px 28px 18px 28px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(245, 166, 35, 0.06) 0%, transparent 100%);
+}
+
+.novedades-badges {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.novedades-pill-hero {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, rgba(245, 166, 35, 0.25), rgba(252, 96, 118, 0.25));
+  border: 1px solid rgba(245, 166, 35, 0.45);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.novedades-version-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.novedades-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.novedades-close-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+  transform: rotate(90deg);
+}
+
+.novedades-close-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.novedades-header h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+  letter-spacing: -0.3px;
+}
+
+.novedades-header p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* --- Barra de pestañas --- */
+.novedades-tabs {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 6px;
+  padding: 10px 24px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+.novedades-tab {
+  padding: 7px 14px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-s);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: all var(--transition);
+}
+
+.novedades-tab:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.novedades-tab.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.novedades-tab .tab-count {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+}
+
+.novedades-tab.active .tab-count {
+  background: rgba(245, 166, 35, 0.25);
+  color: var(--accent);
+}
+
+/* --- Cuerpo con scroll --- */
+.novedades-body {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  overflow-y: auto;
+  padding: 22px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.novedades-body::-webkit-scrollbar {
+  width: 6px;
+}
+.novedades-body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+.novedades-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* --- Tarjeta de cambio/mejora --- */
+.novedad-card {
+  display: flex;
+  gap: 16px;
+  padding: 16px 18px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  transition: all var(--transition);
+}
+
+.novedad-card:hover {
+  border-color: rgba(245, 166, 35, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.3);
+}
+
+.novedad-icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.novedad-info {
+  flex: 1;
+}
+
+.novedad-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+  flex-wrap: wrap;
+}
+
+.novedad-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.novedad-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.novedad-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* --- Timeline de versiones anteriores --- */
+.version-history-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.version-item {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 16px;
+  position: relative;
+}
+
+.version-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.version-badge-tag {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.version-date {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.version-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.version-summary {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0 0 10px 0;
+}
+
+.version-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.version-list li {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.4;
+}
+
+.version-list li span.bullet {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+/* --- Pie del modal --- */
+.novedades-footer {
+  position: relative;
+  z-index: 1;
+  padding: 16px 28px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.novedades-footer-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.novedades-btn-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #FF9A44, #FC6076);
+  border: none;
+  border-radius: var(--radius-m);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(255, 154, 68, 0.35);
+  transition: all var(--transition);
+}
+
+.novedades-btn-confirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(255, 154, 68, 0.5);
+  filter: brightness(1.06);
+}
+
+.novedades-btn-confirm:active {
+  transform: translateY(0);
+}
+
+/* --- Botón del Topbar y Badge no leído --- */
+.icon-btn--changelog {
+  position: relative;
+  color: var(--accent) !important;
+}
+
+.changelog-badge-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 9px;
+  height: 9px;
+  background: #FC6076;
+  border: 2px solid var(--bg-card);
+  border-radius: 50%;
+  animation: changelog-pulse 2s infinite;
+}
+
+@keyframes changelog-pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(252, 96, 118, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(252, 96, 118, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(252, 96, 118, 0); }
+}
+
+/* --- Chip en el pie de la barra lateral --- */
+.sidebar-version-chip {
+  margin: 12px 14px 6px 14px;
+  padding: 8px 12px;
+  background: rgba(245, 166, 35, 0.08);
+  border: 1px solid rgba(245, 166, 35, 0.22);
+  border-radius: var(--radius-s);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.sidebar-version-chip:hover {
+  background: rgba(245, 166, 35, 0.16);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.sidebar-version-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sidebar-version-left span.sparkle {
+  font-size: 13px;
+}
+
+.sidebar-version-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 700;
+}

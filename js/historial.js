@@ -23,11 +23,29 @@ function getBonoNombre(bonoId) {
 }
 
 function initHistorialView() {
-  document.getElementById('hist-search').addEventListener('input', debounce((e) => {
-    HIST_STATE.search = e.target.value.trim().toLowerCase();
-    HIST_STATE.page = 1;
-    renderHistorial();
-  }, 200));
+  const histSearchInput = document.getElementById('hist-search');
+  if (histSearchInput) {
+    histSearchInput.addEventListener('input', debounce((e) => {
+      const val = (e.target.value || '').trim();
+      HIST_STATE.search = val.toLowerCase();
+      HIST_STATE.page = 1;
+      const globalInput = document.getElementById('global-search');
+      if (globalInput && document.activeElement === e.target) {
+        globalInput.value = val;
+      }
+      renderHistorial();
+    }, 200));
+
+    histSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = (e.target.value || '').trim();
+        HIST_STATE.search = val.toLowerCase();
+        HIST_STATE.page = 1;
+        renderHistorial();
+      }
+    });
+  }
 
   document.getElementById('hist-filtro-tipo-venta').addEventListener('change', (e) => {
     HIST_STATE.tipoVenta = e.target.value;
@@ -91,6 +109,8 @@ function initHistorialView() {
     HIST_STATE.estado = '';
     HIST_STATE.page = 1;
     document.getElementById('hist-search').value = '';
+    const globalSearch = document.getElementById('global-search');
+    if (globalSearch) globalSearch.value = '';
     document.getElementById('hist-filtro-tipo-venta').value = '';
     document.getElementById('hist-filtro-via').value = '';
     document.getElementById('hist-filtro-parque').value = '';
@@ -226,12 +246,36 @@ function getFilteredSortedVentas() {
   }));
 
   if (HIST_STATE.search) {
+    const qRaw = (HIST_STATE.search || '').trim().toLowerCase();
+    const qNorm = qRaw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const canLoc = typeof canVerLocalizador === 'function' && canVerLocalizador();
-    rows = rows.filter((v) =>
-      v.parqueNombreCache.toLowerCase().includes(q) ||
-      v.bonoNombreCache.toLowerCase().includes(q) ||
-      (v.cliente_nombre || '').toLowerCase().includes(q) ||
-      (canLoc && (v.localizador || '').toLowerCase().includes(q)));
+    const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    rows = rows.filter((v) => {
+      const pNombre = norm(v.parqueNombreCache);
+      const bNombre = norm(v.bonoNombreCache);
+      const cNombre = norm(v.cliente_nombre);
+      const loc = norm(v.localizador);
+      const notas = norm(v.anotaciones);
+      const extras = norm(v.extras);
+      const importe = norm(v.importe_total);
+      const via = norm(v.via);
+      const selwoHotel = norm(v.selwo_hotel);
+      const fechaVisita = norm(v.fecha_visita);
+      const estado = norm(v.estadoNorm);
+
+      return pNombre.includes(qNorm) ||
+        bNombre.includes(qNorm) ||
+        cNombre.includes(qNorm) ||
+        notas.includes(qNorm) ||
+        extras.includes(qNorm) ||
+        importe.includes(qNorm) ||
+        via.includes(qNorm) ||
+        selwoHotel.includes(qNorm) ||
+        fechaVisita.includes(qNorm) ||
+        estado.includes(qNorm) ||
+        (canLoc && loc.includes(qNorm));
+    });
   }
   if (HIST_STATE.tipoVenta) rows = rows.filter((v) => v.tipo === HIST_STATE.tipoVenta);
   if (HIST_STATE.via) rows = rows.filter((v) => (v.via || 'llamada') === HIST_STATE.via);
