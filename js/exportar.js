@@ -1776,6 +1776,7 @@ async function handleImportCSVFiles(fileList) {
               importe_total,
               localizador: localizador || null,
               estado: estadoNorm,
+              _itemNombre: nombreImport,
             });
 
             let estadoPagoContacto = 'pagado';
@@ -1845,40 +1846,106 @@ async function handleImportCSVFiles(fileList) {
     return;
   }
 
-  // Agrupar ventas por parque/bono para el resumen
-  const countsByPark = {};
-  for (const v of totalNuevasVentas) {
-    const name = v.tipo === 'bono'
-      ? (v.bono_id ? (STATE.tipos_bono.find(b => b.id === v.bono_id)?.nombre || 'Bono') : 'Sin especificar')
-      : (v.parque_id ? (STATE.parques.find(p => p.id === v.parque_id)?.nombre || 'Desconocido') : 'Sin especificar');
-    const key = name + (v.tipo === 'bono' ? ' · Bono' : '');
-    countsByPark[key] = (countsByPark[key] || 0) + 1;
+  // Helper para determinar el nombre del parque o bono a mostrar
+  const getItemName = (v) => {
+    if (v._itemNombre) return v._itemNombre;
+    if (v.tipo === 'bono') {
+      if (v.bono_id) {
+        const b = (STATE.tipos_bono || []).find(x => x.id === v.bono_id);
+        if (b) return b.nombre;
+      }
+      return 'Bono (Sin especificar)';
+    }
+    if (v.parque_id) {
+      const p = (STATE.parques || []).find(x => x.id === v.parque_id);
+      if (p) return p.nombre;
+    }
+    return 'Sin especificar';
+  };
+
+  // Detalle de las ventas nuevas
+  let ventasListHtml = '';
+  if (numNuevas > 0) {
+    ventasListHtml += `
+      <div style="margin-top: 10px; margin-bottom: 6px; font-weight: 600; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between;">
+        <span>✨ ${numNuevas === 1 ? '1 venta nueva detectada' : `${numNuevas} ventas nuevas detectadas`}:</span>
+      </div>
+      <div style="max-height: 250px; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 8px;">
+    `;
+
+    for (const v of totalNuevasVentas) {
+      const pName = getItemName(v);
+      const isBono = v.tipo === 'bono';
+      const badgeClass = isBono ? 'badge warning' : 'badge info';
+      const tipoLabel = isBono ? 'Bono' : 'Entrada';
+      const importeStr = fmtEUR(v.importe_total);
+
+      ventasListHtml += `
+        <div style="background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-m); padding: 11px 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+            <span class="${badgeClass}" style="font-size: 11px; padding: 2px 8px;">${tipoLabel}</span>
+            <strong style="color: var(--text-primary); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(pName)}</strong>
+          </div>
+          <div style="text-align: right; flex-shrink: 0;">
+            <div style="font-family: var(--font-mono); font-weight: 700; color: var(--success); font-size: 15px;">
+              ${importeStr}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    ventasListHtml += `</div>`;
   }
 
-  let listHtml = '<ul style="margin: 8px 0 16px 20px; font-size: 13px;">';
-  for (const [pName, count] of Object.entries(countsByPark)) {
-    listHtml += `<li><strong>${count}</strong> nueva(s) de ${escapeHtml(pName)}</li>`;
-  }
+  // Ventas actualizadas de estado (si las hay)
+  let actualizadasHtml = '';
   if (numActualizadas > 0) {
-    listHtml += `<li><strong>${numActualizadas}</strong> venta(s) existente(s) que suben a un estado superior (ej. a Completado)</li>`;
+    actualizadasHtml = `
+      <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.22); border-radius: var(--radius-s); padding: 9px 12px; margin-top: 10px; font-size: 12.5px; color: var(--info);">
+        🔄 <strong>${numActualizadas}</strong> venta(s) existente(s) subirán a un estado superior (ej. a Completado).
+      </div>
+    `;
   }
-  listHtml += '</ul>';
 
-  const resumenPartes = [];
-  if (numNuevas > 0) resumenPartes.push(`<strong>${numNuevas} venta(s) nueva(s)</strong>`);
-  if (numActualizadas > 0) resumenPartes.push(`<strong>${numActualizadas} venta(s) actualizada(s) de estado</strong>`);
+  // Aviso de duplicados
+  const duplicadasHtml = totalDuplicadas > 0 ? `
+    <div style="background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: var(--radius-s); padding: 8px 12px; margin-top: 10px; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+      <span>ℹ️</span>
+      <span>Se omitirán <strong>${totalDuplicadas}</strong> registro(s) duplicados sin cambios.</span>
+    </div>
+  ` : '';
 
-  let messageHtml = `Se han procesado <strong>${filesProcessed} archivo(s)</strong> y encontrado ${resumenPartes.join(' y ')}:<br>${listHtml}Se omitirán ${totalDuplicadas} registros duplicados sin cambios. ¿Continuar con la importación?`;
+  let messageHtml = `
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <div style="font-size: 13px; color: var(--text-secondary);">
+        Se han procesado <strong>${filesProcessed} archivo(s)</strong> de Vector.
+      </div>
+      ${ventasListHtml}
+      ${actualizadasHtml}
+      ${duplicadasHtml}
+      <div style="margin-top: 12px; font-size: 13px; color: var(--text-primary); font-weight: 500;">
+        ¿Deseas continuar con la importación?
+      </div>
+    </div>
+  `;
 
   if (failedFiles.length > 0) {
-    messageHtml += `<br><br><span style="color:var(--danger)"><strong>Atención:</strong> Hubo errores en ${failedFiles.length} archivo(s):</span><ul style="font-size:12px; margin-top:4px; margin-left: 20px;"><li>${failedFiles.map(escapeHtml).join('</li><li>')}</li></ul>`;
+    messageHtml += `
+      <div style="color: var(--danger); font-size: 12px; margin-top: 10px; padding: 8px 12px; background: var(--danger-soft); border-radius: var(--radius-s); border: 1px solid rgba(248, 113, 113, 0.2);">
+        <strong>Atención:</strong> Hubo errores en ${failedFiles.length} archivo(s):
+        <ul style="margin: 4px 0 0 16px; padding: 0;">
+          <li>${failedFiles.map(escapeHtml).join('</li><li>')}</li>
+        </ul>
+      </div>
+    `;
   }
 
   confirmDialog({
     title: 'Importar ventas de Vector',
     message: messageHtml,
     isHtmlMessage: true,
-    confirmLabel: 'Importar todo',
+    confirmLabel: numNuevas === 1 && numActualizadas === 0 ? 'Importar venta' : 'Importar todo',
+    width: '560px',
     danger: false,
     onConfirm: async () => {
       try {
