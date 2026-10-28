@@ -1710,13 +1710,19 @@ async function handleImportCSVFiles(fileList) {
                   : (typeof getEstadoPriority === 'function' ? getEstadoPriority(existingVenta.estado) : 1);
 
                 if (newPrio > currentPrio) {
+                  const existingItemName = existingVenta.tipo === 'bono'
+                    ? (existingVenta.bono_id ? (STATE.tipos_bono.find(b => b.id === existingVenta.bono_id)?.nombre || 'Bono') : 'Sin especificar')
+                    : (existingVenta.parque_id ? (STATE.parques.find(p => p.id === existingVenta.parque_id)?.nombre || 'Parque') : 'Sin especificar');
+
                   totalVentasAActualizar[existingVenta.id] = {
                     id: existingVenta.id,
                     localizador: localizador,
                     estadoAnterior: existingVenta.estado,
                     estadoNuevo: estadoNorm,
                     cliente_nombre: existingVenta.cliente_nombre || cliente_nombre,
-                    item_nombre: nombreImport
+                    item_nombre: nombreImport || existingItemName,
+                    tipo: existingVenta.tipo || tipoImport,
+                    importe_total: (existingVenta.importe_total !== undefined && existingVenta.importe_total !== null) ? existingVenta.importe_total : importe_total
                   };
                 } else {
                   fileDuplicadas++;
@@ -1899,12 +1905,46 @@ async function handleImportCSVFiles(fileList) {
 
   // Ventas actualizadas de estado (si las hay)
   let actualizadasHtml = '';
-  if (numActualizadas > 0) {
-    actualizadasHtml = `
-      <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.22); border-radius: var(--radius-s); padding: 9px 12px; margin-top: 10px; font-size: 12.5px; color: var(--info);">
-        🔄 <strong>${numActualizadas}</strong> venta(s) existente(s) subirán a un estado superior (ej. a Completado).
+  const actualizadasList = Object.values(totalVentasAActualizar);
+  if (actualizadasList.length > 0) {
+    actualizadasHtml += `
+      <div style="margin-top: 14px; margin-bottom: 6px; font-weight: 600; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between;">
+        <span>🔄 ${actualizadasList.length === 1 ? '1 venta cambia de estado' : `${actualizadasList.length} ventas cambian de estado`}:</span>
       </div>
+      <div style="max-height: 220px; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 8px;">
     `;
+
+    for (const item of actualizadasList) {
+      const isBono = item.tipo === 'bono';
+      const badgeClass = isBono ? 'badge warning' : 'badge info';
+      const tipoLabel = isBono ? 'Bono' : 'Entrada';
+      const importeStr = fmtEUR(item.importe_total);
+
+      const prevBadge = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(item.estadoAnterior) : null;
+      const newBadge = typeof getEstadoBadgeInfo === 'function' ? getEstadoBadgeInfo(item.estadoNuevo) : null;
+      const prevLabel = prevBadge?.label || item.estadoAnterior || 'Pendiente';
+      const newLabel = newBadge?.label || item.estadoNuevo || 'Completado';
+
+      actualizadasHtml += `
+        <div style="background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-m); padding: 11px 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap;">
+            <span class="${badgeClass}" style="font-size: 11px; padding: 2px 8px;">${tipoLabel}</span>
+            <strong style="color: var(--text-primary); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(item.item_nombre || 'Parque')}</strong>
+            <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; margin-left: 2px;">
+              <span class="badge neutral" style="font-size: 10.5px; padding: 1px 7px;">${escapeHtml(prevLabel)}</span>
+              <span style="color: var(--text-muted); font-size: 11px;">➔</span>
+              <span class="badge on" style="font-size: 10.5px; padding: 1px 7px;">${escapeHtml(newLabel)}</span>
+            </span>
+          </div>
+          <div style="text-align: right; flex-shrink: 0;">
+            <div style="font-family: var(--font-mono); font-weight: 700; color: var(--success); font-size: 15px;">
+              ${importeStr}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    actualizadasHtml += `</div>`;
   }
 
   // Aviso de duplicados
@@ -1944,8 +1984,8 @@ async function handleImportCSVFiles(fileList) {
     title: 'Importar ventas de Vector',
     message: messageHtml,
     isHtmlMessage: true,
-    confirmLabel: numNuevas === 1 && numActualizadas === 0 ? 'Importar venta' : 'Importar todo',
-    width: '560px',
+    confirmLabel: numNuevas === 1 && numActualizadas === 0 ? 'Importar venta' : (numNuevas === 0 && numActualizadas === 1 ? 'Actualizar venta' : (numNuevas === 0 ? 'Actualizar ventas' : 'Importar todo')),
+    width: '580px',
     danger: false,
     onConfirm: async () => {
       try {
