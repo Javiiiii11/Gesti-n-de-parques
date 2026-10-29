@@ -32,6 +32,14 @@ const NOVEDADES_DATA = [
         tag: 'Normativa',
         tagBg: 'rgba(245, 166, 35, 0.18)',
         tagColor: '#FF9A44'
+      },
+            {
+        icon: '🔒',
+        title: 'Protección de Datos',
+        desc: 'No se almacena nada en ninguna BD, todo se almacena en la memoria del navegador y se borra al borrar las cookies.',
+        tag: 'Seguridad',
+        tagBg: 'rgba(245, 166, 35, 0.18)',
+        tagColor: '#FF9A44'
       }
     ]
   },
