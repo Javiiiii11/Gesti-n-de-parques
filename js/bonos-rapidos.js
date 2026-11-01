@@ -66,16 +66,17 @@ function cargarDiasMesesAnios() {
 // ----------------------------------------------------------------------------
 function getDatosFormularioBono() {
   const emailGestor = (document.getElementById('br-email-gestor')?.value || '').trim();
-  const emailRepetir = (document.getElementById('br-email-repetir')?.value || '').trim();
+  // El email repetido siempre es el mismo que el del gestor automáticamente
+  const emailRepetir = emailGestor;
   const nombre = (document.getElementById('br-nombre')?.value || '').trim();
   const primerApellido = (document.getElementById('br-primer-apellido')?.value || '').trim();
   const segundoApellido = (document.getElementById('br-segundo-apellido')?.value || '').trim();
   const dia = document.getElementById('br-dia')?.value || '';
   const mes = document.getElementById('br-mes')?.value || '';
   const anio = document.getElementById('br-anio')?.value || '';
-  const tipoDoc = document.getElementById('br-tipo-documento')?.value || 'DNI';
+  const tipoDoc = 'DNI';
   const numDoc = (document.getElementById('br-num-documento')?.value || '').trim().toUpperCase();
-  const copiarFacturacion = Boolean(document.getElementById('br-copiar-facturacion')?.checked);
+  const copiarFacturacion = false;
 
   return {
     emailGestor,
@@ -101,12 +102,6 @@ function validarDatosFormularioBono(datos) {
   if (!emailRegex.test(datos.emailGestor)) {
     return { ok: false, msg: 'El email del gestor no tiene un formato válido' };
   }
-  if (!datos.emailRepetir) {
-    return { ok: false, msg: 'Repite el email del gestor' };
-  }
-  if (datos.emailGestor.toLowerCase() !== datos.emailRepetir.toLowerCase()) {
-    return { ok: false, msg: 'Los dos correos electrónicos no coinciden' };
-  }
   if (!datos.nombre) {
     return { ok: false, msg: 'Introduce el nombre del titular' };
   }
@@ -117,7 +112,7 @@ function validarDatosFormularioBono(datos) {
     return { ok: false, msg: 'Completa la fecha de nacimiento (día, mes y año)' };
   }
   if (!datos.numDoc) {
-    return { ok: false, msg: 'Introduce el número de documento (' + datos.tipoDoc + ')' };
+    return { ok: false, msg: 'Introduce el documento del titular (DNI / NIE / Pasaporte)' };
   }
 
   return { ok: true };
@@ -215,10 +210,9 @@ function onClicPasarAExtension() {
         <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-m); padding:12px; font-size:12px; display:flex; flex-direction:column; gap:6px;">
           <div style="font-weight:600; color:var(--text-muted); text-transform:uppercase; font-size:11px; margin-bottom:4px;">Resumen del formulario a guardar:</div>
           <div>👤 <strong>Titular:</strong> ${escapeHtml(datos.nombre)} ${escapeHtml(datos.primerApellido)} ${escapeHtml(datos.segundoApellido)}</div>
-          <div>✉️ <strong>Email gestor:</strong> ${escapeHtml(datos.emailGestor)}</div>
+          <div>✉️ <strong>Email gestor:</strong> ${escapeHtml(datos.emailGestor)} <span style="color:var(--text-muted); font-size:11px;">(se rellenará en email y repetir email)</span></div>
           <div>🎂 <strong>Fecha nacimiento:</strong> ${datos.dia}/${datos.mes}/${datos.anio}</div>
-          <div>🪪 <strong>Documento:</strong> ${datos.tipoDoc} - ${escapeHtml(datos.numDoc)}</div>
-          <div>🧾 <strong>Copiar facturación:</strong> ${datos.copiarFacturacion ? 'Sí (marcado)' : 'No'}</div>
+          <div>🪪 <strong>Documento:</strong> ${escapeHtml(datos.numDoc)}</div>
         </div>
       </div>
     `,
@@ -277,7 +271,7 @@ function onClicPasarAExtension() {
         anio_nacimiento: datos.anio,
         tipo_documento: datos.tipoDoc,
         numero_documento: datos.numDoc,
-        copiar_facturacion: datos.copiarFacturacion
+        copiar_facturacion: false
       },
       updated_at: new Date().toISOString()
     };
@@ -308,20 +302,14 @@ function onClicPasarAExtension() {
 // ----------------------------------------------------------------------------
 function limpiarFormularioBono() {
   const ids = [
-    'br-email-gestor', 'br-email-repetir', 'br-nombre',
-    'br-primer-apellido', 'br-segundo-apellido', 'br-dia',
-    'br-mes', 'br-anio', 'br-num-documento'
+    'br-email-gestor', 'br-nombre', 'br-primer-apellido',
+    'br-segundo-apellido', 'br-dia', 'br-mes', 'br-anio',
+    'br-num-documento'
   ];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-
-  const tipoDoc = document.getElementById('br-tipo-documento');
-  if (tipoDoc) tipoDoc.value = 'DNI';
-
-  const checkFacturacion = document.getElementById('br-copiar-facturacion');
-  if (checkFacturacion) checkFacturacion.checked = true;
 
   toast('Formulario limpio', 'info');
 }
@@ -331,16 +319,13 @@ function limpiarFormularioBono() {
 // ----------------------------------------------------------------------------
 function rellenarConDatosEjemplo() {
   document.getElementById('br-email-gestor').value = 'gestor.ventas@parques.es';
-  document.getElementById('br-email-repetir').value = 'gestor.ventas@parques.es';
   document.getElementById('br-nombre').value = 'Javier';
   document.getElementById('br-primer-apellido').value = 'Rodríguez';
   document.getElementById('br-segundo-apellido').value = 'Jiménez';
   document.getElementById('br-dia').value = '15';
   document.getElementById('br-mes').value = '05';
   document.getElementById('br-anio').value = '1995';
-  document.getElementById('br-tipo-documento').value = 'DNI';
   document.getElementById('br-num-documento').value = '12345678Z';
-  document.getElementById('br-copiar-facturacion').checked = true;
 
   toast('Datos de ejemplo cargados en el formulario', 'info');
 }
@@ -422,10 +407,9 @@ function renderPlantillasBonosList() {
 
               <div style="font-size:12px; color:var(--text-secondary); display:flex; flex-direction:column; gap:4px;">
                 <div>👤 <strong>Titular:</strong> ${escapeHtml(d.nombre || '')} ${escapeHtml(d.primer_apellido || '')} ${escapeHtml(d.segundo_apellido || '')}</div>
-                <div>🪪 <strong>Doc:</strong> ${escapeHtml(d.tipo_documento || 'DNI')}: ${escapeHtml(d.numero_documento || '—')}</div>
+                <div>🪪 <strong>Documento:</strong> ${escapeHtml(d.numero_documento || '—')}</div>
                 <div>✉️ <strong>Email:</strong> ${escapeHtml(d.email_gestor || '—')}</div>
                 <div>🎂 <strong>Nacimiento:</strong> ${d.dia_nacimiento || '--'}/${d.mes_nacimiento || '--'}/${d.anio_nacimiento || '----'}</div>
-                <div>🧾 <strong>Facturación:</strong> ${d.copiar_facturacion ? 'Copia activada' : 'No'}</div>
               </div>
             </div>
 
@@ -453,16 +437,13 @@ function cargarPlantillaEnFormulario(abreviatura) {
 
   const d = p.datos;
   document.getElementById('br-email-gestor').value = d.email_gestor || '';
-  document.getElementById('br-email-repetir').value = d.email_repetir || d.email_gestor || '';
   document.getElementById('br-nombre').value = d.nombre || '';
   document.getElementById('br-primer-apellido').value = d.primer_apellido || '';
   document.getElementById('br-segundo-apellido').value = d.segundo_apellido || '';
   document.getElementById('br-dia').value = d.dia_nacimiento || '';
   document.getElementById('br-mes').value = d.mes_nacimiento || '';
   document.getElementById('br-anio').value = d.anio_nacimiento || '';
-  document.getElementById('br-tipo-documento').value = d.tipo_documento || 'DNI';
   document.getElementById('br-num-documento').value = d.numero_documento || '';
-  document.getElementById('br-copiar-facturacion').checked = Boolean(d.copiar_facturacion);
 
   toast(`Plantilla ${abreviatura} cargada en el formulario`, 'info');
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -506,7 +487,6 @@ function cablearComunicacionExtension() {
   window._PARKSITE_EXT_WIRED = true;
 
   window.addEventListener('message', async (event) => {
-    // Escuchar mensajes provenientes de la ventana (inyectados por content script)
     if (!event.data || typeof event.data !== 'object') return;
 
     const { type, version, payload } = event.data;
@@ -536,7 +516,6 @@ function cablearComunicacionExtension() {
 }
 
 function verificarExtensionPing() {
-  // Emitir un ping para que el content script responda si está inyectado
   window.postMessage({ type: 'PARKSITE_PING' }, '*');
   setTimeout(() => {
     actualizarBadgeEstadoExtension();
@@ -564,10 +543,9 @@ function actualizarBadgeEstadoExtension() {
   }
 }
 
-// Exportar globalmente para que utils y app puedan invocar
+// Exportar globalmente
 window.initBonosRapidosView = initBonosRapidosView;
 window.cargarPlantillaEnFormulario = cargarPlantillaEnFormulario;
 window.copiarAbreviatura = copiarAbreviatura;
 window.eliminarPlantillaBono = eliminarPlantillaBono;
 window.limpiarFormularioBono = limpiarFormularioBono;
-

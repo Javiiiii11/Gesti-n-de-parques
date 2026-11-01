@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
     templatesList.innerHTML = filtered.map((t, idx) => {
       const d = t.datos || {};
       const titular = `${d.nombre || ''} ${d.primer_apellido || ''} ${d.segundo_apellido || ''}`.trim() || 'Titular sin nombre';
-      const doc = `${d.tipo_documento || 'DNI'}: ${d.numero_documento || '—'}`;
+      const doc = d.numero_documento || '—';
       const email = d.email_gestor || '—';
       const fecha = `${d.dia_nacimiento || '--'}/${d.mes_nacimiento || '--'}/${d.anio_nacimiento || '----'}`;
 
@@ -122,8 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           <div class="template-details-full" id="detail-${idx}" style="display:none;">
             <div>🎂 <strong>Fecha nacimiento:</strong> ${fecha}</div>
-            <div>🧾 <strong>Facturación:</strong> ${d.copiar_facturacion ? 'Copiar info activado' : 'No marcado'}</div>
-            <div>✉️ <strong>Repetir email:</strong> ${escapeHtml(d.email_repetir || email)}</div>
+            <div>✉️ <strong>Email gestor:</strong> ${escapeHtml(email)}</div>
           </div>
         </div>
       `;
@@ -181,13 +180,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 6. Abrir ParkSite
   btnOpenParkSite.addEventListener('click', () => {
-    const urls = [
-      'https://javiiiii11.github.io/Gesti-n-de-parques/',
-      'http://localhost',
-      'http://127.0.0.1'
-    ];
-
-    // Buscar si ya está abierta una pestaña de ParkSite
     chrome.tabs.query({}, (tabs) => {
       const existingTab = tabs.find(t => 
         t.url && (t.url.includes('Gesti-n-de-parques') || t.url.includes('localhost') || t.url.includes('park-sales-app'))
@@ -199,7 +191,6 @@ document.addEventListener('DOMContentLoaded', () => {
           chrome.windows.update(existingTab.windowId, { focused: true });
         }
       } else {
-        // Abrir pestaña nueva
         chrome.tabs.create({ url: 'https://javiiiii11.github.io/Gesti-n-de-parques/#bonos-rapidos' });
       }
     });
@@ -219,4 +210,3 @@ document.addEventListener('DOMContentLoaded', () => {
     return escapeHtml(text);
   }
 });
-

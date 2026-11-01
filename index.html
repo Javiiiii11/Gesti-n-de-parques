@@ -851,17 +851,12 @@
               <!-- Bloque 1: Correo electrónico -->
               <div style="margin-bottom:20px;">
                 <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); margin-bottom:10px; display:flex; align-items:center; gap:6px;">
-                  <span>✉️</span> Correo electrónico
+                  <span>✉️</span> Correo electrónico del gestor
                 </div>
-                <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:14px;">
-                  <div class="form-field">
-                    <label for="br-email-gestor">Email del gestor (para recibir el bono) *</label>
-                    <input type="email" id="br-email-gestor" placeholder="ejemplo@correo.com" required autocomplete="off">
-                  </div>
-                  <div class="form-field">
-                    <label for="br-email-repetir">Repetir el email *</label>
-                    <input type="email" id="br-email-repetir" placeholder="ejemplo@correo.com" required autocomplete="off">
-                  </div>
+                <div class="form-field full" style="max-width:520px;">
+                  <label for="br-email-gestor">Email del gestor (para recibir el bono) *</label>
+                  <input type="email" id="br-email-gestor" placeholder="ejemplo@correo.com" required autocomplete="off">
+                  <span style="font-size:11px; color:var(--text-muted); margin-top:4px;">Se autocompletará automáticamente en ambos campos (email y repetición) en bonoparques.es.</span>
                 </div>
               </div>
 
@@ -870,10 +865,10 @@
                 <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); margin-bottom:10px; display:flex; align-items:center; gap:6px;">
                   <span>👤</span> Datos personales del titular del bono
                 </div>
-                <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:14px;">
+                <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:14px;">
                   <div class="form-field">
                     <label for="br-nombre">Nombre *</label>
-                    <input type="text" id="br-nombre" placeholder="Nombre de pila" required autocomplete="off">
+                    <input type="text" id="br-nombre" placeholder="Nombre" required autocomplete="off">
                   </div>
                   <div class="form-field">
                     <label for="br-primer-apellido">Primer apellido *</label>
@@ -901,29 +896,11 @@
                   </div>
                 </div>
 
-                <!-- Tipo de documento y Número de documento -->
-                <div class="form-grid" style="grid-template-columns: 140px 1fr; gap:14px; max-width:460px;">
-                  <div class="form-field">
-                    <label for="br-tipo-documento">Tipo documento *</label>
-                    <select id="br-tipo-documento">
-                      <option value="DNI" selected>DNI</option>
-                      <option value="NIE">NIE</option>
-                      <option value="Pasaporte">Pasaporte</option>
-                    </select>
-                  </div>
-                  <div class="form-field">
-                    <label for="br-num-documento">Número de documento *</label>
-                    <input type="text" id="br-num-documento" placeholder="12345678A" required autocomplete="off" style="text-transform:uppercase;">
-                  </div>
+                <!-- Número de documento -->
+                <div class="form-field" style="max-width:320px;">
+                  <label for="br-num-documento">Documento (DNI / NIF / Pasaporte) *</label>
+                  <input type="text" id="br-num-documento" placeholder="12345678A" required autocomplete="off" style="text-transform:uppercase;">
                 </div>
-              </div>
-
-              <!-- Bloque 3: Facturación -->
-              <div style="margin-bottom:22px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.06);">
-                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13.5px; font-weight:600; user-select:none;">
-                  <input type="checkbox" id="br-copiar-facturacion" checked style="width:18px; height:18px; accent-color:var(--accent); cursor:pointer;">
-                  <span>Copiar información para detalles de facturación</span>
-                </label>
               </div>
 
               <!-- Fila de acción principal -->
