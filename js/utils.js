@@ -367,6 +367,7 @@ const STATE = {
   objetivosMensuales: [],
   currentUser: null,
   verLocalizador: false,
+  plantillasBonos: [],
 };
 
 function canVerLocalizador() {

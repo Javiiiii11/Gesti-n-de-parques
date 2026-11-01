@@ -5,6 +5,7 @@
 const VIEW_TITLES = {
   'dashboard': 'Dashboard',
   'venta-rapida': 'Registrar venta',
+  'bonos-rapidos': 'Bonos Rápidos — Extensión',
   'historial': 'Historial de ventas',
   'contactos': 'Apuntes / Contactos',
   'notas-rapidas': 'Notas rÃ¡pidas',
@@ -43,6 +44,7 @@ function switchView(viewId) {
 
   if (viewId === 'dashboard') requestAnimationFrame(renderDashboard);
   if (viewId === 'venta-rapida') updateTicketPreview();
+  if (viewId === 'bonos-rapidos' && typeof initBonosRapidosView === 'function') initBonosRapidosView();
   if (viewId === 'estadisticas') renderEstadisticas();
   if (viewId === 'contactos') renderContactos();
   if (viewId === 'llamadas') {
@@ -159,6 +161,9 @@ async function bootApp(user) {
     STATE.tipos_bono = await DB.getTiposBono();
     STATE.contactos = await DB.getContactos();
     STATE.ventas = await DB.getVentas();
+    if (typeof DB.getPlantillasBonos === "function") {
+      STATE.plantillasBonos = await DB.getPlantillasBonos();
+    }
     STATE.objetivosMensuales = await DB.getObjetivosMensuales();
     if (typeof migrateLegacyMonthlyGoal === 'function') {
       await migrateLegacyMonthlyGoal();
@@ -205,6 +210,7 @@ async function bootApp(user) {
   safe(renderParquesTable, 'tabla de parques');
   safe(renderBonosTable, 'tabla de bonos');
   safe(initVentaForm, 'formulario de venta');
+  safe(initBonosRapidosView, 'vista de bonos rápidos');
   safe(initHistorialView, 'vista de historial');
   safe(initEstadisticasView, 'vista de estadÃ­sticas');
   safe(initExportView, 'vista de exportaciÃ³n');

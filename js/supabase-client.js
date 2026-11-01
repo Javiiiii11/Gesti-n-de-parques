@@ -94,6 +94,7 @@ const LOCAL_KEYS = {
   cuadrante_list: 'parksales_cuadrante_list',
   cuadrante_data: 'parksales_cuadrante_data',
   usuarios_permisos: 'parksales_usuarios_permisos',
+  plantillas_bonos: 'parksales_plantillas_bonos',
 };
 
 function localSeedIfEmpty() {
@@ -111,6 +112,9 @@ function localSeedIfEmpty() {
   }
   if (!localStorage.getItem(LOCAL_KEYS.objetivos_mensuales)) {
     localStorage.setItem(LOCAL_KEYS.objetivos_mensuales, JSON.stringify([]));
+  }
+  if (!localStorage.getItem(LOCAL_KEYS.plantillas_bonos)) {
+    localStorage.setItem(LOCAL_KEYS.plantillas_bonos, JSON.stringify([]));
   }
 }
 
@@ -1279,6 +1283,84 @@ const DB = {
       }
     }
   },
+  // ------------------------------------------------ PLANTILLAS BONOS (EXTENSIÓN)
+  async getPlantillasBonos() {
+    localSeedIfEmpty();
+    if (!CATALOG_SUPABASE) {
+      return readLocal(LOCAL_KEYS.plantillas_bonos) || [];
+    }
+    try {
+      const user = STATE.currentUser || (await AUTH.getCurrentUser().catch(() => null));
+      let query = supabaseClient.from('plantillas_bonos').select('*').order('created_at', { ascending: false });
+      if (user && user.id) {
+        query = query.or(`user_id.eq.${user.id},user_id.is.null`);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      if (Array.isArray(data)) {
+        writeLocal(LOCAL_KEYS.plantillas_bonos, data);
+        return data;
+      }
+      return readLocal(LOCAL_KEYS.plantillas_bonos) || [];
+    } catch (err) {
+      console.warn('[ParkSales] Supabase no disponible para plantillas_bonos -> local:', err);
+      return readLocal(LOCAL_KEYS.plantillas_bonos) || [];
+    }
+  },
+
+  async savePlantillaBono(plantilla) {
+    localSeedIfEmpty();
+    const list = readLocal(LOCAL_KEYS.plantillas_bonos) || [];
+    const index = list.findIndex(p => p.abreviatura === plantilla.abreviatura);
+    const user = STATE.currentUser || (await AUTH.getCurrentUser().catch(() => null));
+    
+    const record = {
+      id: plantilla.id || uid(),
+      user_id: user ? user.id : null,
+      abreviatura: plantilla.abreviatura,
+      descripcion: plantilla.descripcion || '',
+      datos: plantilla.datos,
+      created_at: plantilla.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    if (index >= 0) {
+      list[index] = { ...list[index], ...record };
+    } else {
+      list.unshift(record);
+    }
+    writeLocal(LOCAL_KEYS.plantillas_bonos, list);
+
+    if (CATALOG_SUPABASE && user) {
+      try {
+        const { error } = await supabaseClient.from('plantillas_bonos').upsert(record);
+        if (error) console.warn('[ParkSales] Error upserting plantilla_bono a Supabase:', error);
+      } catch (e) {
+        console.warn('[ParkSales] Supabase sync fallo:', e);
+      }
+    }
+    return record;
+  },
+
+  async deletePlantillaBono(abreviatura) {
+    localSeedIfEmpty();
+    const list = readLocal(LOCAL_KEYS.plantillas_bonos) || [];
+    const updated = list.filter(p => p.abreviatura !== abreviatura);
+    writeLocal(LOCAL_KEYS.plantillas_bonos, updated);
+
+    if (CATALOG_SUPABASE) {
+      try {
+        const user = STATE.currentUser || (await AUTH.getCurrentUser().catch(() => null));
+        let query = supabaseClient.from('plantillas_bonos').delete().eq('abreviatura', abreviatura);
+        if (user && user.id) query = query.eq('user_id', user.id);
+        await query;
+      } catch (e) {
+        console.warn('[ParkSales] Error eliminando plantilla de Supabase:', e);
+      }
+    }
+    return true;
+  },
+
 };
 
 /* ============================================================================

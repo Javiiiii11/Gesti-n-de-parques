@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkSite — Bonos Rápidos</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="popup-header">
+      <div class="header-brand">
+        <div class="brand-icon">⚡</div>
+        <div>
+          <h1 class="brand-title">ParkSite Bonos</h1>
+          <span class="brand-sub">Autocompletado rápido</span>
+        </div>
+      </div>
+      <div class="header-toggle">
+        <label class="switch" title="Activar o pausar el autocompletado">
+          <input type="checkbox" id="toggle-enabled" checked>
+          <span class="slider round"></span>
+        </label>
+      </div>
+    </header>
+
+    <!-- Barra de estado y configuración rápida -->
+    <div class="status-bar">
+      <div class="status-indicator" id="ext-status-pill">
+        <span class="status-dot online"></span>
+        <span id="ext-status-text">Listo para bonoparques.es</span>
+      </div>
+      <div class="trigger-select-wrap">
+        <label for="trigger-key-select">Tecla:</label>
+        <select id="trigger-key-select" class="compact-select">
+          <option value="space" selected>Espacio</option>
+          <option value="tab">Tabulador</option>
+          <option value="enter">Enter</option>
+          <option value="auto">Al escribir</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Buscador -->
+    <div class="search-wrap">
+      <input type="text" id="search-input" placeholder="Buscar por /1, nombre, DNI..." autocomplete="off">
+      <span class="search-icon">🔍</span>
+    </div>
+
+    <!-- Contador y subtítulo -->
+    <div class="list-meta">
+      <span>Abreviaturas disponibles (<strong id="template-count">0</strong>)</span>
+      <button id="btn-sync" class="btn-text" title="Recargar plantillas guardadas">🔄 Sincronizar</button>
+    </div>
+
+    <!-- Lista de plantillas -->
+    <div class="templates-list" id="templates-list">
+      <!-- Se genera dinámicamente con popup.js -->
+    </div>
+
+    <!-- Footer -->
+    <footer class="popup-footer">
+      <button id="btn-open-parksite" class="btn-primary">
+        <span>🌐</span> Abrir ParkSite
+      </button>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
+

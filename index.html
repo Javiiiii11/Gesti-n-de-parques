@@ -201,6 +201,13 @@
           </svg>
           Registrar venta
         </div>
+                <div class="nav-item" data-view="bonos-rapidos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          </svg>
+          Bonos rápidos
+        </div>
         <div class="nav-item" data-view="historial">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
@@ -782,6 +789,180 @@
                   style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">—</b></div>
               <div class="tp-total"><span class="lbl">Importe:</span><span class="val" id="tp-total">0,00 €</span>
               </div>
+            </div>
+          </div>
+        </section>
+
+        
+        <!-- ========================== BONOS RÁPIDOS (EXTENSIÓN) ========================== -->
+        <section class="view" id="view-bonos-rapidos">
+          <div class="view-header" style="margin-bottom: 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+              <h2>⚡ Bonos Rápidos (Extensión Chrome)</h2>
+              <p class="desc">Rellena el formulario una sola vez, pulsa «Pasar a extensión» y reutilízalo mediante abreviaturas (/1, /2...) en bonoparques.es.</p>
+            </div>
+            <div id="br-extension-status-badge" class="br-status-badge disconnected" title="Comprobando extensión...">
+              <span class="br-status-dot"></span>
+              <span>Esperando extensión Chrome</span>
+            </div>
+          </div>
+
+          <!-- Guía rápida de uso -->
+          <div class="card card-pad" style="background: linear-gradient(135deg, rgba(0,198,255,0.06), rgba(0,114,255,0.03)); border:1px solid rgba(0,198,255,0.22); margin-bottom:24px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+              <span style="font-size:20px;">💡</span>
+              <h3 style="margin:0; font-size:15px; font-weight:700; color:var(--text-primary);">¿Cómo funciona el flujo rápido?</h3>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:12px; font-size:12.5px; color:var(--text-secondary); line-height:1.45;">
+              <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:var(--radius-m); padding:10px 12px;">
+                <strong style="color:var(--accent);">1. Rellenar en ParkSite:</strong> Introduce los datos del titular abajo y pulsa <span style="color:var(--accent); font-weight:600;">«⚡ Pasar a extensión»</span>.
+              </div>
+              <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:var(--radius-m); padding:10px 12px;">
+                <strong style="color:var(--accent);">2. Asignar abreviatura:</strong> Elige un atajo como <code style="color:var(--accent);">/1</code>, <code style="color:var(--accent);">/2</code> o <code style="color:var(--accent);">/bono1</code>.
+              </div>
+              <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:var(--radius-m); padding:10px 12px;">
+                <strong style="color:var(--accent);">3. Autocompletar:</strong> En <strong style="color:var(--text-primary);">bonoparques.es</strong>, haz clic en el primer campo, escribe <code style="color:var(--accent);">/1</code> y pulsa <strong>Espacio</strong>. ¡Listo!
+              </div>
+            </div>
+          </div>
+
+          <!-- Formulario principal de Bonos -->
+          <div class="card card-pad" style="margin-bottom:28px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid var(--border);">
+              <div>
+                <h3 style="margin:0; font-size:16px; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+                  <span>🪪</span> Formulario de origen de Bonos
+                </h3>
+                <p style="margin:3px 0 0; font-size:12.5px; color:var(--text-muted);">
+                  Estructura idéntica al formulario oficial de Bonos Parques.
+                </p>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button type="button" class="btn btn-ghost btn-sm" id="br-btn-ejemplo" title="Cargar datos de prueba para verificar">
+                  ⚡ Datos de ejemplo
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="br-btn-limpiar" title="Borrar todos los campos">
+                  Limpiar
+                </button>
+              </div>
+            </div>
+
+            <form id="br-form" onsubmit="return false;">
+              <!-- Bloque 1: Correo electrónico -->
+              <div style="margin-bottom:20px;">
+                <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                  <span>✉️</span> Correo electrónico
+                </div>
+                <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:14px;">
+                  <div class="form-field">
+                    <label for="br-email-gestor">Email del gestor (para recibir el bono) *</label>
+                    <input type="email" id="br-email-gestor" placeholder="ejemplo@correo.com" required autocomplete="off">
+                  </div>
+                  <div class="form-field">
+                    <label for="br-email-repetir">Repetir el email *</label>
+                    <input type="email" id="br-email-repetir" placeholder="ejemplo@correo.com" required autocomplete="off">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bloque 2: Datos personales del titular -->
+              <div style="margin-bottom:20px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.06);">
+                <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                  <span>👤</span> Datos personales del titular del bono
+                </div>
+                <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:14px;">
+                  <div class="form-field">
+                    <label for="br-nombre">Nombre *</label>
+                    <input type="text" id="br-nombre" placeholder="Nombre de pila" required autocomplete="off">
+                  </div>
+                  <div class="form-field">
+                    <label for="br-primer-apellido">Primer apellido *</label>
+                    <input type="text" id="br-primer-apellido" placeholder="Primer apellido" required autocomplete="off">
+                  </div>
+                  <div class="form-field">
+                    <label for="br-segundo-apellido">Segundo apellido</label>
+                    <input type="text" id="br-segundo-apellido" placeholder="Segundo apellido (opcional)" autocomplete="off">
+                  </div>
+                </div>
+
+                <!-- Fecha de nacimiento: DD, MM, AAAA independientes -->
+                <div class="form-field full" style="margin-bottom:14px;">
+                  <label style="font-weight:600; margin-bottom:6px;">🎂 Fecha de nacimiento (Día / Mes / Año) *</label>
+                  <div style="display:grid; grid-template-columns: 100px 1fr 120px; gap:10px; max-width:440px;">
+                    <select id="br-dia" required style="width:100%;">
+                      <option value="">Día</option>
+                    </select>
+                    <select id="br-mes" required style="width:100%;">
+                      <option value="">Mes</option>
+                    </select>
+                    <select id="br-anio" required style="width:100%;">
+                      <option value="">Año</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Tipo de documento y Número de documento -->
+                <div class="form-grid" style="grid-template-columns: 140px 1fr; gap:14px; max-width:460px;">
+                  <div class="form-field">
+                    <label for="br-tipo-documento">Tipo documento *</label>
+                    <select id="br-tipo-documento">
+                      <option value="DNI" selected>DNI</option>
+                      <option value="NIE">NIE</option>
+                      <option value="Pasaporte">Pasaporte</option>
+                    </select>
+                  </div>
+                  <div class="form-field">
+                    <label for="br-num-documento">Número de documento *</label>
+                    <input type="text" id="br-num-documento" placeholder="12345678A" required autocomplete="off" style="text-transform:uppercase;">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bloque 3: Facturación -->
+              <div style="margin-bottom:22px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.06);">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13.5px; font-weight:600; user-select:none;">
+                  <input type="checkbox" id="br-copiar-facturacion" checked style="width:18px; height:18px; accent-color:var(--accent); cursor:pointer;">
+                  <span>Copiar información para detalles de facturación</span>
+                </label>
+              </div>
+
+              <!-- Fila de acción principal -->
+              <div style="display:flex; align-items:center; gap:12px; padding-top:16px; border-top:1px solid var(--border);">
+                <button type="button" class="btn btn-primary" id="br-btn-pasar-extension" style="padding:10px 22px; font-size:14px; font-weight:700; gap:8px; box-shadow:0 4px 14px rgba(0,198,255,0.35);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px; height:18px;">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
+                  ⚡ Pasar a extensión
+                </button>
+                <span style="font-size:12px; color:var(--text-muted);">
+                  Se abrirá una ventana para elegir la abreviatura (/1, /2...) y enviarlo a la extensión.
+                </span>
+              </div>
+            </form>
+          </div>
+
+          <!-- Bloque de Plantillas Guardadas -->
+          <div class="card card-pad">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
+              <div>
+                <h3 style="margin:0; font-size:16px; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+                  <span>🗂️</span> Plantillas guardadas en la extensión (<span id="br-plantillas-count">0</span>)
+                </h3>
+                <p style="margin:3px 0 0; font-size:12.5px; color:var(--text-muted);">
+                  Consulta, copia, modifica o elimina tus abreviaturas activas.
+                </p>
+              </div>
+              <div style="position:relative; min-width:240px;">
+                <input type="text" id="br-buscar-plantillas" placeholder="Buscar por /1, nombre, DNI..." style="padding-left:32px; font-size:12.5px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--text-muted); pointer-events:none;">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </div>
+            </div>
+
+            <div id="br-plantillas-container">
+              <!-- Renderizado dinámico desde bonos-rapidos.js -->
             </div>
           </div>
         </section>
@@ -2342,6 +2523,7 @@
   <script src="Tematicas/BlackFriday/blackfriday.js?v=1"></script>
   <script src="Tematicas/tematicas.js?v=2"></script>
   <script src="js/novedades.js?v=2"></script>
+  <script src="js/bonos-rapidos.js?v=1"></script>
   <script src="js/app.js?v=23"></script>
 </body>
 
