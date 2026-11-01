@@ -29,7 +29,6 @@
 
   cargarDatosStorage();
 
-  // Escuchar si se añade/modifica una plantilla en tiempo real desde ParkSite
   if (chrome.storage && chrome.storage.onChanged) {
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area === 'local') {
@@ -52,7 +51,6 @@
   function getAbreviaturaDesdeTexto(texto) {
     if (!texto) return null;
     const trimmed = String(texto).trim();
-    // Coincidencia con /1, /2, /bono1, etc.
     const match = trimmed.match(/\/([a-zA-Z0-9_-]+)$/);
     if (!match) return null;
 
@@ -122,305 +120,280 @@
 
     // 1. Limpiar la abreviatura del campo en el que se escribió
     const abrevRegex = new RegExp(`\\s*${escapeRegExp(plantilla.abreviatura)}\\s*$`, 'i');
-    if (triggerEl.value !== undefined) {
+    if (triggerEl && triggerEl.value !== undefined) {
       setNativeValue(triggerEl, triggerEl.value.replace(abrevRegex, ''));
     }
 
-    const context = triggerEl.form || triggerEl.closest('form') || document;
+    // Usar el documento completo como contexto para abarcar todas las tarjetas/secciones
+    const root = document;
     let totalRellenados = 0;
 
-    // 1) Email del gestor
-    const emailGestorEl = findField(context, [
-      'email', 'mail', 'gestor', 'email_gestor', 'manager_email', 'correo', 'txtEmail', 'user_email'
-    ], ['email', 'text'], ['email', 'correo', 'e-mail']);
-
+    // 1) Email del gestor y Repetir email (mismo correo en ambos)
     const emailVal = datos.email_gestor || datos.email_repetir || '';
-    if (emailGestorEl && emailVal) {
-      setNativeValue(emailGestorEl, emailVal);
-      totalRellenados++;
-    }
-
-    // 2) Repetir email (rellena automáticamente el mismo email)
-    const emailRepetirEl = findRepeatEmailField(context, emailGestorEl);
-    if (emailRepetirEl && emailVal) {
-      setNativeValue(emailRepetirEl, emailVal);
-      totalRellenados++;
-    }
-
-    // 3) Nombre
-    const nombreEl = findNombreField(context);
-    if (nombreEl && datos.nombre) {
-      setNativeValue(nombreEl, datos.nombre);
-      totalRellenados++;
-    }
-
-    // 4) Primer apellido y Segundo apellido
-    const apellidosResult = findAndSetApellidos(context, nombreEl, datos.primer_apellido, datos.segundo_apellido);
-    if (apellidosResult.primerApellidoOk) totalRellenados++;
-    if (apellidosResult.segundoApellidoOk) totalRellenados++;
-
-    // 5) Día de nacimiento (DD)
-    const diaEl = findBirthField(context, ['dia', 'day', 'birth_day', 'dd', 'fechanacimiento_dia', 'birthday_day', 'birthDay'], 'dia');
-    if (diaEl && datos.dia_nacimiento) {
-      setBirthDayValue(diaEl, datos.dia_nacimiento);
-      totalRellenados++;
-    }
-
-    // 6) Mes de nacimiento (MM)
-    const mesEl = findBirthField(context, ['mes', 'month', 'birth_month', 'mm', 'fechanacimiento_mes', 'birthday_month', 'birthMonth'], 'mes');
-    if (mesEl && datos.mes_nacimiento) {
-      setBirthMonthValue(mesEl, datos.mes_nacimiento);
-      totalRellenados++;
-    }
-
-    // 7) Año de nacimiento (AAAA)
-    const anioEl = findBirthField(context, ['anio', 'ano', 'year', 'birth_year', 'yyyy', 'aaaa', 'fechanacimiento_ano', 'birthday_year', 'birthYear'], 'anio');
-    if (anioEl && datos.anio_nacimiento) {
-      setBirthYearValue(anioEl, datos.anio_nacimiento);
-      totalRellenados++;
-    }
-
-    // Caso alternativo si la fecha está en un solo input[type="date"]
-    if (!diaEl && !mesEl && !anioEl) {
-      const fechaUnicaEl = findField(context, ['fecha_nacimiento', 'birthdate', 'birth_date', 'fecnac', 'fechaNacimiento'], ['date', 'text'], ['fecha de nacimiento', 'nacimiento']);
-      if (fechaUnicaEl) {
-        const d = String(datos.dia_nacimiento || '').padStart(2, '0');
-        const m = String(datos.mes_nacimiento || '').padStart(2, '0');
-        const y = datos.anio_nacimiento || '2000';
-        setNativeValue(fechaUnicaEl, `${y}-${m}-${d}`);
+    if (emailVal) {
+      const emailInputs = findEmailInputs(root);
+      if (emailInputs.length > 0) {
+        setNativeValue(emailInputs[0], emailVal);
         totalRellenados++;
+        if (emailInputs.length > 1) {
+          setNativeValue(emailInputs[1], emailVal);
+          totalRellenados++;
+        }
       }
     }
 
-    // 8) Número de documento (DNI/NIE/Pasaporte)
-    const numDocEl = findDocumentField(context);
-    if (numDocEl && datos.numero_documento) {
-      setNativeValue(numDocEl, datos.numero_documento);
+    // 2) Datos personales: Nombre, Primer apellido y Segundo apellido
+    const personalCount = findAndFillPersonalData(root, datos);
+    totalRellenados += personalCount;
+
+    // 3) Fecha de nacimiento: Día, Mes y Año
+    const fechaCount = findAndFillFechaNacimiento(root, datos);
+    totalRellenados += fechaCount;
+
+    // 4) Documento (DNI/NIE/Pasaporte)
+    const docEl = findDocumentInput(root);
+    if (docEl && datos.numero_documento) {
+      setNativeValue(docEl, datos.numero_documento);
       totalRellenados++;
     }
 
-    // Feedback visual flotante
+    // NOTA: La casilla de "Copiar información para detalles de facturación" se ignora completamente por petición del usuario.
+
+    // Notificación flotante de confirmación
     mostrarBadgeExito(plantilla, totalRellenados);
   }
 
   // --------------------------------------------------------------------------
-  // BÚSQUEDA Y ASIGNACIÓN ESPECIALIZADA DE PRIMER Y SEGUNDO APELLIDO
+  // BÚSQUEDA Y ASIGNACIÓN INFALIBLE DE NOMBRE Y APELLIDOS
   // --------------------------------------------------------------------------
-  function findNombreField(root) {
-    const tokens = ['nombre', 'firstname', 'first_name', 'name', 'txtName', 'txtNombre', 'first-name'];
-    for (const t of tokens) {
-      const el = root.querySelector(`input[name="${t}" i], input[id="${t}" i], input[name*="${t}" i], input[id*="${t}" i]`);
-      if (el && isTextualInput(el) && isVisible(el)) {
-        // Asegurar que no sea 'primer_apellido' que contenga 'nombre'
-        const nameAttr = (el.name || '').toLowerCase();
-        const idAttr = (el.id || '').toLowerCase();
-        if (!nameAttr.includes('apellido') && !idAttr.includes('apellido') && !nameAttr.includes('surname') && !idAttr.includes('surname')) {
-          return el;
+  function findAndFillPersonalData(root, datos) {
+    const nombreVal = datos.nombre || '';
+    const primerApellidoVal = datos.primer_apellido || '';
+    const segundoApellidoVal = datos.segundo_apellido || '';
+
+    // 1. Buscar primero por coincidencia de texto visible en etiquetas/labels
+    let nombreEl = findInputByLabelPhrases(root, ['nombre*', 'nombre']);
+    let primerApellidoEl = findInputByLabelPhrases(root, ['primer apellido*', 'primer apellido', '1er apellido', 'primer ap', 'apellido 1']);
+    let segundoApellidoEl = findInputByLabelPhrases(root, ['segundo apellido*', 'segundo apellido', '2do apellido', 'segundo ap', 'apellido 2']);
+
+    // 2. Si falta alguno, buscar por selectores directos de atributos (name, id, placeholder, aria-label)
+    if (!nombreEl) {
+      nombreEl = root.querySelector('input[name="nombre" i], input[id="nombre" i], input[name="firstname" i], input[id="firstname" i], input[name*="nombre" i], input[id*="nombre" i], input[placeholder*="nombre" i]');
+    }
+
+    if (!primerApellidoEl) {
+      primerApellidoEl = root.querySelector(
+        'input[name*="primerapellido" i], input[id*="primerapellido" i],' +
+        'input[name*="primer_apellido" i], input[id*="primer_apellido" i],' +
+        'input[name*="firstsurname" i], input[id*="firstsurname" i],' +
+        'input[name*="first_surname" i], input[id*="first_surname" i],' +
+        'input[placeholder*="primer apellido" i], input[aria-label*="primer apellido" i],' +
+        'input[name*="apellido1" i], input[id*="apellido1" i],' +
+        'input[name*="surname1" i], input[id*="surname1" i],' +
+        'input[name="surname" i], input[id="surname" i],' +
+        'input[name="lastname" i], input[id="lastname" i],' +
+        'input[name="apellido" i], input[id="apellido" i]'
+      );
+    }
+
+    if (!segundoApellidoEl) {
+      segundoApellidoEl = root.querySelector(
+        'input[name*="segundoapellido" i], input[id*="segundoapellido" i],' +
+        'input[name*="segundo_apellido" i], input[id*="segundo_apellido" i],' +
+        'input[name*="secondsurname" i], input[id*="secondsurname" i],' +
+        'input[name*="second_surname" i], input[id*="second_surname" i],' +
+        'input[placeholder*="segundo apellido" i], input[aria-label*="segundo apellido" i],' +
+        'input[name*="apellido2" i], input[id*="apellido2" i],' +
+        'input[name*="surname2" i], input[id*="surname2" i]'
+      );
+    }
+
+    // 3. Fallback Posicional Consecutivo (Regla de oro de formularios de bonos)
+    // En bonoparques.es, los campos son secuenciales: [ Nombre ] -> [ Primer apellido ] -> [ Segundo apellido ]
+    const allTextInputs = Array.from(root.querySelectorAll(
+      'input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"])'
+    )).filter(isVisible);
+
+    // Si tenemos nombre y segundo apellido pero falta el primer apellido, el campo entre ellos ES el primer apellido
+    if (nombreEl && segundoApellidoEl && !primerApellidoEl) {
+      const nIdx = allTextInputs.indexOf(nombreEl);
+      const sIdx = allTextInputs.indexOf(segundoApellidoEl);
+      if (nIdx !== -1 && sIdx === nIdx + 2) {
+        primerApellidoEl = allTextInputs[nIdx + 1];
+      }
+    }
+
+    // Si tenemos nombre pero falta el primer apellido, tomar el input inmediatamente posterior
+    if (nombreEl) {
+      const nIdx = allTextInputs.indexOf(nombreEl);
+      if (nIdx !== -1) {
+        if (!primerApellidoEl && nIdx + 1 < allTextInputs.length) {
+          primerApellidoEl = allTextInputs[nIdx + 1];
+        }
+        if (!segundoApellidoEl && nIdx + 2 < allTextInputs.length) {
+          segundoApellidoEl = allTextInputs[nIdx + 2];
         }
       }
     }
 
-    // Búsqueda por placeholder o labels
-    const allInputs = Array.from(root.querySelectorAll('input')).filter(el => isTextualInput(el) && isVisible(el));
-    for (const el of allInputs) {
-      const ph = (el.placeholder || '').toLowerCase();
-      const aria = (el.getAttribute('aria-label') || '').toLowerCase();
-      if ((ph === 'nombre' || ph.startsWith('nombre') || aria === 'nombre') && !ph.includes('apellido') && !ph.includes('usuario')) {
-        return el;
+    // Protección anti-colisión: el primer y segundo apellido nunca pueden ser el mismo input
+    if (segundoApellidoEl === primerApellidoEl) {
+      const pIdx = allTextInputs.indexOf(primerApellidoEl);
+      if (pIdx !== -1 && pIdx + 1 < allTextInputs.length) {
+        segundoApellidoEl = allTextInputs[pIdx + 1];
+      } else {
+        segundoApellidoEl = null;
       }
     }
 
-    return null;
+    let count = 0;
+    if (nombreEl && nombreVal) {
+      setNativeValue(nombreEl, nombreVal);
+      count++;
+    }
+    if (primerApellidoEl && primerApellidoVal) {
+      setNativeValue(primerApellidoEl, primerApellidoVal);
+      count++;
+    }
+    if (segundoApellidoEl && segundoApellidoVal) {
+      setNativeValue(segundoApellidoEl, segundoApellidoVal);
+      count++;
+    }
+
+    return count;
   }
 
-  function findAndSetApellidos(root, nombreEl, primerApellido, segundoApellido) {
-    let primerApellidoEl = null;
-    let segundoApellidoEl = null;
-    let singleApellidosEl = null;
+  // --------------------------------------------------------------------------
+  // BÚSQUEDA POR TEXTO DE LABEL VISIBLE (TREEWALKER + LABELS)
+  // --------------------------------------------------------------------------
+  function findInputByLabelPhrases(root, phrases) {
+    // A. Buscar en etiquetas <label>
+    const labels = root.querySelectorAll('label');
+    for (const lbl of labels) {
+      const txt = (lbl.textContent || '').trim().toLowerCase();
+      for (const phrase of phrases) {
+        if (txt.includes(phrase)) {
+          if (lbl.htmlFor) {
+            const inp = document.getElementById(lbl.htmlFor);
+            if (inp && isVisible(inp)) return inp;
+          }
+          const inner = lbl.querySelector('input');
+          if (inner && isVisible(inner)) return inner;
 
-    // Tokens específicos de Primer Apellido (ID / Name)
-    const primerTokens = [
-      'primer_apellido', 'primerapellido', 'primer-apellido', 'primer.apellido',
-      'firstsurname', 'first_surname', 'first-surname',
-      'firstlastname', 'first_lastname', 'first_last_name', 'first-lastname',
-      'apellido1', 'apellido_1', 'apellido-1', 'apellido_primero',
-      'surname1', 'surname_1', 'surname-1',
-      'txtprimerapellido', 'txtapellido1', 'txt_apellido1', 'txt_primer_apellido',
-      '1erapellido', '1_apellido', 'lastname1', 'last_name1'
-    ];
-
-    // Tokens específicos de Segundo Apellido (ID / Name)
-    const segundoTokens = [
-      'segundo_apellido', 'segundoapellido', 'segundo-apellido', 'segundo.apellido',
-      'secondsurname', 'second_surname', 'second-surname',
-      'secondlastname', 'second_lastname', 'second_last_name', 'second-lastname',
-      'apellido2', 'apellido_2', 'apellido-2', 'apellido_segundo',
-      'surname2', 'surname_2', 'surname-2',
-      'txtsegundoapellido', 'txtapellido2', 'txt_apellido2', 'txt_segundo_apellido',
-      '2doapellido', '2_apellido', 'lastname2', 'last_name2'
-    ];
-
-    // 1. Intentar localizar por atributos directos (name, id)
-    for (const t of primerTokens) {
-      const el = root.querySelector(`input[name="${t}" i], input[id="${t}" i], input[name*="${t}" i], input[id*="${t}" i]`);
-      if (el && isTextualInput(el) && isVisible(el)) {
-        primerApellidoEl = el;
-        break;
-      }
-    }
-
-    for (const t of segundoTokens) {
-      const el = root.querySelector(`input[name="${t}" i], input[id="${t}" i], input[name*="${t}" i], input[id*="${t}" i]`);
-      if (el && isTextualInput(el) && isVisible(el) && el !== primerApellidoEl) {
-        segundoApellidoEl = el;
-        break;
-      }
-    }
-
-    // 2. Si no se encontró por ID/name, buscar por placeholder, aria-label o label cercano
-    if (!primerApellidoEl || !segundoApellidoEl) {
-      const allInputs = Array.from(root.querySelectorAll('input')).filter(el => isTextualInput(el) && isVisible(el) && el !== nombreEl);
-
-      for (const el of allInputs) {
-        const ph = (el.placeholder || '').toLowerCase();
-        const aria = (el.getAttribute('aria-label') || '').toLowerCase();
-        const labelText = getAssociatedLabelText(el).toLowerCase();
-
-        const isPrimer = ph.includes('primer apellido') || ph.includes('1er apellido') || ph.includes('apellido 1') || ph.includes('1º apellido') ||
-                         aria.includes('primer apellido') || labelText.includes('primer apellido') || labelText.includes('1er apellido') || labelText.includes('apellido 1');
-
-        const isSegundo = ph.includes('segundo apellido') || ph.includes('2do apellido') || ph.includes('apellido 2') || ph.includes('2º apellido') ||
-                          aria.includes('segundo apellido') || labelText.includes('segundo apellido') || labelText.includes('2do apellido') || labelText.includes('apellido 2');
-
-        if (isPrimer && !primerApellidoEl) {
-          primerApellidoEl = el;
-        } else if (isSegundo && !segundoApellidoEl && el !== primerApellidoEl) {
-          segundoApellidoEl = el;
-        } else if (!singleApellidosEl && (ph === 'apellidos' || ph === 'apellido' || labelText.includes('apellidos') || labelText === 'apellido')) {
-          singleApellidosEl = el;
+          let cur = lbl;
+          for (let i = 0; i < 3; i++) {
+            if (!cur || cur === root) break;
+            const pInp = cur.querySelector('input');
+            if (pInp && isVisible(pInp) && pInp !== inner) return pInp;
+            let next = cur.nextElementSibling;
+            while (next) {
+              const nInp = next.tagName === 'INPUT' ? next : next.querySelector('input');
+              if (nInp && isVisible(nInp)) return nInp;
+              next = next.nextElementSibling;
+            }
+            cur = cur.parentElement;
+          }
         }
       }
     }
 
-    // 3. Fallback Posicional Infalible:
-    // En formularios españoles (como bonoparques.es), inmediatamente después de 'Nombre' vienen 'Primer apellido' y 'Segundo apellido'
-    if (!primerApellidoEl && nombreEl) {
-      const allInputs = Array.from(root.querySelectorAll('input')).filter(el => isTextualInput(el) && isVisible(el));
-      const nombreIdx = allInputs.indexOf(nombreEl);
+    // B. Buscar mediante TreeWalker nodos de texto en el DOM (para spans, divs, p que actúan como label)
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+    while ((node = walker.nextNode())) {
+      const text = (node.nodeValue || '').trim().toLowerCase();
+      if (!text || text.length > 50) continue;
 
-      if (nombreIdx !== -1 && nombreIdx + 1 < allInputs.length) {
-        const candidate1 = allInputs[nombreIdx + 1];
-        // Comprobar que no sea email ni fecha ni documento
-        if (!isEmailInput(candidate1) && !isDocumentInput(candidate1)) {
-          primerApellidoEl = candidate1;
-
-          if (nombreIdx + 2 < allInputs.length && !segundoApellidoEl) {
-            const candidate2 = allInputs[nombreIdx + 2];
-            if (!isEmailInput(candidate2) && !isDocumentInput(candidate2)) {
-              segundoApellidoEl = candidate2;
+      for (const phrase of phrases) {
+        if (text.includes(phrase)) {
+          let parent = node.parentElement;
+          if (parent) {
+            if (parent.tagName === 'LABEL' && parent.htmlFor) {
+              const inp = document.getElementById(parent.htmlFor);
+              if (inp && isVisible(inp)) return inp;
+            }
+            let cur = parent;
+            for (let lvl = 0; lvl < 3; lvl++) {
+              if (!cur || cur === document.body) break;
+              const inp = cur.querySelector('input');
+              if (inp && isVisible(inp)) return inp;
+              let sibling = cur.nextElementSibling;
+              while (sibling) {
+                const sInp = sibling.tagName === 'INPUT' ? sibling : sibling.querySelector('input');
+                if (sInp && isVisible(sInp)) return sInp;
+                sibling = sibling.nextElementSibling;
+              }
+              cur = cur.parentElement;
             }
           }
         }
       }
     }
 
-    // 4. Fallback si solo existe un único campo para todos los apellidos (ej. "Apellidos")
-    if (!primerApellidoEl && singleApellidosEl) {
-      const fullApellidos = [primerApellido, segundoApellido].filter(Boolean).join(' ');
-      setNativeValue(singleApellidosEl, fullApellidos);
-      return { primerApellidoOk: true, segundoApellidoOk: true };
-    }
-
-    let primerOk = false;
-    let segundoOk = false;
-
-    if (primerApellidoEl && primerApellido) {
-      setNativeValue(primerApellidoEl, primerApellido);
-      primerOk = true;
-    }
-
-    if (segundoApellidoEl && segundoApellido) {
-      setNativeValue(segundoApellidoEl, segundoApellido);
-      segundoOk = true;
-    }
-
-    return { primerApellidoOk: primerOk, segundoApellidoOk: segundoOk };
-  }
-
-  // --------------------------------------------------------------------------
-  // BÚSQUEDA DE CAMPO DE DOCUMENTO (DNI/NIE/PASAPORTE)
-  // --------------------------------------------------------------------------
-  function findDocumentField(root) {
-    const tokens = ['documento', 'num_documento', 'numero_documento', 'dni', 'nif', 'nie', 'passport', 'id_number', 'txtDni', 'txtDocumento', 'identificationNumber'];
-    for (const t of tokens) {
-      const el = root.querySelector(`input[name="${t}" i], input[id="${t}" i], input[name*="${t}" i], input[id*="${t}" i]`);
-      if (el && isTextualInput(el) && isVisible(el)) return el;
-    }
-
-    // Búsqueda por placeholder o label
-    const allInputs = Array.from(root.querySelectorAll('input')).filter(el => isTextualInput(el) && isVisible(el));
-    for (const el of allInputs) {
-      const ph = (el.placeholder || '').toLowerCase();
-      const aria = (el.getAttribute('aria-label') || '').toLowerCase();
-      const labelText = getAssociatedLabelText(el).toLowerCase();
-
-      if (ph.includes('dni') || ph.includes('documento') || ph.includes('nif') || ph.includes('nie') ||
-          aria.includes('dni') || aria.includes('documento') ||
-          labelText.includes('documento') || labelText.includes('dni') || labelText.includes('nif') || labelText.includes('nie')) {
-        return el;
-      }
-    }
-
     return null;
   }
 
   // --------------------------------------------------------------------------
-  // BÚSQUEDA DE CAMPOS GENERAL Y REPETIR EMAIL
+  // BÚSQUEDA DE EMAILS (PRINCIPAL Y REPETIR)
   // --------------------------------------------------------------------------
-  function findField(root, tokens, types = ['text'], labelTexts = []) {
-    for (const t of tokens) {
-      const el = root.querySelector(`input[name="${t}" i], input[id="${t}" i], input[name*="${t}" i], input[id*="${t}" i]`);
-      if (el && isVisible(el)) return el;
+  function findEmailInputs(root) {
+    const found = [];
+    const allInputs = Array.from(root.querySelectorAll('input')).filter(isVisible);
+
+    // Prioridad 1: inputs con type="email"
+    for (const inp of allInputs) {
+      if ((inp.type || '').toLowerCase() === 'email') {
+        found.push(inp);
+      }
     }
 
-    for (const t of tokens) {
-      const el = root.querySelector(`input[placeholder*="${t}" i]`);
-      if (el && isVisible(el)) return el;
-    }
-
-    if (labelTexts && labelTexts.length > 0) {
-      const allInputs = Array.from(root.querySelectorAll('input')).filter(isVisible);
-      for (const el of allInputs) {
-        const lbl = getAssociatedLabelText(el).toLowerCase();
-        for (const lt of labelTexts) {
-          if (lbl.includes(lt.toLowerCase())) return el;
+    // Si encontramos menos de 2, buscar por name, id o label que contengan 'email' o 'correo'
+    if (found.length < 2) {
+      for (const inp of allInputs) {
+        if (found.includes(inp)) continue;
+        const name = (inp.name || '').toLowerCase();
+        const id = (inp.id || '').toLowerCase();
+        const ph = (inp.placeholder || '').toLowerCase();
+        if (name.includes('email') || id.includes('email') || ph.includes('email') ||
+            name.includes('correo') || id.includes('correo') || ph.includes('correo') ||
+            name.includes('mail') || id.includes('mail')) {
+          found.push(inp);
         }
       }
     }
 
-    return null;
+    return found;
   }
 
-  function findRepeatEmailField(root, firstEmailEl) {
-    const tokens = ['repetir', 'repeat', 'confirm', 'email2', 'email_confirm', 'email_repeat', 'repite', 'confirmacion'];
-    for (const t of tokens) {
-      const el = root.querySelector(`input[id*="${t}" i], input[name*="${t}" i], input[placeholder*="${t}" i]`);
-      if (el && el !== firstEmailEl && isVisible(el)) return el;
+  // --------------------------------------------------------------------------
+  // BÚSQUEDA Y ASIGNACIÓN DE FECHA DE NACIMIENTO
+  // --------------------------------------------------------------------------
+  function findAndFillFechaNacimiento(root, datos) {
+    let filled = 0;
+
+    const diaEl = findBirthInput(root, ['dia', 'day', 'dd', 'fechanacimiento_dia', 'birthday_day', 'birthDay'], 'dia');
+    const mesEl = findBirthInput(root, ['mes', 'month', 'mm', 'fechanacimiento_mes', 'birthday_month', 'birthMonth'], 'mes');
+    const anioEl = findBirthInput(root, ['anio', 'ano', 'year', 'yyyy', 'aaaa', 'fechanacimiento_ano', 'birthday_year', 'birthYear'], 'anio');
+
+    if (diaEl && datos.dia_nacimiento) {
+      setBirthDayValue(diaEl, datos.dia_nacimiento);
+      filled++;
     }
 
-    // Si no tiene nombre explícito, buscar el segundo input de tipo email en el formulario
-    const allEmails = Array.from(root.querySelectorAll('input[type="email"], input[name*="email" i]')).filter(isVisible);
-    if (allEmails.length >= 2) {
-      if (firstEmailEl && allEmails[0] === firstEmailEl) {
-        return allEmails[1];
-      }
-      return allEmails[1];
+    if (mesEl && datos.mes_nacimiento) {
+      setBirthMonthValue(mesEl, datos.mes_nacimiento);
+      filled++;
     }
 
-    return null;
+    if (anioEl && datos.anio_nacimiento) {
+      setBirthYearValue(anioEl, datos.anio_nacimiento);
+      filled++;
+    }
+
+    return filled;
   }
 
-  function findBirthField(root, tokens, tipo) {
+  function findBirthInput(root, tokens, tipo) {
     for (const t of tokens) {
       const el = root.querySelector(`select[id*="${t}" i], select[name*="${t}" i], input[id*="${t}" i], input[name*="${t}" i]`);
       if (el && isVisible(el)) return el;
@@ -428,58 +401,35 @@
 
     const allElements = Array.from(root.querySelectorAll('select, input')).filter(isVisible);
     for (const el of allElements) {
-      const lbl = getAssociatedLabelText(el).toLowerCase().trim();
       const ph = (el.placeholder || '').toLowerCase().trim();
-      if ((tipo === 'dia' && (lbl.includes('día') || lbl.includes('dia') || ph === 'dd' || ph === 'día')) ||
-          (tipo === 'mes' && (lbl.includes('mes') || ph === 'mm' || ph === 'mes')) ||
-          (tipo === 'anio' && (lbl.includes('año') || lbl.includes('ano') || ph === 'aaaa' || ph === 'yyyy' || ph === 'año'))) {
-        return el;
-      }
+      if (tipo === 'dia' && (ph === 'dd' || ph === 'día' || ph === 'dia')) return el;
+      if (tipo === 'mes' && (ph === 'mm' || ph === 'mes')) return el;
+      if (tipo === 'anio' && (ph === 'aaaa' || ph === 'yyyy' || ph === 'año' || ph === 'ano')) return el;
     }
 
     return null;
   }
 
-  function getAssociatedLabelText(input) {
-    if (!input) return '';
-    // 1. Label con atributo for
-    if (input.id) {
-      const lbl = document.querySelector(`label[for="${CSS.escape(input.id)}"]`);
-      if (lbl) return lbl.textContent || '';
-    }
-    // 2. Label padre contenedor
-    const parentLabel = input.closest('label');
-    if (parentLabel) return parentLabel.textContent || '';
-
-    // 3. Contenedor padre de campo (.form-group, .field, div)
-    const container = input.closest('.form-group, .form-field, .field, .input-wrap, div');
-    if (container) {
-      const labelLike = container.querySelector('label, .label, span.title, p.label, span.field-label');
-      if (labelLike) return labelLike.textContent || '';
+  // --------------------------------------------------------------------------
+  // BÚSQUEDA DE DOCUMENTO (DNI/NIE/PASAPORTE)
+  // --------------------------------------------------------------------------
+  function findDocumentInput(root) {
+    const tokens = ['documento', 'num_documento', 'numero_documento', 'dni', 'nif', 'nie', 'passport', 'id_number', 'txtDni', 'txtDocumento', 'identificationNumber'];
+    for (const t of tokens) {
+      const el = root.querySelector(`input[name="${t}" i], input[id="${t}" i], input[name*="${t}" i], input[id*="${t}" i]`);
+      if (el && isVisible(el)) return el;
     }
 
-    return '';
-  }
+    const allInputs = Array.from(root.querySelectorAll('input')).filter(isVisible);
+    for (const el of allInputs) {
+      const ph = (el.placeholder || '').toLowerCase();
+      const aria = (el.getAttribute('aria-label') || '').toLowerCase();
+      if (ph.includes('dni') || ph.includes('documento') || aria.includes('dni') || aria.includes('documento')) {
+        return el;
+      }
+    }
 
-  function isTextualInput(el) {
-    if (!el || el.tagName.toLowerCase() !== 'input') return false;
-    const type = (el.type || 'text').toLowerCase();
-    return type === 'text' || type === 'search' || type === '' || type === 'tel';
-  }
-
-  function isEmailInput(el) {
-    if (!el) return false;
-    const type = (el.type || '').toLowerCase();
-    const name = (el.name || '').toLowerCase();
-    const id = (el.id || '').toLowerCase();
-    return type === 'email' || name.includes('email') || id.includes('email') || name.includes('mail') || id.includes('mail');
-  }
-
-  function isDocumentInput(el) {
-    if (!el) return false;
-    const name = (el.name || '').toLowerCase();
-    const id = (el.id || '').toLowerCase();
-    return name.includes('dni') || id.includes('dni') || name.includes('doc') || id.includes('doc') || name.includes('nif') || id.includes('nif');
+    return null;
   }
 
   function isVisible(el) {
@@ -488,7 +438,7 @@
   }
 
   // --------------------------------------------------------------------------
-  // ASIGNACIÓN DE VALORES CON DISPARO COMPLETO DE EVENTOS
+  // ASIGNACIÓN DE VALORES DISPARANDO EVENTOS NATIVOS
   // --------------------------------------------------------------------------
   function setNativeValue(el, val) {
     if (!el || val === undefined || val === null) return;
@@ -496,20 +446,27 @@
     try {
       if (typeof el.focus === 'function') el.focus();
 
+      // Compatibilidad con React Value Tracker
+      const lastValue = el.value;
+      el.value = val;
+      const tracker = el._valueTracker;
+      if (tracker) {
+        tracker.setValue(lastValue);
+      }
+
+      // Setter del prototipo nativo
       const tag = el.tagName.toLowerCase();
       const proto = tag === 'textarea' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
       const descriptor = Object.getOwnPropertyDescriptor(proto, 'value');
 
       if (descriptor && descriptor.set) {
         descriptor.set.call(el, val);
-      } else {
-        el.value = val;
       }
     } catch (e) {
       el.value = val;
     }
 
-    // Disparar secuencia completa de eventos para React / Angular / Vue / Vanilla
+    // Disparar eventos con burbujeo completo
     el.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
     el.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
     el.dispatchEvent(new Event('blur', { bubbles: true, cancelable: true }));

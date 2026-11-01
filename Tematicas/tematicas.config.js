@@ -20,7 +20,7 @@
 const tematica_blackfriday = false;
 
 // 🎃 TEMÁTICA HALLOWEEN (true = ACTIVA, false = DESACTIVADA)
-const tematica_halloween = true;
+const tematica_halloween = false;
 
 // 🎄 TEMÁTICA NAVIDAD (true = ACTIVA, false = DESACTIVADA)
 const tematica_navidad = false;
