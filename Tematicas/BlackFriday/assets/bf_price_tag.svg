@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 60" fill="none">
+  <defs>
+    <linearGradient id="priceGrad" x1="0" y1="0" x2="48" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1A0A00"/>
+      <stop offset="100%" stop-color="#0D0600"/>
+    </linearGradient>
+    <linearGradient id="priceGold" x1="0" y1="0" x2="48" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF275"/>
+      <stop offset="100%" stop-color="#FFD700"/>
+    </linearGradient>
+  </defs>
+  <!-- Tag body -->
+  <path d="M6 0 L42 0 Q48 0 48 6 L48 42 L24 60 L0 42 L0 6 Q0 0 6 0 Z" fill="url(#priceGrad)" stroke="#FFD700" stroke-width="1.5"/>
+  <!-- Hole -->
+  <circle cx="24" cy="9" r="4" fill="none" stroke="#FFD700" stroke-width="1.5"/>
+  <!-- % symbol -->
+  <text x="24" y="38" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="18" font-weight="900" fill="url(#priceGold)">%</text>
+  <!-- BF text -->
+  <text x="24" y="22" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="7" font-weight="900" fill="#FF1E56" letter-spacing="1">BLACK</text>
+</svg>
+

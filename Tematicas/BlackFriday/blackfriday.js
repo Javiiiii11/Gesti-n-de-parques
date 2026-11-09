@@ -1,7 +1,7 @@
 /* ============================================================================
-   Temáticas ParkSales · BLACK FRIDAY THEME CONTROLLER (EDICIÓN ALTA ENERGÍA)
-   Gestor visual, efectos ambientales de chispas y atmósfera Cyber Luxury Black Friday.
-   100% modular y seguro: Cero impacto en lógica de negocio, datos o eventos.
+   Temáticas ParkSales · BLACK FRIDAY THEME CONTROLLER
+   Gestor visual, efectos ambientales y elementos interactivos Black Friday.
+   100% modular y seguro: Cero impacto en lógica de negocio ni eventos de formularios.
    ============================================================================ */
 
 (function () {
@@ -11,12 +11,11 @@
   let audioContext = null;
   let soundEnabled = false;
 
-  // Sistema de chispas en Canvas
+  // Sistema de micro-chispas Canvas
   let sparksCanvas = null;
   let sparksCtx = null;
   let sparksAnimId = null;
   let sparksList = [];
-  let sparksArcs = [];
 
   const BF_TIPS = [
     '🏷️ ¡Black Friday es la mayor oportunidad del año! Cada llamada es un cierre en potencia.',
@@ -26,18 +25,23 @@
     '🚀 Mantén el foco en las mejores promociones. ¡Vamos a por el día más potente de ParkSales!',
     '🎯 El entusiasmo vende más que cualquier descuento. ¡Haz que la experiencia sea única!',
     '⭐ Las mejores ventas son las que se cierran con decisión y pasión. ¡A por todas!',
-    '🏆 La semana dorada de ventas: ¡hoy se forjan los mejores números del año!'
+    '🏆 La semana dorada de ventas: ¡hoy se forjan los mejores números del año!',
+    '💰 Un cliente satisfecho hoy es un cliente recurrente mañana. ¡Dale lo mejor!',
+    '✨ Cada bono vendido hoy es un recuerdo para toda la temporada. ¡Haz que cuente!'
   ];
 
+  // 6 Badges 3D de lujo (estilo Pumpkins de Halloween)
   const CARD_BADGES = [
-    'tag_sale.svg',
-    'tag_percent.svg',
-    'tag_flash.svg',
-    'tag_vip.svg'
+    'bf_gift_box.svg',
+    'bf_bag_gold.svg',
+    'bf_diamond.svg',
+    'bf_badge_vip.svg',
+    'bf_tag_neon.svg',
+    'bf_badge_deal.svg'
   ];
 
   /* -------------------------------------------------------------------------- */
-  /* 1. SINTETIZADOR DE AUDIO CYBER BLACK FRIDAY (WEB AUDIO API - 0 DEPENDENCIAS)*/
+  /* 1. SINTETIZADOR DE AUDIO WEB AUDIO API                                     */
   /* -------------------------------------------------------------------------- */
 
   async function ensureAudioCtx() {
@@ -46,9 +50,7 @@
       if (AudioCtx) audioContext = new AudioCtx();
     }
     if (audioContext && audioContext.state === 'suspended') {
-      try {
-        await audioContext.resume();
-      } catch (e) { }
+      try { await audioContext.resume(); } catch (e) {}
     }
     return audioContext;
   }
@@ -60,63 +62,58 @@
       if (!ctx) return;
       const now = ctx.currentTime;
 
-      if (type === 'cash' || type === 'arpeggio') {
-        // Chime arpegiado futurista de "Venta / Éxito" (E5, G#5, B5, E6)
+      if (type === 'cash') {
+        // Chime arpegiado futurista de éxito / venta
         const notes = [
           { f: 659.25, t: 0.00, d: 0.35, type: 'triangle' },
           { f: 830.61, t: 0.08, d: 0.35, type: 'sine' },
           { f: 987.77, t: 0.16, d: 0.40, type: 'triangle' },
-          { f: 1318.51, t: 0.24, d: 1.2, type: 'sine' }
+          { f: 1318.51, t: 0.24, d: 1.10, type: 'sine' }
         ];
 
         const master = ctx.createGain();
-        master.gain.setValueAtTime(0.22, now);
-        master.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
+        master.gain.setValueAtTime(0.18, now);
+        master.gain.exponentialRampToValueAtTime(0.0001, now + 1.6);
         master.connect(ctx.destination);
 
         notes.forEach((note) => {
-          const startTime = now + note.t;
+          const s = now + note.t;
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
-
           osc.type = note.type;
-          osc.frequency.setValueAtTime(note.f, startTime);
-
-          gain.gain.setValueAtTime(0.26, startTime);
-          gain.gain.exponentialRampToValueAtTime(0.0001, startTime + note.d);
-
+          osc.frequency.setValueAtTime(note.f, s);
+          gain.gain.setValueAtTime(0.24, s);
+          gain.gain.exponentialRampToValueAtTime(0.0001, s + note.d);
           osc.connect(gain);
           gain.connect(master);
-          osc.start(startTime);
-          osc.stop(startTime + note.d);
+          osc.start(s);
+          osc.stop(s + note.d);
         });
       } else if (type === 'whoosh') {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(540, now);
-        osc.frequency.exponentialRampToValueAtTime(140, now + 0.22);
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.20);
 
-        gain.gain.setValueAtTime(0.05, now);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.20);
 
         const filter = ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(1200, now);
+        filter.frequency.setValueAtTime(1100, now);
 
         osc.connect(filter);
         filter.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now);
-        osc.stop(now + 0.25);
+        osc.stop(now + 0.22);
       }
-    } catch (e) {
-      console.warn('Audio Black Friday error:', e);
-    }
+    } catch (e) {}
   }
 
   /* -------------------------------------------------------------------------- */
-  /* 2. CHISPAS CYBER & ALTA ENERGÍA (CANVAS LIGERO, 60 FPS, SUBIENDO)          */
+  /* 2. CHISPAS CYBER SUAVES EN CANVAS                                          */
   /* -------------------------------------------------------------------------- */
 
   function initCyberSparksCanvas() {
@@ -139,35 +136,22 @@
     window.addEventListener('resize', resizeCanvas);
 
     sparksList = [];
-    sparksArcs = [];
-    const maxSparks = 42;
+    const maxSparks = 32;
 
-    function createSpark(fromBurst = false, originX, originY) {
+    function createSpark() {
       const w = sparksCanvas.width || window.innerWidth;
       const h = sparksCanvas.height || window.innerHeight;
-
-      const isGold = Math.random() < 0.65;
-      const color = isGold 
-        ? (Math.random() < 0.45 ? '#FFF275' : '#FFD700') 
-        : (Math.random() < 0.65 ? '#FF1E56' : '#00F0FF');
-      
-      const glow = isGold ? 'rgba(255, 215, 0, 0.7)' : 'rgba(255, 30, 86, 0.7)';
-
-      const x = originX !== undefined ? originX : Math.random() * w;
-      const y = originY !== undefined ? originY : (fromBurst ? Math.random() * h : h - Math.random() * (h * 0.45));
-
+      const isRed = Math.random() < 0.55;
       return {
-        x: x,
-        y: y,
-        vx: (Math.random() - 0.5) * (fromBurst ? 4.5 : 2.0),
-        vy: fromBurst ? (Math.random() - 0.5) * 4.5 : -(Math.random() * 2.4 + 0.9),
-        size: Math.random() * 2.2 + 1.2,
+        x: Math.random() * w,
+        y: h - Math.random() * (h * 0.4),
+        vx: (Math.random() - 0.5) * 1.5,
+        vy: -(Math.random() * 2.0 + 0.8),
+        size: Math.random() * 1.8 + 1.0,
         life: 1.0,
-        decay: Math.random() * 0.014 + 0.009,
-        color: color,
-        glow: glow,
-        flickerSpeed: Math.random() * 0.25 + 0.08,
-        flickerOffset: Math.random() * Math.PI * 2
+        decay: Math.random() * 0.012 + 0.008,
+        color: isRed ? '#FF1E56' : '#FFC107',
+        glow: isRed ? 'rgba(255, 30, 86, 0.7)' : 'rgba(255, 193, 7, 0.7)'
       };
     }
 
@@ -177,104 +161,29 @@
       sparksList.push(sp);
     }
 
-    let lastArcTime = Date.now();
-
-    function triggerElectricArc() {
-      if (!sparksCanvas) return;
-      const w = sparksCanvas.width || window.innerWidth;
-      const h = sparksCanvas.height || window.innerHeight;
-
-      const startX = Math.random() < 0.5 ? Math.random() * 120 + 20 : w - (Math.random() * 120 + 20);
-      const startY = Math.random() * h * 0.7 + 40;
-      
-      const points = [{ x: startX, y: startY }];
-      let cx = startX;
-      let cy = startY;
-      const segments = 3 + Math.floor(Math.random() * 3);
-      for (let s = 0; s < segments; s++) {
-        cx += (Math.random() - 0.5) * 36;
-        cy += (Math.random() - 0.3) * 30;
-        points.push({ x: cx, y: cy });
-      }
-
-      for (let b = 0; b < 4; b++) {
-        sparksList.push(createSpark(true, cx, cy));
-      }
-
-      sparksArcs.push({
-        points: points,
-        life: 1.0,
-        decay: 0.16,
-        color: Math.random() < 0.6 ? '#FFD700' : '#FF1E56'
-      });
-    }
-
-    function renderSparks(now) {
+    function renderSparks() {
       if (!sparksCanvas || !sparksCtx) return;
-
       sparksCtx.clearRect(0, 0, sparksCanvas.width, sparksCanvas.height);
-
-      if (Date.now() - lastArcTime > 3500 && Math.random() < 0.08) {
-        lastArcTime = Date.now();
-        triggerElectricArc();
-      }
-
-      for (let a = sparksArcs.length - 1; a >= 0; a--) {
-        const arc = sparksArcs[a];
-        arc.life -= arc.decay;
-        if (arc.life <= 0) {
-          sparksArcs.splice(a, 1);
-          continue;
-        }
-
-        sparksCtx.save();
-        sparksCtx.beginPath();
-        sparksCtx.moveTo(arc.points[0].x, arc.points[0].y);
-        for (let p = 1; p < arc.points.length; p++) {
-          sparksCtx.lineTo(arc.points[p].x, arc.points[p].y);
-        }
-        sparksCtx.strokeStyle = arc.color;
-        sparksCtx.lineWidth = 1.4;
-        sparksCtx.shadowBlur = 10;
-        sparksCtx.shadowColor = arc.color;
-        sparksCtx.globalAlpha = Math.max(0, arc.life);
-        sparksCtx.stroke();
-        sparksCtx.restore();
-      }
 
       for (let i = sparksList.length - 1; i >= 0; i--) {
         const p = sparksList[i];
-
         p.x += p.vx;
         p.y += p.vy;
         p.life -= p.decay;
 
-        p.vx *= 0.99;
-        p.vy *= 0.996;
-
-        if (p.life <= 0 || p.y < -20 || p.x < -20 || p.x > sparksCanvas.width + 20) {
+        if (p.life <= 0 || p.y < -10) {
           sparksList[i] = createSpark();
           continue;
         }
 
-        const flicker = 0.65 + 0.35 * Math.sin(now * p.flickerSpeed + p.flickerOffset);
-        const alpha = Math.max(0, Math.min(1, p.life * flicker));
-
         sparksCtx.save();
-        sparksCtx.globalAlpha = alpha;
-        sparksCtx.shadowBlur = 8;
+        sparksCtx.globalAlpha = Math.max(0, p.life * 0.85);
+        sparksCtx.shadowBlur = 6;
         sparksCtx.shadowColor = p.glow;
         sparksCtx.fillStyle = p.color;
-
         sparksCtx.beginPath();
         sparksCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         sparksCtx.fill();
-
-        sparksCtx.fillStyle = '#FFFFFF';
-        sparksCtx.beginPath();
-        sparksCtx.arc(p.x, p.y, p.size * 0.45, 0, Math.PI * 2);
-        sparksCtx.fill();
-
         sparksCtx.restore();
       }
 
@@ -295,54 +204,82 @@
       sparksCtx = null;
     }
     sparksList = [];
-    sparksArcs = [];
   }
 
   /* -------------------------------------------------------------------------- */
-  /* 3. BANNERS/RIBETE DECORATIVO EN ESQUINAS SUPERIORES (TOP: 0)               */
+  /* 3. ELEMENTOS AMBIENTALES FLOTANTES (ESTILO MURCIÉLAGOS DE HALLOWEEN)       */
   /* -------------------------------------------------------------------------- */
 
-  function injectCornerRibbons() {
-    if (document.getElementById('bf-corner-ribbon-left')) return;
+  function injectAmbientElements() {
+    if (document.getElementById('bf-ambient-container')) return;
 
-    const ribbonLeft = document.createElement('div');
-    ribbonLeft.id = 'bf-corner-ribbon-left';
-    ribbonLeft.className = 'bf-corner-ribbon top-left';
-    ribbonLeft.innerHTML = `<img src="Tematicas/BlackFriday/assets/bf_corner_ribbon.svg" alt="Black Friday Corner" class="bf-ribbon-img">`;
-    document.body.appendChild(ribbonLeft);
-
-    const ribbonRight = document.createElement('div');
-    ribbonRight.id = 'bf-corner-ribbon-right';
-    ribbonRight.className = 'bf-corner-ribbon top-right';
-    ribbonRight.innerHTML = `<img src="Tematicas/BlackFriday/assets/bf_corner_ribbon.svg" alt="Black Friday Corner" class="bf-ribbon-img">`;
-    document.body.appendChild(ribbonRight);
+    const container = document.createElement('div');
+    container.id = 'bf-ambient-container';
+    container.className = 'bf-ambient-container';
+    container.innerHTML = `
+      <img src="Tematicas/BlackFriday/assets/bf_diamond.svg" class="bf-ambient-item bf-amb-1" alt="">
+      <img src="Tematicas/BlackFriday/assets/bf_tag_neon.svg" class="bf-ambient-item bf-amb-2" alt="">
+      <img src="Tematicas/BlackFriday/assets/bf_gift_box.svg" class="bf-ambient-item bf-amb-3" alt="">
+      <img src="Tematicas/BlackFriday/assets/bf_bag_gold.svg" class="bf-ambient-item bf-amb-4" alt="">
+      <img src="Tematicas/BlackFriday/assets/bf_badge_vip.svg" class="bf-ambient-item bf-amb-5" alt="">
+    `;
+    document.body.appendChild(container);
   }
 
   /* -------------------------------------------------------------------------- */
-  /* 4. LOGOTIPO SIDEBAR & PANTALLA DE ACCESO (DISEÑO LIMPIO EN 1 LÍNEA)        */
+  /* 4. ESQUINAS HUD CYBER (DISCRETAS Y SIN OBSTRUIR LA UI)                     */
+  /* -------------------------------------------------------------------------- */
+
+  function injectCornerDecors() {
+    if (document.getElementById('bf-corner-decor-left')) return;
+
+    const decorLeft = document.createElement('div');
+    decorLeft.id = 'bf-corner-decor-left';
+    decorLeft.className = 'bf-corner-decor top-left';
+    decorLeft.innerHTML = `<img src="Tematicas/BlackFriday/assets/bf_corner_decor.svg" alt="" class="bf-corner-decor-img">`;
+    document.body.appendChild(decorLeft);
+
+    const decorRight = document.createElement('div');
+    decorRight.id = 'bf-corner-decor-right';
+    decorRight.className = 'bf-corner-decor top-right';
+    decorRight.innerHTML = `<img src="Tematicas/BlackFriday/assets/bf_corner_decor.svg" alt="" class="bf-corner-decor-img">`;
+    document.body.appendChild(decorRight);
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /* 5. MASCOTA DE MARCA EN SIDEBAR                                             */
   /* -------------------------------------------------------------------------- */
 
   function decorateBrandAndAuth() {
     const sidebarBrand = document.querySelector('.sidebar-brand');
-    if (sidebarBrand && !sidebarBrand.querySelector('.bf-brand-tag')) {
-      const tag = document.createElement('span');
-      tag.className = 'bf-brand-tag';
-      tag.textContent = '⚡ BF SALE';
-      sidebarBrand.appendChild(tag);
+    if (sidebarBrand) {
+      if (!sidebarBrand.querySelector('.bf-brand-mascot')) {
+        const mascot = document.createElement('img');
+        mascot.src = 'Tematicas/BlackFriday/assets/bf_mascot_flame.svg';
+        mascot.alt = 'Black Friday Flame';
+        mascot.className = 'bf-brand-mascot';
+        sidebarBrand.insertBefore(mascot, sidebarBrand.querySelector('span'));
+      }
+      if (!sidebarBrand.querySelector('.bf-brand-tag')) {
+        const tag = document.createElement('span');
+        tag.className = 'bf-brand-tag';
+        tag.textContent = '⚡ BF SALE';
+        sidebarBrand.appendChild(tag);
+      }
     }
 
     const authCard = document.querySelector('.auth-card');
     if (authCard && !authCard.querySelector('.bf-auth-card-badge')) {
       const vipImg = document.createElement('img');
       vipImg.src = 'Tematicas/BlackFriday/assets/vip_pass.svg';
-      vipImg.alt = 'Black Friday VIP Access';
+      vipImg.alt = 'VIP Access';
       vipImg.className = 'bf-auth-card-badge';
       authCard.appendChild(vipImg);
     }
   }
 
   /* -------------------------------------------------------------------------- */
-  /* 5. TOPBAR BADGE "BLACK FRIDAY" Y BOTÓN DE SONIDO                           */
+  /* 6. TOPBAR BADGE Y BOTÓN DE SONIDO                                          */
   /* -------------------------------------------------------------------------- */
 
   function injectTopbarElements() {
@@ -352,7 +289,7 @@
     const pill = document.createElement('div');
     pill.id = 'bf-topbar-pill';
     pill.className = 'bf-topbar-pill';
-    pill.innerHTML = `<span class="bf-pill-icon">🏷️</span> <span>BLACK FRIDAY</span>`;
+    pill.innerHTML = `<span>🏷️</span> <span>BLACK FRIDAY</span>`;
 
     const soundBtn = document.createElement('button');
     soundBtn.id = 'bf-sound-toggle';
@@ -363,12 +300,12 @@
       soundEnabled = !soundEnabled;
       soundBtn.classList.toggle('active', soundEnabled);
       soundBtn.innerHTML = soundEnabled ? '⚡' : '🔇';
-      soundBtn.title = soundEnabled ? 'Efectos Black Friday: ACTIVADOS (clic para silenciar)' : 'Efectos Black Friday: Desactivados';
+      soundBtn.title = soundEnabled ? 'Efectos Black Friday: ACTIVADOS' : 'Efectos Black Friday: Desactivados';
       if (soundEnabled) {
         await playBfSound('cash');
         if (typeof toast === 'function') toast('⚡ ¡Efectos Black Friday ACTIVADOS!', 'info', 2500);
       } else {
-        if (typeof toast === 'function') toast('Sonidos Black Friday silenciados', 'info', 2000);
+        if (typeof toast === 'function') toast('Efectos Black Friday silenciados', 'info', 2000);
       }
     });
 
@@ -386,28 +323,34 @@
   }
 
   /* -------------------------------------------------------------------------- */
-  /* 6. ADORNOS EN TODAS LAS CAJAS, TARJETAS Y PANELES (DISCRETOS)              */
+  /* 7. DECORAR TARJETAS CON BADGES 3D (EXCLUYENDO NOTAS RÁPIDAS)               */
   /* -------------------------------------------------------------------------- */
 
   function decorateCards() {
-    // Abarca Dashboard, Historial, Llamadas, Archivos de Parques e Importar/Exportar
+    // Buscar todas las tarjetas, pero EXCLUYENDO explícitamente el editor de notas rápidas
     const allCards = document.querySelectorAll(
-      '.card, .stat-card, .widget, .filter-card, .dashboard-panel, .ex-card, .parques-panel, .promos-card, .historial-filter-card, #llamada-form, .ll-card'
+      '.card:not(.notes-textarea-card), .stat-card, .filter-card, .dashboard-panel, .ex-card, .parques-panel, .promos-card, .historial-filter-card, #llamada-form, .ll-card'
     );
+
     allCards.forEach((card, index) => {
-      if (!card.querySelector('.bf-card-badge')) {
+      // Garantizar que no está dentro de notas rápidas
+      if (card.closest('#view-notas-rapidas') || card.classList.contains('notes-textarea-card')) {
+        return;
+      }
+
+      if (!card.querySelector('.bf-card-corner-badge')) {
         const badgeImg = document.createElement('img');
         const file = CARD_BADGES[index % CARD_BADGES.length];
         badgeImg.src = `Tematicas/BlackFriday/assets/${file}`;
-        badgeImg.alt = 'Black Friday Deal';
-        badgeImg.className = 'bf-card-badge';
+        badgeImg.alt = '';
+        badgeImg.className = 'bf-card-corner-badge';
         card.appendChild(badgeImg);
       }
     });
   }
 
   /* -------------------------------------------------------------------------- */
-  /* 7. DASHBOARD BANNER CON CUENTA ATRÁS Y TIPS DE VENTAS                       */
+  /* 8. DASHBOARD BANNER CON CUENTA ATRÁS Y TIPS                                 */
   /* -------------------------------------------------------------------------- */
 
   function getBlackFridayDate(year) {
@@ -428,7 +371,6 @@
     const now = new Date();
     let currentYear = now.getFullYear();
     let target = getBlackFridayDate(currentYear);
-
     if (now > target) {
       target = getBlackFridayDate(currentYear + 1);
     }
@@ -497,7 +439,7 @@
   }
 
   /* -------------------------------------------------------------------------- */
-  /* 8. COPILOT FAB BLACK FRIDAY (LOGO OFICIAL COPILOT EN ESTILO BLACK FRIDAY)   */
+  /* 9. COPILOT FLOTANTE - EDICIÓN OFICIAL BLACK FRIDAY                         */
   /* -------------------------------------------------------------------------- */
 
   function decorateCopilotFab() {
@@ -518,8 +460,8 @@
               <stop offset="100%" stop-color="#06070B"/>
             </radialGradient>
             <linearGradient id="bf-cp-ribbon" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#FFF275"/>
-              <stop offset="35%" stop-color="#FFD700"/>
+              <stop offset="0%" stop-color="#FFFFFF"/>
+              <stop offset="35%" stop-color="#FFE082"/>
               <stop offset="70%" stop-color="#FF1E56"/>
               <stop offset="100%" stop-color="#8B0029"/>
             </linearGradient>
@@ -528,24 +470,24 @@
               <feComposite in="SourceGraphic" in2="blur" operator="over"/>
             </filter>
           </defs>
-          <circle cx="24" cy="24" r="22" fill="url(#bf-cp-disc)" stroke="#FFD700" stroke-width="2" filter="url(#bf-cp-glow)"/>
-          <circle cx="24" cy="24" r="19" stroke="#FF1E56" stroke-width="0.8" stroke-dasharray="3 2" opacity="0.6"/>
+          <circle cx="24" cy="24" r="22" fill="url(#bf-cp-disc)" stroke="#FF1E56" stroke-width="2" filter="url(#bf-cp-glow)"/>
+          <circle cx="24" cy="24" r="19" stroke="#FFC107" stroke-width="0.8" stroke-dasharray="3 2" opacity="0.6"/>
           
           <g transform="translate(6, 6) scale(1.5)">
             <path d="M8 13.5c0-1.38 1.12-2.5 2.5-2.5h3c1.38 0 2.5 1.12 2.5 2.5S14.88 16 13.5 16h-3C9.12 16 8 14.88 8 13.5z"
               fill="url(#bf-cp-ribbon)" filter="url(#bf-cp-glow)"/>
             <path d="M9.5 8.5c0-.83.67-1.5 1.5-1.5h2c.83 0 1.5.67 1.5 1.5S13.83 10 13 10h-2c-.83 0-1.5-.67-1.5-1.5z"
-              fill="#FFF275" opacity="0.95"/>
+              fill="#FFFFFF" opacity="0.95"/>
           </g>
           
           <g transform="translate(32, 4)">
-            <rect x="0" y="0" width="12" height="12" rx="3" fill="#FF1E56" stroke="#FFF275" stroke-width="1"/>
-            <path d="M6 1 L3 6 L6 6 L5 10 L9 5 L6 5 Z" fill="#FFF275"/>
+            <rect x="0" y="0" width="12" height="12" rx="3" fill="#FF1E56" stroke="#FFE082" stroke-width="1"/>
+            <path d="M6 1 L3 6 L6 6 L5 10 L9 5 L6 5 Z" fill="#FFE082"/>
           </g>
         </svg>
       `;
 
-      wrap.addEventListener('click', (e) => {
+      wrap.addEventListener('click', () => {
         if (typeof window.abrirCopilot === 'function') {
           window.abrirCopilot();
           if (soundEnabled) playBfSound('whoosh');
@@ -563,29 +505,23 @@
   }
 
   /* -------------------------------------------------------------------------- */
-  /* 9. INICIALIZACIÓN Y DESTRUCCIÓN SEGURA DE LA TEMÁTICA                       */
+  /* 10. INICIALIZACIÓN Y DESTRUCCIÓN                                           */
   /* -------------------------------------------------------------------------- */
 
   window.initBlackFridayTheme = function () {
     document.documentElement.classList.add('theme-blackfriday');
     document.body.classList.add('theme-blackfriday');
 
-    // Chispas Canvas
     initCyberSparksCanvas();
-    // Ribete de esquina superior
-    injectCornerRibbons();
-    // Marca y Login
+    injectAmbientElements();
+    injectCornerDecors();
     decorateBrandAndAuth();
-    // Topbar y Sonido
     injectTopbarElements();
-    // Banner
     injectDashboardBanner();
-    // Decorar todas las cajas (dashboard, historial, llamadas, parques, exportar)
     decorateCards();
-    // Botón oficial Copilot Black Friday
     decorateCopilotFab();
 
-    // Observador para cambios de vista o recarga de datos
+    // Observar navegación entre vistas
     if (!window.__bfViewObserverAttached) {
       window.__bfViewObserverAttached = true;
 
@@ -593,9 +529,7 @@
       if (typeof originalSwitchView === 'function') {
         window.switchView = function (...args) {
           const res = originalSwitchView.apply(this, args);
-          if (soundEnabled) {
-            playBfSound('whoosh');
-          }
+          if (soundEnabled) playBfSound('whoosh');
           setTimeout(() => {
             if (document.body.classList.contains('theme-blackfriday')) {
               injectDashboardBanner();
@@ -637,8 +571,9 @@
 
     const idsToRemove = [
       'bf-sparks-canvas',
-      'bf-corner-ribbon-left',
-      'bf-corner-ribbon-right',
+      'bf-ambient-container',
+      'bf-corner-decor-left',
+      'bf-corner-decor-right',
       'bf-topbar-pill',
       'bf-sound-toggle',
       'bf-dashboard-banner'
@@ -649,7 +584,9 @@
       if (el) el.remove();
     });
 
-    document.querySelectorAll('.bf-brand-tag, .bf-auth-card-badge, .bf-card-badge, .bf-copilot-wrap').forEach((el) => {
+    document.querySelectorAll(
+      '.bf-brand-mascot, .bf-brand-tag, .bf-auth-card-badge, .bf-card-corner-badge, .bf-copilot-wrap'
+    ).forEach((el) => {
       el.remove();
     });
 
@@ -657,6 +594,8 @@
     if (copilotLabel) {
       copilotLabel.textContent = 'Copilot';
     }
+
+    window.__bfViewObserverAttached = false;
   };
 
 })();

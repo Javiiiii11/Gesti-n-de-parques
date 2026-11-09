@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="dealGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF1E56"/>
+      <stop offset="100%" stop-color="#C4003B"/>
+    </linearGradient>
+    <linearGradient id="dealGold" x1="0" y1="0" x2="48" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF275"/>
+      <stop offset="100%" stop-color="#FFD700"/>
+    </linearGradient>
+  </defs>
+  <!-- Burst shape -->
+  <path d="M24 2 L27 10 L34 5 L33 13 L41 12 L37 19 L45 22 L38 27 L43 34 L35 34 L35 42 L28 38 L24 46 L20 38 L13 42 L13 34 L5 34 L10 27 L3 22 L11 19 L7 12 L15 13 L14 5 L21 10 Z" fill="url(#dealGrad)" stroke="#FFD700" stroke-width="0.8"/>
+  <text x="24" y="26" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="8" font-weight="900" fill="url(#dealGold)">DEAL</text>
+</svg>
+

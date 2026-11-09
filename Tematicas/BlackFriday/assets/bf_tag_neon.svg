@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <radialGradient id="tagGlowNeon" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF1E56" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#FF1E56" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="tagBaseGrad" x1="10" y1="12" x2="54" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF1E56"/>
+      <stop offset="40%" stop-color="#C70039"/>
+      <stop offset="100%" stop-color="#800020"/>
+    </linearGradient>
+    <linearGradient id="goldHole" x1="14" y1="14" x2="26" y2="26" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF9A6"/>
+      <stop offset="100%" stop-color="#FFB800"/>
+    </linearGradient>
+  </defs>
+  
+  <circle cx="32" cy="32" r="26" fill="url(#tagGlowNeon)"/>
+  
+  <g transform="rotate(-18 32 32)">
+    <!-- Hanging String -->
+    <path d="M20 18 Q14 8 22 4 Q30 8 20 18" stroke="#FFD700" stroke-width="1.5" fill="none" opacity="0.8"/>
+    
+    <!-- Tag Shape -->
+    <path d="M12 28 L28 12 H50 C52 12 54 14 54 16 V48 C54 50 52 52 50 52 H24 C22 52 20 50 18 48 L12 28 Z" fill="url(#tagBaseGrad)" stroke="#FFD700" stroke-width="1.2"/>
+    
+    <!-- Metallic Hole Grommet -->
+    <circle cx="24" cy="24" r="4.5" fill="#140206" stroke="url(#goldHole)" stroke-width="1.8"/>
+    
+    <!-- Dashed Interior Stitching -->
+    <path d="M16 28 L28 16 H48 V48 H22 Z" stroke="rgba(255,215,0,0.4)" stroke-width="0.8" stroke-dasharray="2 2" fill="none"/>
+    
+    <!-- % OFF Text -->
+    <text x="37" y="32" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="7" font-weight="900" fill="#FFF9A6" letter-spacing="0.5">BLACK</text>
+    <text x="37" y="44" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="13" font-weight="900" fill="#FFFFFF">%</text>
+  </g>
+  
+  <!-- Little Star -->
+  <circle cx="10" cy="46" r="2" fill="#FFD700"/>
+</svg>
+

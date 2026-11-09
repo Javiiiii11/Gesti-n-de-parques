@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <radialGradient id="bagGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFD700" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#FFD700" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bagBody" x1="12" y1="20" x2="52" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#242634"/>
+      <stop offset="50%" stop-color="#141520"/>
+      <stop offset="100%" stop-color="#0A0B12"/>
+    </linearGradient>
+    <linearGradient id="goldSheen" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF9A6"/>
+      <stop offset="40%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#E59400"/>
+    </linearGradient>
+    <linearGradient id="redBadge" x1="22" y1="32" x2="42" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF3366"/>
+      <stop offset="100%" stop-color="#B8002D"/>
+    </linearGradient>
+    <filter id="bagShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+  
+  <circle cx="32" cy="38" r="24" fill="url(#bagGlow)"/>
+  
+  <!-- Metallic Handles -->
+  <path d="M24 24 V14 C24 9.5 27.5 6 32 6 C36.5 6 40 9.5 40 14 V24" stroke="url(#goldSheen)" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Bag Body (Trapezoid) -->
+  <path d="M15 22 L18 57 C18.3 59 19.8 60 21.8 60 H42.2 C44.2 60 45.7 59 46 57 L49 22 Z" fill="url(#bagBody)" stroke="url(#goldSheen)" stroke-width="1.2" filter="url(#bagShadow)"/>
+  
+  <!-- Top Fold Crease -->
+  <path d="M15 22 H49" stroke="#FFF9A6" stroke-width="1.5" stroke-opacity="0.7"/>
+  <path d="M17 26 H47" stroke="rgba(255,215,0,0.3)" stroke-width="1"/>
+  
+  <!-- Luxury BF Badge on Bag -->
+  <circle cx="32" cy="40" r="10" fill="url(#redBadge)" stroke="url(#goldSheen)" stroke-width="1"/>
+  <text x="32" y="38" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="6.5" font-weight="900" fill="#FFF9A6">SALE</text>
+  <text x="32" y="45" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="7.5" font-weight="900" fill="#FFFFFF">%</text>
+  
+  <!-- Accent Stars -->
+  <path d="M12 28 L13 31 L16 32 L13 33 L12 36 L11 33 L8 32 L11 31 Z" fill="#FFD700" opacity="0.8"/>
+  <circle cx="48" cy="18" r="1.5" fill="#FFF9A6"/>
+</svg>
+

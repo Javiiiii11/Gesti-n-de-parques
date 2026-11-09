@@ -1,0 +1,209 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
+  <defs>
+    <!-- 3D Cyber Bot Shell Gradients -->
+    <radialGradient id="botHead3D" cx="36%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#383D54" />
+      <stop offset="35%" stop-color="#1E2235" />
+      <stop offset="75%" stop-color="#10121D" />
+      <stop offset="100%" stop-color="#07080E" />
+    </radialGradient>
+
+    <radialGradient id="botBody3D" cx="38%" cy="32%" r="68%">
+      <stop offset="0%" stop-color="#2D3248" />
+      <stop offset="40%" stop-color="#181B2B" />
+      <stop offset="85%" stop-color="#0B0D16" />
+      <stop offset="100%" stop-color="#040508" />
+    </radialGradient>
+
+    <!-- Shiny Cyber Visor (Glossy Curved Glass) -->
+    <linearGradient id="botVisor" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B" />
+      <stop offset="40%" stop-color="#0A0F1D" />
+      <stop offset="100%" stop-color="#030712" />
+    </linearGradient>
+
+    <linearGradient id="visorGlassReflect" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6" />
+      <stop offset="30%" stop-color="#00F0FF" stop-opacity="0.3" />
+      <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#FF1E56" stop-opacity="0.2" />
+    </linearGradient>
+
+    <!-- Glowing Cyber Eyes (Friendly Curved Cyan/Gold) -->
+    <radialGradient id="botEyeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="45%" stop-color="#00F0FF" />
+      <stop offset="100%" stop-color="#0066FF" stop-opacity="0.8" />
+    </radialGradient>
+
+    <!-- Laser Crimson Accents -->
+    <linearGradient id="laserRed" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF547D" />
+      <stop offset="50%" stop-color="#FF1E56" />
+      <stop offset="100%" stop-color="#9E0026" />
+    </linearGradient>
+
+    <!-- Metallic Gold Foil Trims -->
+    <linearGradient id="foilGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF9A6" />
+      <stop offset="40%" stop-color="#FFD700" />
+      <stop offset="80%" stop-color="#FF9E00" />
+      <stop offset="100%" stop-color="#B87700" />
+    </linearGradient>
+
+    <!-- Official Microsoft Copilot Ribbon Gradients -->
+    <!-- Loop 1: Azure Cyan / Deep Blue -->
+    <linearGradient id="cpLoopAzure" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="40%" stop-color="#0284C7" />
+      <stop offset="80%" stop-color="#0369A1" />
+      <stop offset="100%" stop-color="#1E3A8A" />
+    </linearGradient>
+
+    <!-- Loop 2: Warm Gold / Orange / Red / Magenta -->
+    <linearGradient id="cpLoopWarm" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047" />
+      <stop offset="30%" stop-color="#F97316" />
+      <stop offset="70%" stop-color="#EF4444" />
+      <stop offset="100%" stop-color="#C026D3" />
+    </linearGradient>
+
+    <!-- Ambient Magic Cosmic Swirl (Black Friday Holographic Laser Ring) -->
+    <linearGradient id="bfLaserRing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD700" stop-opacity="0.9" />
+      <stop offset="40%" stop-color="#FF1E56" stop-opacity="0.85" />
+      <stop offset="75%" stop-color="#7209B7" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#00F0FF" stop-opacity="0.9" />
+    </linearGradient>
+
+    <!-- Soft Drop Shadows -->
+    <filter id="botShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000000" flood-opacity="0.5" />
+      <feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#FF1E56" flood-opacity="0.4" />
+    </filter>
+
+    <filter id="laserGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 1. HOLOGRAPHIC MAGIC LASER TRAIL & PARTICLES (Like Halloween ghost & Christmas gingerbread) -->
+  <g filter="url(#laserGlow)">
+    <!-- Swirling Hologram Ring -->
+    <path d="M38,142 C14,108 20,58 56,40 C88,22 156,26 186,52 C222,82 226,144 196,176 C170,202 114,208 78,186" 
+          stroke="url(#bfLaserRing)" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.88" />
+    <path d="M44,140 C22,112 26,68 58,50 C88,34 150,38 178,60 C210,88 214,140 188,168" 
+          stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6" />
+
+    <!-- Cyber Sparkles & Diamonds -->
+    <polygon points="30,80 32,86 38,86 33,90 35,96 30,92 25,96 27,90 22,86 28,86" fill="#FFD700" />
+    <polygon points="208,82 210,87 215,87 211,90 213,95 208,92 203,95 205,90 201,87 206,87" fill="#FF1E56" />
+    <polygon points="198,155 200,160 205,160 201,163 203,168 198,165 193,168 195,163 191,160 196,160" fill="#00F0FF" />
+    <circle cx="48" cy="38" r="2.2" fill="#FFFFFF" opacity="0.9" />
+    <circle cx="216" cy="118" r="2.8" fill="#FFD700" opacity="0.9" />
+    <circle cx="72" cy="198" r="2.2" fill="#FF1E56" opacity="0.85" />
+    <circle cx="25" cy="130" r="1.8" fill="#00F0FF" opacity="0.9" />
+  </g>
+
+  <!-- 2. MAIN 3D CHUBBY CYBER BOT BODY (Cute Pixar-style friendly curves) -->
+  <g filter="url(#botShadow)">
+
+    <!-- Cyber Jet Pods (Feet/Thrusters) -->
+    <ellipse cx="88" cy="196" rx="14" ry="9" fill="url(#botBody3D)" stroke="url(#foilGold)" stroke-width="1.2" />
+    <ellipse cx="88" cy="198" rx="7" ry="3.5" fill="#00F0FF" opacity="0.9" />
+    <ellipse cx="152" cy="196" rx="14" ry="9" fill="url(#botBody3D)" stroke="url(#foilGold)" stroke-width="1.2" />
+    <ellipse cx="152" cy="198" rx="7" ry="3.5" fill="#00F0FF" opacity="0.9" />
+
+    <!-- Cute Chubby Arms -->
+    <!-- Left Arm holding the Black Friday Gift Bag -->
+    <path d="M72,122 C52,118 34,130 38,146 C44,158 64,150 78,138 Z" fill="url(#botBody3D)" stroke="url(#laserRed)" stroke-width="1.2" />
+    <circle cx="38" cy="140" r="7.5" fill="url(#botBody3D)" />
+
+    <!-- Right Arm holding / presenting Copilot Ribbon -->
+    <path d="M148,122 C168,118 194,126 190,144 C184,158 162,148 142,136 Z" fill="url(#botBody3D)" stroke="url(#laserRed)" stroke-width="1.2" />
+    <circle cx="188" cy="136" r="7.5" fill="url(#botBody3D)" />
+
+    <!-- Black Friday Mini Shopping Bag in Left Hand -->
+    <g transform="translate(24, 138) scale(0.68)">
+      <path d="M14 18 V10 C14 6 17 3 21 3 C25 3 28 6 28 10 V18" stroke="url(#foilGold)" stroke-width="2.5" fill="none" />
+      <path d="M6 18 L8 44 C8.3 46 9.8 47 11.5 47 H30.5 C32.2 47 33.7 46 34 44 L36 18 Z" fill="url(#laserRed)" stroke="url(#foilGold)" stroke-width="1.2" />
+      <text x="21" y="32" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="7" font-weight="900" fill="#FFF">BF</text>
+      <text x="21" y="42" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="9" font-weight="900" fill="#FFD700">%</text>
+    </g>
+
+    <!-- Round Plump Torso with Cyber Armor Plates -->
+    <ellipse cx="120" cy="145" rx="42" ry="40" fill="url(#botBody3D)" stroke="url(#foilGold)" stroke-width="1.4" />
+    
+    <!-- Chest Power Core (Glowing Crimson Laser Arc) -->
+    <path d="M102,138 Q120,154 138,138" stroke="url(#laserRed)" stroke-width="3" stroke-linecap="round" fill="none" />
+    <circle cx="120" cy="144" r="5" fill="#FF1E56" filter="url(#laserGlow)" />
+    <circle cx="120" cy="144" r="2.5" fill="#FFF" />
+
+    <!-- Ear Cyber Antennas / Headphones -->
+    <!-- Left Ear Headphone -->
+    <rect x="66" y="70" width="10" height="28" rx="4" fill="url(#laserRed)" stroke="url(#foilGold)" stroke-width="1.2" />
+    <!-- Right Ear Headphone -->
+    <rect x="164" y="70" width="10" height="28" rx="4" fill="url(#laserRed)" stroke="url(#foilGold)" stroke-width="1.2" />
+    <!-- Golden Headphone Arch -->
+    <path d="M72,74 C72,42 168,42 168,74" stroke="url(#foilGold)" stroke-width="3.5" fill="none" stroke-linecap="round" />
+
+    <!-- Little Golden Head Antenna with Glowing Laser Tip -->
+    <line x1="120" y1="44" x2="120" y2="28" stroke="url(#foilGold)" stroke-width="2.5" stroke-linecap="round" />
+    <circle cx="120" cy="26" r="4.5" fill="url(#laserRed)" stroke="#FFF" stroke-width="1" filter="url(#laserGlow)" />
+    <circle cx="120" cy="26" r="2" fill="#FFF9A6" />
+
+    <!-- Big Adorable Rounded Head -->
+    <circle cx="120" cy="84" r="44" fill="url(#botHead3D)" stroke="url(#foilGold)" stroke-width="1.5" />
+
+    <!-- 3. GLOSSY CURVED CYBER VISOR WITH FRIENDLY EYES -->
+    <!-- Visor Background -->
+    <rect x="84" y="66" width="72" height="36" rx="16" fill="url(#botVisor)" stroke="url(#laserRed)" stroke-width="1.5" />
+    
+    <!-- Visor Glass Diagonal Reflection Sheen -->
+    <path d="M86,76 Q120,68 154,76 L154,70 Q120,62 86,70 Z" fill="url(#visorGlassReflect)" />
+    <ellipse cx="120" cy="84" rx="34" ry="16" fill="url(#visorGlassReflect)" opacity="0.15" />
+
+    <!-- Left Friendly Glowing Digital Eye (Happy Pixar Arc/Oval) -->
+    <g filter="url(#laserGlow)">
+      <ellipse cx="104" cy="83" rx="7" ry="9" fill="url(#botEyeGlow)" />
+      <!-- Star / Heart Glint -->
+      <circle cx="102" cy="79" r="2.8" fill="#FFFFFF" />
+      <circle cx="106" cy="86" r="1.5" fill="#FFFFFF" />
+    </g>
+
+    <!-- Right Friendly Glowing Digital Eye -->
+    <g filter="url(#laserGlow)">
+      <ellipse cx="136" cy="83" rx="7" ry="9" fill="url(#botEyeGlow)" />
+      <!-- Star / Heart Glint -->
+      <circle cx="134" cy="79" r="2.8" fill="#FFFFFF" />
+      <circle cx="138" cy="86" r="1.5" fill="#FFFFFF" />
+    </g>
+
+    <!-- Cute Digital Smile -->
+    <path d="M114,94 Q120,99 126,94" stroke="#00F0FF" stroke-width="2" stroke-linecap="round" fill="none" filter="url(#laserGlow)" />
+
+    <!-- Rosy Cyber Cheeks (Soft Neon Pink) -->
+    <ellipse cx="94" cy="92" rx="4.5" ry="2.5" fill="#FF1E56" opacity="0.6" filter="url(#laserGlow)" />
+    <ellipse cx="146" cy="92" rx="4.5" ry="2.5" fill="#FF1E56" opacity="0.6" filter="url(#laserGlow)" />
+
+    <!-- 4. OFFICIAL MICROSOFT COPILOT RIBBON EMBLEM (Proudly held in the chest/right) -->
+    <g transform="translate(156, 126) scale(1.15)" filter="url(#laserGlow)">
+      <!-- Outer Glow Backing Disk -->
+      <circle cx="12" cy="12" r="13" fill="#0A0F1D" stroke="url(#foilGold)" stroke-width="1.5" />
+      <!-- Loop 1: Azure/Blue -->
+      <path d="M6,14.5 C6,12.8 7.3,11.5 9,11.5 H13 C14.7,11.5 16,12.8 16,14.5 C16,16.2 14.7,17.5 13,17.5 H9 C7.3,17.5 6,16.2 6,14.5 Z" 
+            fill="url(#cpLoopAzure)" />
+      <!-- Loop 2: Yellow/Orange/Red -->
+      <path d="M8,8.5 C8,7.3 9,6.5 10.5,6.5 H13 C14.5,6.5 15.5,7.3 15.5,8.5 C15.5,9.7 14.5,10.5 13,10.5 H10.5 C9,10.5 8,9.7 8,8.5 Z" 
+            fill="url(#cpLoopWarm)" />
+      <!-- Inner Sparkle -->
+      <circle cx="12" cy="12" r="1.2" fill="#FFFFFF" />
+    </g>
+
+  </g>
+</svg>
+
