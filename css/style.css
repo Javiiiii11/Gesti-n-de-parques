@@ -3384,7 +3384,10 @@ label:has(input[type="radio"]:checked) {
 .form-field input,
 .form-field select,
 .form-field textarea {
-  background: var(--bg-elevated);
+  background-color: var(--bg-elevated);
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 22px 22px;
   border: 1px solid var(--border);
   border-radius: var(--radius-s);
   padding: 10px 12px;
@@ -6992,4 +6995,13 @@ body.light-mode .cuad-edit-card.code-V{background:#FEE2E2;border-color:#FCA5A5;c
 
 #br-buscar-plantillas::placeholder {
   color: var(--text-muted) !important;
+}
+
+
+/* Compatibilidad con extensiones de navegador (TempMail, Bitwarden, etc.) */
+input[type="email"], #br-email-gestor {
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  background-size: 22px 22px !important;
+  padding-right: 38px !important;
 }

@@ -51,14 +51,14 @@ body.theme-blackfriday {
 /* -------------------------------------------------------------------------- */
 
 body.theme-blackfriday.light-mode {
-  --bg:             #F8FAFC;
+  --bg:             #F1F4F9;
   --bg-elevated:    #FFFFFF;
   --bg-card:        #FFFFFF;
-  --bg-hover:       #F1F5F9;
-  --border:         rgba(226, 232, 240, 0.95);
-  --border-soft:    rgba(241, 245, 249, 0.9);
+  --bg-hover:       #EDE5E7;
+  --border:         rgba(225, 29, 72, 0.16);
+  --border-soft:    rgba(226, 232, 240, 0.9);
   --text-primary:   #0F172A;
-  --text-secondary: #475569;
+  --text-secondary: #334155;
   --text-muted:     #64748B;
 
   --accent:         #E11D48;
@@ -67,14 +67,14 @@ body.theme-blackfriday.light-mode {
   
   --bf-red:         #E11D48;
   --bf-gold:        #D97706;
-  --shadow-card:    0 2px 10px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
+  --shadow-card:    0 4px 16px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(225, 29, 72, 0.05);
 
-  background-color: #F8FAFC !important;
+  background-color: #F1F4F9 !important;
   background-image:
-    radial-gradient(ellipse 70% 45% at 10% 0%,  rgba(225, 29, 72, 0.04) 0%, transparent 65%),
-    radial-gradient(ellipse 65% 40% at 90% 5%,  rgba(217, 119, 6, 0.04) 0%, transparent 60%),
-    radial-gradient(ellipse 55% 35% at 50% 100%, rgba(15, 23, 42, 0.02) 0%, transparent 55%),
-    linear-gradient(160deg, #F8FAFC 0%, #F1F5F9 50%, #EDF2F7 100%) !important;
+    radial-gradient(ellipse 70% 45% at 10% 0%,  rgba(225, 29, 72, 0.06) 0%, transparent 65%),
+    radial-gradient(ellipse 65% 40% at 90% 5%,  rgba(217, 119, 6, 0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 35% at 50% 100%, rgba(225, 29, 72, 0.04) 0%, transparent 55%),
+    linear-gradient(160deg, #F5F7FA 0%, #EEF2F6 50%, #E9EDF5 100%) !important;
   background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100% !important;
   background-attachment: fixed !important;
 }
@@ -93,11 +93,17 @@ body.theme-blackfriday .sidebar {
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5) !important;
 }
 
-/* Sidebar en Modo Claro: Elegante grafito noche, gran contraste */
+/* Sidebar en Modo Claro: Diseño refinado, luminoso y con identidad Black Friday — pensado especialmente para quienes prefieren modo claro */
 body.theme-blackfriday.light-mode .sidebar {
-  background: linear-gradient(180deg, #0F121C 0%, #090B12 100%) !important;
-  border-right: 1px solid rgba(226, 232, 240, 0.15) !important;
-  box-shadow: 2px 0 16px rgba(15, 23, 42, 0.10) !important;
+  background:
+    linear-gradient(180deg,
+      rgba(225, 29, 72, 0.05) 0%,
+      rgba(255, 255, 255, 0.7) 25%,
+      rgba(251, 191, 36, 0.03) 65%,
+      rgba(225, 29, 72, 0.05) 100%),
+    #FFFFFF !important;
+  border-right: 1.5px solid rgba(225, 29, 72, 0.16) !important;
+  box-shadow: 4px 0 24px rgba(225, 29, 72, 0.06), 1px 0 8px rgba(15, 23, 42, 0.03) !important;
 }
 
 /* Marca en Sidebar */
@@ -122,7 +128,7 @@ body.theme-blackfriday .sidebar-brand {
   50%      { transform: translateY(-3px) rotate(4deg); }
 }
 
-body.theme-blackfriday .sidebar-brand > span:not(.bf-brand-tag) {
+body.theme-blackfriday:not(.light-mode) .sidebar-brand > span:not(.bf-brand-tag) {
   background: linear-gradient(90deg, #FFFFFF 0%, #FFE082 50%, #FF1E56 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
@@ -131,8 +137,18 @@ body.theme-blackfriday .sidebar-brand > span:not(.bf-brand-tag) {
   letter-spacing: 0.02em;
 }
 
+body.theme-blackfriday.light-mode .sidebar-brand > span:not(.bf-brand-tag) {
+  background: linear-gradient(90deg, #0F172A 0%, #9F1239 55%, #E11D48 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
+  font-size: 19px !important;
+}
+
 /* Badge BF SALE */
-body.theme-blackfriday .sidebar-brand .bf-brand-tag {
+body.theme-blackfriday:not(.light-mode) .sidebar-brand .bf-brand-tag {
   display: inline-flex !important;
   align-items: center !important;
   white-space: nowrap !important;
@@ -151,22 +167,57 @@ body.theme-blackfriday .sidebar-brand .bf-brand-tag {
   line-height: 1.2 !important;
 }
 
-/* Nav items */
-body.theme-blackfriday .sidebar-nav .nav-item,
-body.theme-blackfriday .sidebar-nav .nav-link {
-  color: #94A3B8 !important;
+body.theme-blackfriday.light-mode .sidebar-brand .bf-brand-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  background: linear-gradient(135deg, #E11D48 0%, #BE123C 100%) !important;
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.8px !important;
+  padding: 2.5px 7px !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(245, 158, 11, 0.6) !important;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.35) !important;
+  text-transform: uppercase !important;
+  line-height: 1.2 !important;
+}
+
+/* Nav items en Modo Oscuro */
+body.theme-blackfriday:not(.light-mode) .sidebar-nav .nav-item,
+body.theme-blackfriday:not(.light-mode) .sidebar-nav .nav-link {
+  color: #CBD5E1 !important;
   transition: all 0.18s ease !important;
 }
 
-body.theme-blackfriday .sidebar-nav .nav-item:hover:not(.active),
-body.theme-blackfriday .sidebar-nav .nav-link:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: #FFFFFF !important;
-  border-left: 3px solid rgba(255, 30, 86, 0.5) !important;
+body.theme-blackfriday:not(.light-mode) .sidebar-nav .nav-item span,
+body.theme-blackfriday:not(.light-mode) .sidebar-nav .nav-link span {
+  color: inherit !important;
+  font-weight: inherit !important;
 }
 
-body.theme-blackfriday .sidebar-nav .nav-item.active,
-body.theme-blackfriday .sidebar-nav .nav-link.active {
+body.theme-blackfriday:not(.light-mode) .sidebar-nav .nav-item svg,
+body.theme-blackfriday:not(.light-mode) .sidebar-nav .nav-link svg {
+  color: #94A3B8 !important;
+}
+
+body.theme-blackfriday:not(.light-mode) .sidebar-nav .nav-item:hover:not(.active),
+body.theme-blackfriday:not(.light-mode) .sidebar-nav .nav-link:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.07) !important;
+  color: #FFFFFF !important;
+  border-left: 3px solid rgba(255, 30, 86, 0.6) !important;
+}
+
+body.theme-blackfriday:not(.light-mode) .sidebar-nav .nav-item:hover:not(.active) svg,
+body.theme-blackfriday:not(.light-mode) .sidebar-nav .nav-link:hover:not(.active) svg {
+  color: #FF1E56 !important;
+}
+
+body.theme-blackfriday:not(.light-mode) .sidebar-nav .nav-item.active,
+body.theme-blackfriday:not(.light-mode) .sidebar-nav .nav-link.active {
   background: linear-gradient(90deg, rgba(255, 30, 86, 0.22) 0%, rgba(255, 193, 7, 0.14) 100%) !important;
   border-left: 3.5px solid #FF1E56 !important;
   color: #FFFFFF !important;
@@ -174,15 +225,136 @@ body.theme-blackfriday .sidebar-nav .nav-link.active {
   box-shadow: inset 0 0 14px rgba(255, 30, 86, 0.12) !important;
 }
 
-body.theme-blackfriday .sidebar-nav .nav-item.active svg,
-body.theme-blackfriday .sidebar-nav .nav-link.active svg {
+body.theme-blackfriday:not(.light-mode) .sidebar-nav .nav-item.active svg,
+body.theme-blackfriday:not(.light-mode) .sidebar-nav .nav-link.active svg {
   color: #FF1E56 !important;
   filter: drop-shadow(0 0 6px rgba(255, 30, 86, 0.6)) !important;
 }
 
-body.theme-blackfriday .nav-separator span {
-  color: #475569 !important;
+body.theme-blackfriday:not(.light-mode) .nav-separator span {
+  color: #94A3B8 !important;
+  font-weight: 800 !important;
+}
+
+/* Nav items en Modo Claro — Atractivo, legible y con contraste estético */
+body.theme-blackfriday.light-mode .sidebar-nav .nav-item,
+body.theme-blackfriday.light-mode .sidebar-nav .nav-link {
+  color: #334155 !important;
+  font-weight: 600 !important;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Asegurar que spans internos (como Llamadas) hereden siempre el color */
+body.theme-blackfriday.light-mode .sidebar-nav .nav-item span,
+body.theme-blackfriday.light-mode .sidebar-nav .nav-link span {
+  color: inherit !important;
+  font-weight: inherit !important;
+}
+
+body.theme-blackfriday.light-mode .sidebar-nav .nav-item svg,
+body.theme-blackfriday.light-mode .sidebar-nav .nav-link svg {
+  color: #64748B !important;
+  transition: all 0.18s ease !important;
+}
+
+body.theme-blackfriday.light-mode .sidebar-nav .nav-item:hover:not(.active),
+body.theme-blackfriday.light-mode .sidebar-nav .nav-link:hover:not(.active) {
+  background: linear-gradient(90deg, rgba(225, 29, 72, 0.08) 0%, rgba(245, 158, 11, 0.04) 100%) !important;
+  color: #BE123C !important;
+  border-left: 3.5px solid #E11D48 !important;
+}
+
+body.theme-blackfriday.light-mode .sidebar-nav .nav-item:hover:not(.active) svg,
+body.theme-blackfriday.light-mode .sidebar-nav .nav-link:hover:not(.active) svg {
+  color: #E11D48 !important;
+  transform: scale(1.06);
+}
+
+body.theme-blackfriday.light-mode .sidebar-nav .nav-item.active,
+body.theme-blackfriday.light-mode .sidebar-nav .nav-link.active {
+  background: linear-gradient(90deg, rgba(225, 29, 72, 0.14) 0%, rgba(245, 158, 11, 0.08) 100%) !important;
+  border-left: 3.5px solid #E11D48 !important;
+  color: #9F1239 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.08), inset 0 0 10px rgba(225, 29, 72, 0.05) !important;
+}
+
+body.theme-blackfriday.light-mode .sidebar-nav .nav-item.active span,
+body.theme-blackfriday.light-mode .sidebar-nav .nav-link.active span {
+  color: #9F1239 !important;
+  font-weight: 800 !important;
+}
+
+body.theme-blackfriday.light-mode .sidebar-nav .nav-item.active svg,
+body.theme-blackfriday.light-mode .sidebar-nav .nav-link.active svg {
+  color: #E11D48 !important;
+  filter: drop-shadow(0 1px 4px rgba(225, 29, 72, 0.4)) !important;
+}
+
+body.theme-blackfriday.light-mode .nav-separator span {
+  color: #94A3B8 !important;
+  font-weight: 800 !important;
+  font-size: 10px !important;
+  letter-spacing: 0.10em !important;
+  text-transform: uppercase !important;
+}
+
+/* Chip de Novedades y Versión en Sidebar */
+body.theme-blackfriday:not(.light-mode) .sidebar-version-chip {
+  background: rgba(255, 30, 86, 0.10) !important;
+  border: 1px solid rgba(255, 30, 86, 0.35) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+}
+
+body.theme-blackfriday:not(.light-mode) .sidebar-version-chip:hover {
+  background: rgba(255, 30, 86, 0.20) !important;
+  border-color: #FF1E56 !important;
+  box-shadow: 0 0 12px rgba(255, 30, 86, 0.45) !important;
+}
+
+body.theme-blackfriday:not(.light-mode) .sidebar-version-left,
+body.theme-blackfriday:not(.light-mode) .sidebar-version-left span {
+  color: #F8FAFC !important;
   font-weight: 700 !important;
+}
+
+body.theme-blackfriday:not(.light-mode) .sidebar-version-tag {
+  color: #FFE082 !important;
+  background: rgba(255, 30, 86, 0.3) !important;
+  font-weight: 800 !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+}
+
+body.theme-blackfriday.light-mode .sidebar-version-chip {
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFF5F7 100%) !important;
+  border: 1.5px solid rgba(225, 29, 72, 0.22) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+}
+
+body.theme-blackfriday.light-mode .sidebar-version-chip:hover {
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFE4E6 100%) !important;
+  border-color: #E11D48 !important;
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.18) !important;
+  transform: translateY(-1.5px) !important;
+}
+
+body.theme-blackfriday.light-mode .sidebar-version-left,
+body.theme-blackfriday.light-mode .sidebar-version-left span {
+  color: #0F172A !important;
+  font-weight: 700 !important;
+}
+
+body.theme-blackfriday.light-mode .sidebar-version-tag {
+  color: #9F1239 !important;
+  background: linear-gradient(135deg, #FFE4E6 0%, #FECDD3 100%) !important;
+  border: 1px solid rgba(225, 29, 72, 0.25) !important;
+  padding: 2.5px 7px !important;
+  border-radius: 5px !important;
+  font-weight: 800 !important;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -204,26 +376,35 @@ body.theme-blackfriday #topbar-title {
 
 /* Topbar en Modo Claro */
 body.theme-blackfriday.light-mode .topbar {
-  background: rgba(255, 255, 255, 0.94) !important;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.9) !important;
+  background:
+    linear-gradient(90deg,
+      rgba(225, 29, 72, 0.06) 0%,
+      rgba(255, 255, 255, 0.97) 20%,
+      rgba(255, 255, 255, 0.97) 80%,
+      rgba(217, 119, 6, 0.06) 100%) !important;
+  border-bottom: 1.5px solid rgba(225, 29, 72, 0.18) !important;
   backdrop-filter: blur(14px) !important;
-  box-shadow: 0 1px 8px rgba(15, 23, 42, 0.04) !important;
+  box-shadow: 0 2px 14px rgba(15, 23, 42, 0.06), 0 1px 4px rgba(225, 29, 72, 0.05) !important;
 }
 
 body.theme-blackfriday.light-mode #topbar-title {
-  color: #0F172A !important;
-  font-weight: 700 !important;
+  background: linear-gradient(90deg, #1E293B 0%, #E11D48 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  font-weight: 800 !important;
 }
 
 body.theme-blackfriday.light-mode .topbar-user-btn {
-  background: #F1F5F9 !important;
-  border: 1px solid #E2E8F0 !important;
+  background: #FFFFFF !important;
+  border: 1px solid rgba(225, 29, 72, 0.20) !important;
   color: #0F172A !important;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06) !important;
 }
 
 body.theme-blackfriday.light-mode .topbar-user-btn:hover {
-  background: #E2E8F0 !important;
-  border-color: #CBD5E1 !important;
+  background: #FFF1F2 !important;
+  border-color: #E11D48 !important;
+  box-shadow: 0 2px 10px rgba(225, 29, 72, 0.15) !important;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -307,9 +488,11 @@ body.theme-blackfriday.light-mode .cuad-side .card,
 body.theme-blackfriday.light-mode .cuad-admin-card,
 body.theme-blackfriday.light-mode .ll-card {
   position: relative;
-  background: #FFFFFF !important;
-  border: 1px solid rgba(226, 232, 240, 0.95) !important;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03) !important;
+  background: linear-gradient(145deg, #FFFFFF 0%, #FEFCFB 60%, #FFF8F9 100%) !important;
+  border: 1.5px solid rgba(225, 29, 72, 0.14) !important;
+  box-shadow:
+    0 2px 10px rgba(15, 23, 42, 0.06),
+    0 4px 18px -4px rgba(225, 29, 72, 0.06) !important;
   transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease !important;
 }
 
@@ -323,8 +506,10 @@ body.theme-blackfriday.light-mode .ex-card:hover,
 body.theme-blackfriday.light-mode .ll-card:hover,
 body.theme-blackfriday.light-mode #llamada-form:hover {
   transform: translateY(-2px) !important;
-  border-color: rgba(225, 29, 72, 0.35) !important;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08), 0 0 12px rgba(225, 29, 72, 0.08) !important;
+  border-color: rgba(225, 29, 72, 0.40) !important;
+  box-shadow:
+    0 6px 24px rgba(15, 23, 42, 0.10),
+    0 0 16px -4px rgba(225, 29, 72, 0.12) !important;
 }
 
 body.theme-blackfriday.light-mode .stat-card::before {
@@ -358,7 +543,7 @@ body.theme-blackfriday.light-mode .ex-card h3 {
 }
 
 body.theme-blackfriday.light-mode p,
-body.theme-blackfriday.light-mode span:not(.badge):not(.pill-badge):not(.bf-brand-tag),
+body.theme-blackfriday.light-mode span:not(.badge):not(.pill-badge):not(.bf-brand-tag):not(.sidebar *),
 body.theme-blackfriday.light-mode label {
   color: #334155 !important;
 }
@@ -487,7 +672,10 @@ body.theme-blackfriday input:not([type="checkbox"]):not([type="radio"]),
 body.theme-blackfriday select,
 body.theme-blackfriday textarea:not(.notes-textarea):not(#notas-rapidas-textarea),
 body.theme-blackfriday .filter-select {
-  background: rgba(16, 20, 32, 0.9) !important;
+  background-color: rgba(16, 20, 32, 0.9) !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  background-size: 22px 22px !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   color: #F8FAFC !important;
 }
@@ -511,7 +699,10 @@ body.theme-blackfriday.light-mode input:not([type="checkbox"]):not([type="radio"
 body.theme-blackfriday.light-mode select,
 body.theme-blackfriday.light-mode textarea:not(.notes-textarea):not(#notas-rapidas-textarea),
 body.theme-blackfriday.light-mode .filter-select {
-  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  background-size: 22px 22px !important;
   border: 1px solid #CBD5E1 !important;
   color: #0F172A !important;
 }
@@ -1077,7 +1268,7 @@ body.theme-blackfriday.light-mode .bf-countdown-lbl {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 19. COPILOT FLOTANTE - EDICIÓN BLACK FRIDAY                                */
+/* 19. COPILOT FLOTANTE - EDICIÓN CYBER ROBOT BLACK FRIDAY                    */
 /* -------------------------------------------------------------------------- */
 
 body.theme-blackfriday #copilot-fab > svg {
@@ -1089,46 +1280,127 @@ body.theme-blackfriday #copilot-fab .copilot-fab-pulse {
 }
 
 body.theme-blackfriday #copilot-fab {
-  filter: drop-shadow(0 0 14px rgba(255, 30, 86, 0.5)) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  gap: 3px !important;
+  filter: drop-shadow(0 0 16px rgba(255, 30, 86, 0.55)) !important;
 }
 
-.bf-copilot-wrap {
+.bf-copilot-mascot-wrap {
   position: relative;
-  width: 58px;
-  height: 58px;
+  width: 76px;
+  height: 76px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: visible !important;
 }
 
-.bf-copilot-wrap:hover {
-  transform: scale(1.12);
+.bf-copilot-mascot-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 18px rgba(255, 30, 86, 0.75)) drop-shadow(0 0 12px rgba(255, 193, 7, 0.5));
+  animation: bf-bot-float 3s ease-in-out infinite;
+  user-select: none;
+  pointer-events: none;
+}
+
+@keyframes bf-bot-float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(2.5deg);
+  }
 }
 
 .bf-copilot-pulse {
   position: absolute;
-  inset: -5px;
+  top: 50%;
+  left: 50%;
+  width: 70px;
+  height: 70px;
+  margin-top: -35px;
+  margin-left: -35px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 30, 86, 0.4) 0%, rgba(255, 193, 7, 0.25) 55%, transparent 75%);
-  animation: bfPulseRing 2.4s infinite ease-out;
+  background: radial-gradient(circle, rgba(255, 30, 86, 0.5) 0%, rgba(255, 193, 7, 0.25) 55%, transparent 75%);
+  animation: bf-copilot-pulse-anim 2.6s ease-out infinite;
   pointer-events: none;
 }
 
-@keyframes bfPulseRing {
-  0%   { transform: scale(0.9); opacity: 0.8; }
-  50%  { transform: scale(1.15); opacity: 0.3; }
-  100% { transform: scale(1.35); opacity: 0; }
+@keyframes bf-copilot-pulse-anim {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.85;
+  }
+  70% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
 }
 
-.bf-copilot-svg {
-  width: 54px;
-  height: 54px;
-  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.6));
+.bf-copilot-badge {
+  display: none !important;
 }
 
+body.theme-blackfriday #copilot-fab:hover .bf-copilot-mascot-wrap {
+  transform: scale(1.15) translateY(-5px);
+}
+
+body.theme-blackfriday #copilot-fab:hover .bf-copilot-mascot-img {
+  filter: drop-shadow(0 8px 24px rgba(255, 30, 86, 0.95))
+    drop-shadow(0 0 18px rgba(0, 240, 255, 0.8))
+    drop-shadow(0 0 14px rgba(255, 193, 7, 0.65));
+}
+
+body.theme-blackfriday #copilot-fab:active .bf-copilot-mascot-wrap {
+  transform: scale(0.94);
+}
+
+/* Copilot Label */
 body.theme-blackfriday #copilot-fab .copilot-fab-label {
-  color: #FFFFFF !important;
+  color: #FFE082 !important;
+  text-shadow: 0 0 8px rgba(255, 30, 86, 0.7), 0 0 14px rgba(255, 193, 7, 0.5) !important;
   font-weight: 800 !important;
+  font-size: 10.5px !important;
+  letter-spacing: 0.08em !important;
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+body.theme-blackfriday.light-mode #copilot-fab .copilot-fab-label {
+  color: #BE123C !important;
+  text-shadow: 0 1px 4px rgba(255, 255, 255, 0.95), 0 0 8px rgba(225, 29, 72, 0.35) !important;
+  font-weight: 800 !important;
+  font-size: 10.5px !important;
+  letter-spacing: 0.08em !important;
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+body.theme-blackfriday.light-mode .bf-copilot-badge {
+  background: #FFFFFF;
+  border-color: #E11D48;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 0 8px rgba(225, 29, 72, 0.4);
+}
+
+
+/* TempMail y extensiones en Black Friday */
+body.theme-blackfriday input[type="email"], #br-email-gestor {
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  background-size: 22px 22px !important;
+  padding-right: 38px !important;
 }

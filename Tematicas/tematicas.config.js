@@ -17,7 +17,7 @@
    ============================================================================ */
 
 // 🏷️ TEMÁTICA BLACK FRIDAY (true = ACTIVA, false = DESACTIVADA)
-const tematica_blackfriday = false;
+const tematica_blackfriday = true;
 
 // 🎃 TEMÁTICA HALLOWEEN (true = ACTIVA, false = DESACTIVADA)
 const tematica_halloween = false;

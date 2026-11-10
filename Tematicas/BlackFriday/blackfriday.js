@@ -439,68 +439,38 @@
   }
 
   /* -------------------------------------------------------------------------- */
-  /* 9. COPILOT FLOTANTE - EDICIÓN OFICIAL BLACK FRIDAY                         */
+  /* 9. COPILOT FLOTANTE - EDICIÓN CYBER BOT BLACK FRIDAY                         */
   /* -------------------------------------------------------------------------- */
 
   function decorateCopilotFab() {
     const fab = document.getElementById('copilot-fab');
     if (!fab) return;
 
-    if (!fab.querySelector('.bf-copilot-wrap')) {
-      const wrap = document.createElement('div');
-      wrap.className = 'bf-copilot-wrap';
-      wrap.setAttribute('aria-label', 'Microsoft Copilot Black Friday');
-      wrap.innerHTML = `
-        <div class="bf-copilot-pulse"></div>
-        <svg class="bf-copilot-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <radialGradient id="bf-cp-disc" cx="50%" cy="30%" r="70%">
-              <stop offset="0%" stop-color="#222538"/>
-              <stop offset="60%" stop-color="#0E0F17"/>
-              <stop offset="100%" stop-color="#06070B"/>
-            </radialGradient>
-            <linearGradient id="bf-cp-ribbon" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#FFFFFF"/>
-              <stop offset="35%" stop-color="#FFE082"/>
-              <stop offset="70%" stop-color="#FF1E56"/>
-              <stop offset="100%" stop-color="#8B0029"/>
-            </linearGradient>
-            <filter id="bf-cp-glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="2.5" result="blur"/>
-              <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-            </filter>
-          </defs>
-          <circle cx="24" cy="24" r="22" fill="url(#bf-cp-disc)" stroke="#FF1E56" stroke-width="2" filter="url(#bf-cp-glow)"/>
-          <circle cx="24" cy="24" r="19" stroke="#FFC107" stroke-width="0.8" stroke-dasharray="3 2" opacity="0.6"/>
-          
-          <g transform="translate(6, 6) scale(1.5)">
-            <path d="M8 13.5c0-1.38 1.12-2.5 2.5-2.5h3c1.38 0 2.5 1.12 2.5 2.5S14.88 16 13.5 16h-3C9.12 16 8 14.88 8 13.5z"
-              fill="url(#bf-cp-ribbon)" filter="url(#bf-cp-glow)"/>
-            <path d="M9.5 8.5c0-.83.67-1.5 1.5-1.5h2c.83 0 1.5.67 1.5 1.5S13.83 10 13 10h-2c-.83 0-1.5-.67-1.5-1.5z"
-              fill="#FFFFFF" opacity="0.95"/>
-          </g>
-          
-          <g transform="translate(32, 4)">
-            <rect x="0" y="0" width="12" height="12" rx="3" fill="#FF1E56" stroke="#FFE082" stroke-width="1"/>
-            <path d="M6 1 L3 6 L6 6 L5 10 L9 5 L6 5 Z" fill="#FFE082"/>
-          </g>
-        </svg>
-      `;
+    // Limpiar elementos de mascota y badges previos para evitar duplicados
+    fab.querySelectorAll('.bf-copilot-mascot-wrap, .bf-copilot-wrap, .bf-copilot-badge').forEach((el) => el.remove());
 
-      wrap.addEventListener('click', () => {
-        if (typeof window.abrirCopilot === 'function') {
-          window.abrirCopilot();
-          if (soundEnabled) playBfSound('whoosh');
-        }
-      });
+    const wrap = document.createElement('div');
+    wrap.className = 'bf-copilot-mascot-wrap';
+    wrap.setAttribute('aria-label', 'Microsoft Copilot Cyber Robot AI');
+    wrap.innerHTML = `
+      <div class="bf-copilot-pulse"></div>
+      <img src="Tematicas/BlackFriday/copilot_robot.png?v=6" class="bf-copilot-mascot-img" alt="Copilot Cyber Robot Mascot AI">
+    `;
 
-      const label = fab.querySelector('.copilot-fab-label');
-      if (label) {
-        label.textContent = 'Copilot ⚡';
-        fab.insertBefore(wrap, label);
-      } else {
-        fab.appendChild(wrap);
+    wrap.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (typeof window.abrirCopilot === 'function') {
+        window.abrirCopilot();
+        if (soundEnabled) playBfSound('whoosh');
       }
+    });
+
+    const label = fab.querySelector('.copilot-fab-label');
+    if (label) {
+      label.textContent = 'Copilot ⚡';
+      fab.insertBefore(wrap, label);
+    } else {
+      fab.appendChild(wrap);
     }
   }
 
@@ -585,7 +555,7 @@
     });
 
     document.querySelectorAll(
-      '.bf-brand-mascot, .bf-brand-tag, .bf-auth-card-badge, .bf-card-corner-badge, .bf-copilot-wrap'
+      '.bf-brand-mascot, .bf-brand-tag, .bf-auth-card-badge, .bf-card-corner-badge, .bf-copilot-mascot-wrap, .bf-copilot-wrap'
     ).forEach((el) => {
       el.remove();
     });
