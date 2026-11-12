@@ -564,7 +564,7 @@
             <span style="background:rgba(0,198,255,0.25); color:#00e5ff; font-size:11px; padding:1px 6px; border-radius:4px; font-weight:800;">${plantilla.abreviatura}</span>
           </div>
           <div style="font-size:12px; color:rgba(255,255,255,0.85); margin-top:2px;">
-            ${titular} (${d.numero_documento || 'Doc'}) — ${totalCampos} campos rellenados.
+            ${titular}${d.numero_documento ? ' (' + d.numero_documento + ')' : ''} — ${totalCampos} campos rellenados.
           </div>
         </div>
       </div>

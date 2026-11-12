@@ -111,9 +111,6 @@ function validarDatosFormularioBono(datos) {
   if (!datos.dia || !datos.mes || !datos.anio) {
     return { ok: false, msg: 'Completa la fecha de nacimiento (día, mes y año)' };
   }
-  if (!datos.numDoc) {
-    return { ok: false, msg: 'Introduce el documento del titular (DNI / NIE / Pasaporte)' };
-  }
 
   return { ok: true };
 }
@@ -212,7 +209,7 @@ function onClicPasarAExtension() {
           <div>👤 <strong>Titular:</strong> ${escapeHtml(datos.nombre)} ${escapeHtml(datos.primerApellido)} ${escapeHtml(datos.segundoApellido)}</div>
           <div>✉️ <strong>Email gestor:</strong> ${escapeHtml(datos.emailGestor)} <span style="color:var(--text-muted); font-size:11px;">(se rellenará en email y repetir email)</span></div>
           <div>🎂 <strong>Fecha nacimiento:</strong> ${datos.dia}/${datos.mes}/${datos.anio}</div>
-          <div>🪪 <strong>Documento:</strong> ${escapeHtml(datos.numDoc)}</div>
+          <div>🪪 <strong>Documento:</strong> ${datos.numDoc ? escapeHtml(datos.numDoc) : '<span style="color:var(--text-muted); font-style:italic;">(Omitido - no se rellenará)</span>'}</div>
         </div>
       </div>
     `,
