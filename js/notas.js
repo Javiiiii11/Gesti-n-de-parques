@@ -31,7 +31,12 @@ function initNotasRapidas() {
     updateNotesStatus('saving');
     
     // Guardar de inmediato para evitar cualquier pérdida
-    localStorage.setItem('parksales_quick_notes', text);
+    try {
+      localStorage.setItem('parksales_quick_notes', text);
+    } catch (err) {
+      if (typeof purgeUnneededLocalStorage === 'function') purgeUnneededLocalStorage();
+      try { localStorage.setItem('parksales_quick_notes', text); } catch (_) {}
+    }
     if (typeof mirrorPut === 'function') mirrorPut('parksales_quick_notes', text);
     
     updateNotesStats(text);

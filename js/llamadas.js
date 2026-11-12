@@ -25,7 +25,12 @@ function getCalls() {
 
 function saveCalls(calls) {
   const json = JSON.stringify(calls);
-  localStorage.setItem(CALLS_STORAGE_KEY, json);
+  try {
+    localStorage.setItem(CALLS_STORAGE_KEY, json);
+  } catch (err) {
+    if (typeof purgeUnneededLocalStorage === 'function') purgeUnneededLocalStorage();
+    try { localStorage.setItem(CALLS_STORAGE_KEY, json); } catch (_) {}
+  }
   if (typeof mirrorPut === 'function') {
     mirrorPut(CALLS_STORAGE_KEY, json);
   }

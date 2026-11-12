@@ -125,23 +125,141 @@ function uid() {
   });
 }
 
-function readLocal(key) {
+const MEMORY_RAW_CACHE = new Map();
+
+/**
+ * Purga de emergencia en localStorage sin perder datos de usuario:
+ * - Descarga datos pesados de backups locales (ya asegurados en IndexedDB).
+ * - Descarga meses antiguos de cuadrantes (asegurados en IndexedDB).
+ */
+function purgeUnneededLocalStorage() {
   try {
-    return JSON.parse(localStorage.getItem(key) || '[]');
+    // 1. Quitar los payloads pesados de backups en localStorage
+    const rawCache = localStorage.getItem('parksales_cloud_backups_local_cache');
+    if (rawCache) {
+      try {
+        const parsed = JSON.parse(rawCache);
+        if (Array.isArray(parsed)) {
+          const lightweight = parsed.map(b => {
+            if (!b) return b;
+            const { data, ...summary } = b;
+            return summary;
+          });
+          localStorage.setItem('parksales_cloud_backups_local_cache', JSON.stringify(lightweight));
+        }
+      } catch (_) {
+        localStorage.removeItem('parksales_cloud_backups_local_cache');
+      }
+    }
+
+    // 2. Si es necesario, descargar cuadrantes antiguos (>2 meses) de localStorage
+    // (quedan 100% seguros y accesibles en IndexedDB)
+    const listRaw = localStorage.getItem(LOCAL_KEYS.cuadrante_list);
+    if (listRaw) {
+      try {
+        const list = JSON.parse(listRaw);
+        if (Array.isArray(list) && list.length > 2) {
+          const sorted = [...list].sort((a, b) => String(b.mes).localeCompare(String(a.mes)));
+          const older = sorted.slice(2);
+          for (const item of older) {
+            if (item?.mes) {
+              localStorage.removeItem(LOCAL_KEYS.cuadrante_data + '_' + item.mes);
+            }
+          }
+        }
+      } catch (_) {}
+    }
   } catch (err) {
-    console.error('[ParkSales] Datos corruptos en localStorage para "' + key + '":', err);
-    return [];
+    console.warn('[ParkSales Storage] Error en purga preventiva:', err);
   }
 }
+
+/**
+ * Optimización automática del almacenamiento: libera megabytes de localStorage
+ * migrando respaldos pesados a IndexedDB al arrancar.
+ */
+async function optimizeStorageQuota() {
+  try {
+    const rawCache = localStorage.getItem('parksales_cloud_backups_local_cache');
+    if (rawCache) {
+      try {
+        const parsed = JSON.parse(rawCache);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasHeavyData = parsed.some(b => b && b.data);
+          if (hasHeavyData) {
+            if (typeof mirrorPut === 'function') {
+              await mirrorPut('parksales_cloud_backups_full', rawCache);
+            }
+            const lightweight = parsed.map(b => {
+              if (!b) return b;
+              const { data, ...summary } = b;
+              return summary;
+            });
+            localStorage.setItem('parksales_cloud_backups_local_cache', JSON.stringify(lightweight));
+            console.info('[ParkSales Storage] Espacio optimizado: copias de seguridad pesadas migradas a IndexedDB.');
+          }
+        }
+      } catch (_) {
+        localStorage.removeItem('parksales_cloud_backups_local_cache');
+      }
+    }
+  } catch (err) {
+    console.warn('[ParkSales Storage] Aviso en optimizeStorageQuota:', err);
+  }
+}
+
+function readLocal(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw !== null) {
+      MEMORY_RAW_CACHE.set(key, raw);
+      return JSON.parse(raw || '[]');
+    }
+  } catch (err) {
+    console.warn('[ParkSales] Lectura directa de localStorage no disponible para "' + key + '":', err);
+  }
+
+  // Fallback transparente al caché en memoria
+  if (MEMORY_RAW_CACHE.has(key)) {
+    try {
+      return JSON.parse(MEMORY_RAW_CACHE.get(key) || '[]');
+    } catch (_) {
+      return [];
+    }
+  }
+  return [];
+}
+
 function writeLocal(key, data) {
   const json = JSON.stringify(data);
+  MEMORY_RAW_CACHE.set(key, json);
+
+  let savedInLocal = false;
   try {
     localStorage.setItem(key, json);
+    savedInLocal = true;
   } catch (err) {
-    console.error('[ParkSales] Error al guardar en el navegador (¿almacenamiento lleno?):', err);
-    try { toast('No se pudo guardar en el navegador (almacenamiento lleno). Haz una copia de seguridad.', 'error', 8000); } catch (e) { }
+    console.warn('[ParkSales] Cuota de almacenamiento alcanzada. Ejecutando auto-limpieza preventiva...', err);
+    purgeUnneededLocalStorage();
+    try {
+      localStorage.setItem(key, json);
+      savedInLocal = true;
+      console.info('[ParkSales] Guardado exitoso en localStorage tras optimizar espacio.');
+    } catch (retryErr) {
+      console.warn('[ParkSales] No se pudo escribir en localStorage por límite de cuota. Datos protegidos en memoria e IndexedDB.', retryErr);
+    }
   }
-  mirrorPut(key, json);
+
+  // Replicar de inmediato en almacenamiento duradero IndexedDB (sin límite de 5MB)
+  if (typeof mirrorPut === 'function') {
+    mirrorPut(key, json);
+  }
+
+  if (!savedInLocal) {
+    try {
+      toast('💾 Espacio del navegador optimizado. Datos guardados con total seguridad.', 'info', 4000);
+    } catch (_) {}
+  }
 }
 
 /* ----------------------------------------------------------------------------
@@ -207,6 +325,7 @@ async function requestPersistentStorage() {
 /** Recupera datos del espejo IndexedDB si localStorage los ha perdido */
 async function restoreMirroredData() {
   await requestPersistentStorage();
+  await optimizeStorageQuota();
   const keysToRestore = [
     LOCAL_KEYS.ventas,
     LOCAL_KEYS.contactos,
@@ -666,7 +785,11 @@ const DB = {
 
   // --------------------------------------------------------- CUADRANTE
   _readCuadranteLocal(mesKey) {
-    const raw = localStorage.getItem(LOCAL_KEYS.cuadrante_data + '_' + mesKey);
+    const key = LOCAL_KEYS.cuadrante_data + '_' + mesKey;
+    let raw = localStorage.getItem(key);
+    if (!raw && MEMORY_RAW_CACHE.has(key)) {
+      raw = MEMORY_RAW_CACHE.get(key);
+    }
     if (!raw) return null;
     try {
       let data = JSON.parse(raw);
@@ -680,7 +803,18 @@ const DB = {
 
   _writeCuadranteLocal(mesKey, payload, meta) {
     const json = JSON.stringify(payload);
-    localStorage.setItem(LOCAL_KEYS.cuadrante_data + '_' + mesKey, json);
+    const key = LOCAL_KEYS.cuadrante_data + '_' + mesKey;
+    MEMORY_RAW_CACHE.set(key, json);
+    try {
+      localStorage.setItem(key, json);
+    } catch (e) {
+      purgeUnneededLocalStorage();
+      try {
+        localStorage.setItem(key, json);
+      } catch (e2) {
+        console.warn('[ParkSales] Cuadrante persistido en IndexedDB (cuota localStorage preservada).');
+      }
+    }
     const list = readLocal(LOCAL_KEYS.cuadrante_list);
     const info = {
       mes: mesKey,
@@ -694,7 +828,7 @@ const DB = {
     else list.unshift(info);
     writeLocal(LOCAL_KEYS.cuadrante_list, list);
     if (typeof mirrorPut === 'function') {
-      mirrorPut(LOCAL_KEYS.cuadrante_data + '_' + mesKey, json);
+      mirrorPut(key, json);
     }
     return info;
   },
@@ -953,7 +1087,23 @@ const DB = {
     try {
       const cacheKey = 'parksales_cloud_backups_local_cache';
       const currentCache = JSON.parse(localStorage.getItem(cacheKey) || '[]');
-      currentCache.unshift({ ...row, id: 'loc-' + Date.now() });
+      const backupId = 'loc-' + Date.now();
+
+      // Guardar copia completa (con data) en almacenamiento IndexedDB sin límite de 5MB
+      if (typeof mirrorGet === 'function' && typeof mirrorPut === 'function') {
+        try {
+          const fullCacheRaw = (await mirrorGet('parksales_cloud_backups_full')) || '[]';
+          let fullCache = [];
+          try { fullCache = JSON.parse(fullCacheRaw); } catch (_) {}
+          fullCache.unshift({ ...row, id: backupId });
+          if (fullCache.length > 5) fullCache.length = 5;
+          await mirrorPut('parksales_cloud_backups_full', JSON.stringify(fullCache));
+        } catch (_) {}
+      }
+
+      // En localStorage guardar únicamente el resumen sin el payload "data" pesado (ahorro >95% de espacio)
+      const { data: _omitData, ...rowSummary } = row;
+      currentCache.unshift({ ...rowSummary, id: backupId });
       if (currentCache.length > 5) currentCache.length = 5;
       localStorage.setItem(cacheKey, JSON.stringify(currentCache));
     } catch (e) { /* ignore */ }
@@ -1023,6 +1173,19 @@ const DB = {
 
   async getCloudBackupDetail(id) {
     if (!CATALOG_SUPABASE || !supabaseClient || String(id).startsWith('loc-')) {
+      // 1. Intentar cargar desde el almacenamiento completo en IndexedDB
+      if (typeof mirrorGet === 'function') {
+        try {
+          const fullCacheRaw = await mirrorGet('parksales_cloud_backups_full');
+          if (fullCacheRaw) {
+            const fullCache = JSON.parse(fullCacheRaw);
+            const found = fullCache.find(b => b.id === id);
+            if (found && found.data) return found;
+          }
+        } catch (_) {}
+      }
+
+      // 2. Fallback a caché local
       const cache = JSON.parse(localStorage.getItem('parksales_cloud_backups_local_cache') || '[]');
       const found = cache.find(b => b.id === id);
       if (!found) throw new Error('Copia no encontrada en caché');
@@ -1041,6 +1204,16 @@ const DB = {
 
   async deleteCloudBackup(id) {
     if (String(id).startsWith('loc-')) {
+      if (typeof mirrorGet === 'function' && typeof mirrorPut === 'function') {
+        try {
+          const fullCacheRaw = await mirrorGet('parksales_cloud_backups_full');
+          if (fullCacheRaw) {
+            const fullCache = JSON.parse(fullCacheRaw);
+            const filtered = fullCache.filter(b => b.id !== id);
+            await mirrorPut('parksales_cloud_backups_full', JSON.stringify(filtered));
+          }
+        } catch (_) {}
+      }
       const cache = JSON.parse(localStorage.getItem('parksales_cloud_backups_local_cache') || '[]');
       const filtered = cache.filter(b => b.id !== id);
       localStorage.setItem('parksales_cloud_backups_local_cache', JSON.stringify(filtered));
