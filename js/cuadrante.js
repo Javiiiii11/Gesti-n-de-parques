@@ -551,6 +551,23 @@ function codeOn(person, iso) {
   return userDays(person)[iso] || '';
 }
 
+/**
+ * Código efectivo para un día: si tiene código explícito lo devuelve,
+ * si está vacío pero DENTRO del rango subido del CSV, lo trata como libre
+ * (0 = finde libre, L = entre semana libre).
+ */
+function effectiveCodeOn(person, iso, date) {
+  if (!person) return '';
+  const code = codeOn(person, iso);
+  if (code) return code;
+  const range = bundleDateRange();
+  if (range && iso >= range.from && iso <= range.to) {
+    const d = date || new Date(iso + 'T12:00:00');
+    return isWeekendDate(d) ? '0' : 'L';
+  }
+  return '';
+}
+
 function monthStats(person, monthDate) {
   const y = monthDate.getFullYear();
   const m = monthDate.getMonth();
@@ -561,13 +578,10 @@ function monthStats(person, monthDate) {
   let weekendWork = 0;
   let hours = 0;
   const byCode = {};
-  const range = bundleDateRange();
   for (let d = 1; d <= total; d++) {
     const date = new Date(y, m, d);
     const iso = isoLocal(date);
-    let code = codeOn(person, iso);
-    // Mismo criterio que el calendario: finde vacío dentro del CSV = Libre
-    if (!code && isWeekendDate(date) && range && iso >= range.from && iso <= range.to) code = '0';
+    const code = effectiveCodeOn(person, iso, date);
     if (!code) continue;
     const meta = shiftMeta(code, date);
     byCode[code] = (byCode[code] || 0) + 1;
@@ -639,11 +653,7 @@ function getCompensatoryIsos(weekend) {
   return [monIso, tueIso].filter(inRange);
 }
 function isWorkIso(person, iso) {
-  const code = codeOn(person, iso);
-  // finde vacío dentro del rango se considera Libre (0) -> no trabajo
-  const range = bundleDateRange();
-  let effCode = code;
-  if (!effCode && isWeekendDate(new Date(iso + 'T12:00:00')) && range && iso >= range.from && iso <= range.to) effCode = '0';
+  const effCode = effectiveCodeOn(person, iso);
   if (!effCode) return false;
   const meta = shiftMeta(effCode, iso);
   return !!meta?.work;
@@ -656,8 +666,7 @@ function longestStreakWithOverrides(person, overrides) {
   let end = new Date(range.to + 'T12:00:00');
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const iso = isoLocal(d);
-    let code = overrides && iso in overrides ? overrides[iso] : codeOn(person, iso);
-    if (!code && isWeekendDate(d) && iso >= range.from && iso <= range.to) code = '0';
+    let code = (overrides && (iso in overrides)) ? overrides[iso] : effectiveCodeOn(person, iso, d);
     const meta = code ? shiftMeta(code, iso) : null;
     const isWork = !!meta?.work;
     if (isWork) { cur++; max = Math.max(max, cur); }
@@ -715,7 +724,7 @@ function findSwapCandidates(selectedIso) {
       compIsos
     });
   }
-  candidates.sort((a,b) => (a.ok === b.ok ? 0 : a.ok ? -1 : 1));
+  candidates.sort((a, b) => (a.ok === b.ok ? 0 : a.ok ? -1 : 1));
   return candidates;
 }
 
@@ -884,7 +893,7 @@ function renderHero(person, hasData) {
   }
 
   const todayIso = isoLocal(new Date());
-  const todayCode = codeOn(person, todayIso);
+  const todayCode = effectiveCodeOn(person, todayIso);
   const todayMeta = shiftMeta(todayCode, todayIso);
   const nxt = nextShift(person, new Date());
   const inThisMonth = ymKey(new Date()) === ymKey(cuadMonth);
@@ -970,9 +979,7 @@ function renderWeekStrip(person) {
   for (let i = 0; i < 7; i++) {
     const date = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
     const iso = isoLocal(date);
-    let code = codeOn(person, iso);
-    const range = bundleDateRange();
-    if (!code && isWeekendDate(date) && person && range && iso >= range.from && iso <= range.to) code = '0';
+    const code = effectiveCodeOn(person, iso, date);
     const meta = shiftMeta(code, date);
     const isToday = iso === isoLocal(today);
     cells.push(`
@@ -1025,18 +1032,40 @@ function renderCalendar(person, hasData) {
     .join('');
 
   const cells = [];
-  for (let i = 0; i < pad; i++) cells.push('<div class="cuad-day is-empty"></div>');
+  // Padding: días del mes anterior (visible si tienen turno)
+  for (let i = 0; i < pad; i++) {
+    const prevDate = new Date(y, m, -(pad - 1 - i));
+    const prevIso = isoLocal(prevDate);
+    const prevCode = person ? effectiveCodeOn(person, prevIso, prevDate) : '';
+    if (prevCode) {
+      const prevMeta = shiftMeta(prevCode, prevDate);
+      const prevWeekend = isWeekendDate(prevDate);
+      const prevHoliday = holidaySet.has(prevIso);
+      const prevClasses = [
+        'cuad-day', 'is-other-month',
+        prevWeekend ? 'is-weekend' : '',
+        prevCode ? `code-${prevCode}` : 'is-unset',
+        prevHoliday ? 'is-holiday' : '',
+      ].filter(Boolean).join(' ');
+      const prevLabel = prevCode === '0' || prevCode === 'L' ? 'Libre' : prevCode;
+      const prevHours = prevMeta?.hours ? `<span class="cuad-day-hours">${escapeHtml(prevMeta.hours)}</span>` : '';
+      cells.push(`
+        <div class="${prevClasses}" title="${escapeHtml(weekdayLong(prevDate) + ' · ' + shiftTitle(prevCode, prevDate))}">
+          <span class="cuad-day-top"><span class="cuad-day-num">${prevDate.getDate()}</span></span>
+          <span class="cuad-day-code">${escapeHtml(prevLabel)}</span>
+          ${prevHours}
+          ${prevHoliday ? '<span class="cuad-day-hol">Festivo</span>' : ''}
+        </div>`);
+    } else {
+      cells.push('<div class="cuad-day is-empty"></div>');
+    }
+  }
 
   for (let d = 1; d <= total; d++) {
     const date = new Date(y, m, d);
     const iso = isoLocal(date);
-    const code = person ? codeOn(person, iso) : '';
+    const displayCode = person ? effectiveCodeOn(person, iso, date) : '';
     const weekend = isWeekendDate(date);
-    // Solo hasta el último día detectado del CSV: si el finde está dentro del rango subido y no tiene código, es finde libre
-    const range = bundleDateRange();
-    const inUploadedRange = range && iso >= range.from && iso <= range.to;
-    const isWeekendOff = !code && weekend && person && inUploadedRange;
-    const displayCode = isWeekendOff ? '0' : code;
     const meta = shiftMeta(displayCode, date);
     const holiday = holidaySet.has(iso);
     const classes = [
@@ -1118,9 +1147,7 @@ function renderAgenda(person) {
     const iso = cuadSelectedIso || isoLocal(new Date());
     const [ys, ms, ds] = iso.split('-').map(Number);
     const date = new Date(ys, ms - 1, ds);
-    let code = codeOn(person, iso);
-    const range = bundleDateRange();
-    if (!code && isWeekendDate(date) && person && range && iso >= range.from && iso <= range.to) code = '0';
+    const code = effectiveCodeOn(person, iso, date);
     const holiday = (cuadBundle.holidays || []).includes(iso);
     const isTfsFestivo = code === 'TFS' && !isWeekendDate(date);
     // Botón para buscar cambios de fin de semana: solo tiene sentido en sábado o domingo
@@ -1261,7 +1288,7 @@ function openSwapModal(iso) {
   const [sat, sun] = weekend;
   const satDate = new Date(sat + 'T12:00:00');
   const sunDate = new Date(sun + 'T12:00:00');
-  const weekendLabel = `${satDate.toLocaleDateString('es-ES',{weekday:'long', day:'numeric', month:'short'})} y ${sunDate.toLocaleDateString('es-ES',{weekday:'long', day:'numeric'})}`;
+  const weekendLabel = `${satDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })} y ${sunDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' })}`;
   const mySatWork = isWorkIso(me, sat);
   const mySunWork = isWorkIso(me, sun);
   const myLabel = mySatWork || mySunWork ? 'Trabajas' : 'Libras';
@@ -1287,7 +1314,7 @@ function openSwapModal(iso) {
   };
 
   const compIsos = getCompensatoryIsos(weekend);
-  const compLabel = compIsos.length ? compIsos.map(iso => new Date(iso+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short', day:'numeric'})).join(' y ') : '—';
+  const compLabel = compIsos.length ? compIsos.map(iso => new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' })).join(' y ') : '—';
   const html = `
     <p class="desc" style="margin-bottom:10px;">Fin de semana del <strong>${escapeHtml(weekendLabel)}</strong> — tú <strong>${escapeHtml(myLabel)}</strong>. Si cambiáis, se mueven también las <strong>libranzas (L) del ${escapeHtml(compLabel)}</strong> asociadas a ese finde. Solo muestro compis donde el finde es opuesto y <strong>ninguno supera 10 días seguidos</strong> en todo el rango del CSV, no solo en el mismo mes.</p>
     <div class="cuad-swap-summary">
@@ -1301,7 +1328,7 @@ function openSwapModal(iso) {
   `;
 
   openModal({
-    title: `Intercambio de finde · ${satDate.toLocaleDateString('es-ES',{day:'numeric', month:'short'})}–${sunDate.getDate()}`,
+    title: `Intercambio de finde · ${satDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}–${sunDate.getDate()}`,
     width: '560px',
     bodyHtml: html,
     footHtml: `<button class="btn btn-ghost" type="button" id="cuad-swap-close">Cerrar</button>`
@@ -1528,7 +1555,7 @@ function openEditTurnoModal(iso) {
 async function cuadSaveTurnoEdit(iso, newCode) {
   const me = currentPerson();
   if (!me) throw new Error('No identificado');
-  const mesKey = iso.slice(0,7);
+  const mesKey = iso.slice(0, 7);
   let data = await DB.getCuadrante(mesKey);
   if (!data) {
     data = { users: {}, holidays: [], range: { from: iso, to: iso } };
@@ -1571,12 +1598,14 @@ function pickInitialMonth() {
 async function loadMonth() {
   const key = ymKey(cuadMonth);
   const prevKey = ymKey(addMonths(cuadMonth, -1));
+  const nextKey = ymKey(addMonths(cuadMonth, 1));
   try {
-    const [current, prev] = await Promise.all([
+    const [current, prev, next] = await Promise.all([
       DB.getCuadrante(key),
       DB.getCuadrante(prevKey),
+      DB.getCuadrante(nextKey),
     ]);
-    cuadBundle = mergeCuadrantes([prev, current]);
+    cuadBundle = mergeCuadrantes([prev, current, next]);
     cuadRemoteOk = true;
   } catch (err) {
     cuadBundle = { users: {}, holidays: [], sources: [] };
@@ -1780,6 +1809,50 @@ function openUploadModalActual() {
       }
       try {
         const saved = await DB.saveCuadrante(mesKey, snapshot.data, { nombreArchivo: snapshot.filename });
+
+        // Guardar fechas que pertenecen a meses adyacentes (overlap)
+        const overlapMonths = {};
+        for (const [personKey, personData] of Object.entries(snapshot.data)) {
+          for (const iso of Object.keys(personData.days || {})) {
+            const isoMonth = iso.slice(0, 7);
+            if (isoMonth !== mesKey) {
+              if (!overlapMonths[isoMonth]) overlapMonths[isoMonth] = {};
+              if (!overlapMonths[isoMonth][personKey]) {
+                overlapMonths[isoMonth][personKey] = { orig: personData.orig, days: {} };
+              }
+              overlapMonths[isoMonth][personKey].days[iso] = personData.days[iso];
+            }
+          }
+        }
+        for (const [oKey, oData] of Object.entries(overlapMonths)) {
+          try {
+            const existing = await DB.getCuadrante(oKey);
+            if (existing?.users) {
+              // Merge overlap days into existing month
+              for (const [pk, pd] of Object.entries(oData)) {
+                if (existing.users[pk]) {
+                  Object.assign(existing.users[pk].days, pd.days);
+                } else {
+                  existing.users[pk] = pd;
+                }
+              }
+              // Recalculate range
+              const allIsos = [];
+              for (const u of Object.values(existing.users)) {
+                allIsos.push(...Object.keys(u.days || {}));
+              }
+              if (allIsos.length) {
+                allIsos.sort();
+                existing.range = { from: allIsos[0], to: allIsos[allIsos.length - 1] };
+              }
+              await DB.saveCuadrante(oKey, existing.users, { nombreArchivo: snapshot.filename });
+            } else {
+              // No existing data for that month, create new
+              await DB.saveCuadrante(oKey, oData, { nombreArchivo: snapshot.filename });
+            }
+          } catch (_) { /* ignore overlap save errors */ }
+        }
+
         closeModal();
         if (saved?.missingTable) {
           toast('Guardado en este navegador. Ejecuta sql/cuadrantes.sql en Supabase para compartirlo con el equipo.', 'info', 7000);
